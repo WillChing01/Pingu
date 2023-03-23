@@ -1,0 +1,31 @@
+# depslib dependency file v1.0
+1679605204 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
+	<iostream>
+	"board.h"
+
+1679609115 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
+	<vector>
+	<string>
+	<bitset>
+	<windows.h>
+	<cctype>
+	"constants.h"
+	"king.h"
+	"knight.h"
+	"pawn.h"
+	"slider.h"
+
+1679609108 c:\users\willi\onedrive\desktop\coding\chess_3\include\constants.h
+
+1679527397 c:\users\willi\onedrive\desktop\coding\chess_3\include\king.h
+	"constants.h"
+
+1679528778 c:\users\willi\onedrive\desktop\coding\chess_3\include\knight.h
+	"constants.h"
+
+1679583431 c:\users\willi\onedrive\desktop\coding\chess_3\include\pawn.h
+	"constants.h"
+
+1679604692 c:\users\willi\onedrive\desktop\coding\chess_3\include\slider.h
+	"constants.h"
+
