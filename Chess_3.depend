@@ -1,21 +1,22 @@
 # depslib dependency file v1.0
-1679605204 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
+1679764957 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
 	<iostream>
 	"board.h"
+	"test-suite.h"
 
-1679609115 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
+1679764967 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
 	<vector>
-	<string>
 	<bitset>
 	<windows.h>
 	<cctype>
 	"constants.h"
+	"bitboard.h"
 	"king.h"
 	"knight.h"
 	"pawn.h"
 	"slider.h"
 
-1679609108 c:\users\willi\onedrive\desktop\coding\chess_3\include\constants.h
+1679695379 c:\users\willi\onedrive\desktop\coding\chess_3\include\constants.h
 
 1679527397 c:\users\willi\onedrive\desktop\coding\chess_3\include\king.h
 	"constants.h"
@@ -26,6 +27,13 @@
 1679583431 c:\users\willi\onedrive\desktop\coding\chess_3\include\pawn.h
 	"constants.h"
 
-1679604692 c:\users\willi\onedrive\desktop\coding\chess_3\include\slider.h
+1679757735 c:\users\willi\onedrive\desktop\coding\chess_3\include\slider.h
 	"constants.h"
+
+1679760707 c:\users\willi\onedrive\desktop\coding\chess_3\include\bitboard.h
+	<string>
+	"constants.h"
+
+1679760678 c:\users\willi\onedrive\desktop\coding\chess_3\include\test-suite.h
+	"board.h"
 

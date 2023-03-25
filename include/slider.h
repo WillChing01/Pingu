@@ -36,7 +36,7 @@ U64 eastFillOccluded(U64 g, U64 p)
     g |= p & (g << 2);
     p &= p << 2;
     g |= p & (g << 4);
-    g |= g << 1;
+    g |= (g & NOT_H_FILE) << 1;
     return g & ~old;
 }
 
@@ -49,7 +49,7 @@ U64 noEaFillOccluded(U64 g, U64 p)
     g |= p & (g << 18);
     p &= p << 18;
     g |= p & (g << 36);
-    g |= g << 9;
+    g |= (g & NOT_H_FILE) << 9;
     return g & ~old;
 }
 
@@ -62,7 +62,7 @@ U64 soEaFillOccluded(U64 g, U64 p)
     g |= p & (g >> 14);
     p &= p >> 14;
     g |= p & (g >> 28);
-    g |= g >> 7;
+    g |= (g & NOT_H_FILE) >> 7;
     return g & ~old;
 }
 
@@ -75,7 +75,7 @@ U64 westFillOccluded(U64 g, U64 p)
     g |= p & (g >> 2);
     p &= p >> 2;
     g |= p & (g >> 4);
-    g |= g >> 1;
+    g |= (g & NOT_A_FILE) >> 1;
     return g & ~old;
 }
 
@@ -88,7 +88,7 @@ U64 soWeFillOccluded(U64 g, U64 p)
     g |= p & (g >> 18);
     p &= p >> 18;
     g |= p & (g >> 36);
-    g |= g >> 9;
+    g |= (g & NOT_A_FILE) >> 9;
     return g & ~old;
 }
 
@@ -101,7 +101,7 @@ U64 noWeFillOccluded(U64 g, U64 p)
     g |= p & (g << 14);
     p &= p << 14;
     g |= p & (g << 28);
-    g |= g << 7;
+    g |= (g & NOT_A_FILE) << 7;
     return g & ~old;
 }
 
