@@ -55,6 +55,9 @@ class Board {
             .hasQueenSideRookMoved={false,false},
         };
 
+        int _kingPos[2] = {4,60};
+        vector<int> _queensPos[2] = {{3},{59}};
+
         const int _nKing=0;
         const int _nQueens=2;
         const int _nRooks=4;
@@ -410,33 +413,6 @@ class Board {
             }
         }
 
-        void testMoves()
-        {
-            //test out moves and remove the ones which leave king hanging.
-            vector<moveInfo> legalBuffer;
-
-            for (int i=0;i<(int)moveBuffer.size();i++)
-            {
-                movePieces(moveBuffer[i]);
-                updateOccupied();
-                updateAttackTables(!current.turn);
-                updateAttacked();
-
-                //check if result in check or not.
-                bool res = isInCheck(current.turn);
-                if (res==false)
-                {
-                    //legal move.
-                    legalBuffer.push_back(moveBuffer[i]);
-                }
-
-                unMovePieces(moveBuffer[i]);
-            }
-
-            //only include the legal moves.
-            moveBuffer = legalBuffer;
-        }
-
         void movePieces(moveInfo currentMove)
         {
             //remove piece from start square;
@@ -503,33 +479,51 @@ class Board {
             }
         }
 
-        void makeMove(moveInfo currentMove)
+        bool makeMove(moveInfo currentMove)
         {
-            //update history.
-            stateHistory.push_back(current);
-            moveHistory.push_back(currentMove);
-
             //move pieces.
             movePieces(currentMove);
 
-            //update game-state.
+            //check if the move was legal.
+            updateOccupied();
+            updateAttackTables(!current.turn);
+            updateAttacked();
 
-            //if double-pawn push, set en-passant square.
-            //otherwise, set en-passant square to -1.
-            if (currentMove.pieceType/2 == _nPawns/2 && abs(currentMove.finishSquare-currentMove.startSquare) == 16)
+            bool inCheck = isInCheck(current.turn);
+
+            if (inCheck)
             {
-                //en-passant is possible immediately.
-                current.enPassantSquare = currentMove.finishSquare-8+16*(currentMove.pieceType%2);
+                //illegal move.
+                unMovePieces(currentMove);
+                return false;
             }
             else
             {
-                current.enPassantSquare = -1;
-            }
+                //update history.
+                stateHistory.push_back(current);
+                moveHistory.push_back(currentMove);
 
-            current.turn = !current.turn;
-            current.hasKingMoved[currentMove.pieceType%2] |= currentMove.pieceType/2 == _nKing/2;
-            current.hasKingSideRookMoved[currentMove.pieceType%2] |= (currentMove.pieceType/2 == _nRooks/2) && (currentMove.startSquare == 7 + 56 * (currentMove.pieceType%2));
-            current.hasQueenSideRookMoved[currentMove.pieceType%2] |= (currentMove.pieceType/2 == _nRooks/2) && (currentMove.startSquare == 0 + 56 * (currentMove.pieceType%2));
+                //update game-state.
+
+                //if double-pawn push, set en-passant square.
+                //otherwise, set en-passant square to -1.
+                if (currentMove.pieceType/2 == _nPawns/2 && abs(currentMove.finishSquare-currentMove.startSquare) == 16)
+                {
+                    //en-passant is possible immediately.
+                    current.enPassantSquare = currentMove.finishSquare-8+16*(currentMove.pieceType%2);
+                }
+                else
+                {
+                    current.enPassantSquare = -1;
+                }
+
+                current.turn = !current.turn;
+                current.hasKingMoved[currentMove.pieceType%2] |= currentMove.pieceType/2 == _nKing/2;
+                current.hasKingSideRookMoved[currentMove.pieceType%2] |= (currentMove.pieceType/2 == _nRooks/2) && (currentMove.startSquare == 7 + 56 * (currentMove.pieceType%2));
+                current.hasQueenSideRookMoved[currentMove.pieceType%2] |= (currentMove.pieceType/2 == _nRooks/2) && (currentMove.startSquare == 0 + 56 * (currentMove.pieceType%2));
+
+                return true;
+            }
         }
 
         void unmakeMove()

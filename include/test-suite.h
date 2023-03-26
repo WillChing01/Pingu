@@ -25,26 +25,27 @@ long long perft(Board &b, int depth, bool display=false, bool rootNode=true)
 
         b.moveBuffer.clear();
         b.generatePseudoMoves(b.current.turn);
-        b.testMoves();
 
         vector<moveInfo> moveCache = b.moveBuffer;
 
         for (int i=0;i<(int)moveCache.size();i++)
         {
             //execute the move.
-            b.makeMove(moveCache[i]);
+            bool isLegal = b.makeMove(moveCache[i]);
 
-            //go one deeper.
-            long long res=perft(b,depth-1,display,false);
-            total+=res;
-
-            if (rootNode==true)
+            if (isLegal==true)
             {
-                cout << toCoord(moveCache[i].startSquare) << toCoord(moveCache[i].finishSquare) << " : " << res << endl;
-            }
+                //go one deeper.
+                long long res=perft(b,depth-1,display,false);
+                total+=res;
+                if (rootNode==true)
+                {
+                    cout << toCoord(moveCache[i].startSquare) << toCoord(moveCache[i].finishSquare) << " : " << res << endl;
+                }
 
-            //unmake the move.
-            b.unmakeMove();
+                //unmake the move.
+                b.unmakeMove();
+            }
         }
 
         return total;
