@@ -1,6 +1,8 @@
 #ifndef TEST-SUITE_H_INCLUDED
 #define TEST-SUITE_H_INCLUDED
 
+#include <chrono>
+
 #include "board.h"
 
 const long long INITIAL_POSITION_NODES[7] = {1,20,400,8902,197281,4865609,119060324};
@@ -58,13 +60,15 @@ void testInitialPosition(int depth = 6)
     cout << "PERFT - INITIAL POSITION" << endl;
     cout << "------------------------" << endl;
 
+    auto t1 = std::chrono::high_resolution_clock::now();
+
     for (int i=0;i<depth+1;i++)
     {
         cout << endl;
         cout << "DEPTH - " << i << endl;
         cout << "Expected - " << INITIAL_POSITION_NODES[i] << endl;
 
-        long long result = perft(b,i);
+        long long result = perft(b,i,false,i==depth);
         cout << "Received - " << result << endl;
 
         if (result!=INITIAL_POSITION_NODES[i])
@@ -75,6 +79,9 @@ void testInitialPosition(int depth = 6)
             break;
         }
     }
+
+    auto t2 = std::chrono::high_resolution_clock::now();
+
     if (good)
     {
         cout << endl;
@@ -82,6 +89,11 @@ void testInitialPosition(int depth = 6)
         cout << "ALL CHECKS PASSED" << endl;
         cout << "-----------------" << endl;
     }
+
+    cout << "-----------------" << endl;
+    cout << "TIME ELAPSED (ms)" << endl;
+    cout << std::chrono::duration<double, std::milli>(t2-t1).count() << endl;
+    cout << "-----------------" << endl;
 }
 
 #endif // TEST-SUITE_H_INCLUDED
