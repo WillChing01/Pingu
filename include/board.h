@@ -23,7 +23,6 @@ struct gameState
     bool hasKingSideRookMoved[2];
     bool hasQueenSideRookMoved[2];
     int enPassantSquare;
-    vector<U64> pieces{vector<U64>(12,0)};
 };
 
 struct moveInfo
@@ -39,6 +38,7 @@ struct moveInfo
 class Board {
     public:
         vector<U64> attackTables{vector<U64>(12,0)};
+        vector<U64> pieces{vector<U64>(12,0)};
 
         U64 occupied[2]={0,0};
         U64 attacked[2]={0,0};
@@ -65,23 +65,23 @@ class Board {
         Board()
         {
             //default constructor for regular games.
-            current.pieces[_nKing]=WHITE_KING;
-            current.pieces[_nKing+1]=BLACK_KING;
+            pieces[_nKing]=WHITE_KING;
+            pieces[_nKing+1]=BLACK_KING;
 
-            current.pieces[_nQueens]=WHITE_QUEENS;
-            current.pieces[_nQueens+1]=BLACK_QUEENS;
+            pieces[_nQueens]=WHITE_QUEENS;
+            pieces[_nQueens+1]=BLACK_QUEENS;
 
-            current.pieces[_nRooks]=WHITE_ROOKS;
-            current.pieces[_nRooks+1]=BLACK_ROOKS;
+            pieces[_nRooks]=WHITE_ROOKS;
+            pieces[_nRooks+1]=BLACK_ROOKS;
 
-            current.pieces[_nBishops]=WHITE_BISHOPS;
-            current.pieces[_nBishops+1]=BLACK_BISHOPS;
+            pieces[_nBishops]=WHITE_BISHOPS;
+            pieces[_nBishops+1]=BLACK_BISHOPS;
 
-            current.pieces[_nKnights]=WHITE_KNIGHTS;
-            current.pieces[_nKnights+1]=BLACK_KNIGHTS;
+            pieces[_nKnights]=WHITE_KNIGHTS;
+            pieces[_nKnights+1]=BLACK_KNIGHTS;
 
-            current.pieces[_nPawns]=WHITE_PAWNS;
-            current.pieces[_nPawns+1]=BLACK_PAWNS;
+            pieces[_nPawns]=WHITE_PAWNS;
+            pieces[_nPawns+1]=BLACK_PAWNS;
 
             updateOccupied();
             updateAttackTables(0);
@@ -120,7 +120,7 @@ class Board {
                 U64 x = convertToBitboard(newMove.capturedPieceSquare);
                 for (int i=_nQueens+(pieceType+1)%2;i<12;i+=2)
                 {
-                    if ((x & current.pieces[i]) != 0)
+                    if ((x & pieces[i]) != 0)
                     {
                         //found the captured piece.
                         newMove.capturedPieceType = i;
@@ -149,9 +149,9 @@ class Board {
         void updateOccupied()
         {
             occupied[0]=0; occupied[1]=0;
-            for (int i=0;i<(int)current.pieces.size();i++)
+            for (int i=0;i<(int)pieces.size();i++)
             {
-                occupied[i%2] |= current.pieces[i];
+                occupied[i%2] |= pieces[i];
             }
         }
 
@@ -166,7 +166,7 @@ class Board {
 
         bool isInCheck(bool side)
         {
-            return bool(current.pieces[_nKing+(int)(side)] & attacked[(int)(!side)]);
+            return bool(pieces[_nKing+(int)(side)] & attacked[(int)(!side)]);
         }
 
         pair<bool,bool> canCastle(bool side)
@@ -210,9 +210,9 @@ class Board {
             }
 
             string temp=bitset<64>(0).to_string();
-            for (int i=0;i<(int)current.pieces.size();i++)
+            for (int i=0;i<(int)pieces.size();i++)
             {
-                temp=bitset<64>(current.pieces[i]).to_string();
+                temp=bitset<64>(pieces[i]).to_string();
                 for (int j=0;j<64;j++)
                 {
                     if (temp[j]=='0') {continue;}
@@ -258,12 +258,12 @@ class Board {
             //generate tables of attacked squares.
             U64 p = ~(occupied[0] | occupied[1]);
 
-            attackTables[_nKing+side]=kingAttacks(current.pieces[_nKing+(int)(side)]);
-            attackTables[_nQueens+side]=queenAttacks(current.pieces[_nQueens+(int)(side)],p);
-            attackTables[_nRooks+side]=rookAttacks(current.pieces[_nRooks+(int)(side)],p);
-            attackTables[_nBishops+side]=bishopAttacks(current.pieces[_nBishops+(int)(side)],p);
-            attackTables[_nKnights+side]=knightAttacks(current.pieces[_nKnights+(int)(side)]);
-            attackTables[_nPawns+side]=pawnAttacks(current.pieces[_nPawns+(int)(side)],(int)(side));
+            attackTables[_nKing+side]=kingAttacks(pieces[_nKing+(int)(side)]);
+            attackTables[_nQueens+side]=queenAttacks(pieces[_nQueens+(int)(side)],p);
+            attackTables[_nRooks+side]=rookAttacks(pieces[_nRooks+(int)(side)],p);
+            attackTables[_nBishops+side]=bishopAttacks(pieces[_nBishops+(int)(side)],p);
+            attackTables[_nKnights+side]=knightAttacks(pieces[_nKnights+(int)(side)]);
+            attackTables[_nPawns+side]=pawnAttacks(pieces[_nPawns+(int)(side)],(int)(side));
         }
 
         void generatePseudoMoves(bool side)
@@ -274,7 +274,7 @@ class Board {
             //king.
 
             //get position of king.
-            int kingPos = getLSB(current.pieces[_nKing+(int)(side)]);
+            int kingPos = getLSB(pieces[_nKing+(int)(side)]);
 
             //get position of move-squares.
             //the king cannot go to a square which is attacked by the enemy.
@@ -302,7 +302,7 @@ class Board {
 
             U64 p = ~(occupied[0] | occupied[1]);
             //queen.
-            U64 queens = current.pieces[_nQueens+(int)(side)];
+            U64 queens = pieces[_nQueens+(int)(side)];
 
             while (queens!=0)
             {
@@ -319,7 +319,7 @@ class Board {
             }
 
             //rook.
-            U64 rooks = current.pieces[_nRooks+(int)(side)];
+            U64 rooks = pieces[_nRooks+(int)(side)];
 
             while (rooks!=0)
             {
@@ -336,7 +336,7 @@ class Board {
             }
 
             //bishops.
-            U64 bishops = current.pieces[_nBishops+(int)(side)];
+            U64 bishops = pieces[_nBishops+(int)(side)];
 
             while (bishops!=0)
             {
@@ -353,7 +353,7 @@ class Board {
             }
 
             //knights.
-            U64 knights = current.pieces[_nKnights+(int)(side)];
+            U64 knights = pieces[_nKnights+(int)(side)];
 
             while (knights!=0)
             {
@@ -370,7 +370,7 @@ class Board {
             }
 
             //pawns.
-            U64 pawns = current.pieces[_nPawns+(int)(side)];
+            U64 pawns = pieces[_nPawns+(int)(side)];
 
             while (pawns!=0)
             {
@@ -417,59 +417,39 @@ class Board {
 
             for (int i=0;i<(int)moveBuffer.size();i++)
             {
-                gameState result = movePieces(current, moveBuffer[i]);
+                movePieces(moveBuffer[i]);
+                updateOccupied();
+                updateAttackTables(!current.turn);
+                updateAttacked();
 
                 //check if result in check or not.
-                bool res = inCheck(result, current.turn);
+                bool res = isInCheck(current.turn);
                 if (res==false)
                 {
                     //legal move.
                     legalBuffer.push_back(moveBuffer[i]);
                 }
+
+                unMovePieces(moveBuffer[i]);
             }
 
             //only include the legal moves.
             moveBuffer = legalBuffer;
         }
 
-        bool inCheck(gameState currentState, bool side)
+        void movePieces(moveInfo currentMove)
         {
-            //checks if the chosen side is in check.
-
-            U64 p = 0;
-            for (int i=0;i<(int)currentState.pieces.size();i++)
-            {
-                p |= currentState.pieces[i];
-            }
-            p = ~p;
-
-            U64 totalAttacked=0;
-
-            totalAttacked |=kingAttacks(currentState.pieces[_nKing+(int)(!side)]);
-            totalAttacked |=queenAttacks(currentState.pieces[_nQueens+(int)(!side)],p);
-            totalAttacked |=rookAttacks(currentState.pieces[_nRooks+(int)(!side)],p);
-            totalAttacked |=bishopAttacks(currentState.pieces[_nBishops+(int)(!side)],p);
-            totalAttacked |=knightAttacks(currentState.pieces[_nKnights+(int)(!side)]);
-            totalAttacked |=pawnAttacks(currentState.pieces[_nPawns+(int)(!side)],(int)(!side));
-
-            return (currentState.pieces[_nKing+(int)(side)] & totalAttacked) != 0;
-        }
-
-        gameState movePieces(gameState currentState, moveInfo currentMove)
-        {
-            gameState test = currentState;
-
             //remove piece from start square;
-            test.pieces[currentMove.pieceType] -= convertToBitboard(currentMove.startSquare);
+            pieces[currentMove.pieceType] -= convertToBitboard(currentMove.startSquare);
 
             //add piece to end square, accounting for promotion.
             int finishPieceType = currentMove.promotionPieceType>=_nQueens ? currentMove.promotionPieceType : currentMove.pieceType;
-            test.pieces[finishPieceType] += convertToBitboard(currentMove.finishSquare);
+            pieces[finishPieceType] += convertToBitboard(currentMove.finishSquare);
 
             //remove any captured pieces.
             if (currentMove.capturedPieceType!=-1)
             {
-                test.pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.capturedPieceSquare);
+                pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.capturedPieceSquare);
             }
 
             //if castles, then move the rook too.
@@ -478,18 +458,49 @@ class Board {
                 if (currentMove.finishSquare-currentMove.startSquare==2)
                 {
                     //kingside.
-                    test.pieces[_nRooks+currentMove.pieceType%2] -= KING_ROOK_POS[currentMove.pieceType%2];
-                    test.pieces[_nRooks+currentMove.pieceType%2] += KING_ROOK_POS[currentMove.pieceType%2] >> 2;
+                    pieces[_nRooks+currentMove.pieceType%2] -= KING_ROOK_POS[currentMove.pieceType%2];
+                    pieces[_nRooks+currentMove.pieceType%2] += KING_ROOK_POS[currentMove.pieceType%2] >> 2;
                 }
                 else
                 {
                     //queenside.
-                    test.pieces[_nRooks+currentMove.pieceType%2] -= QUEEN_ROOK_POS[currentMove.pieceType%2];
-                    test.pieces[_nRooks+currentMove.pieceType%2] += QUEEN_ROOK_POS[currentMove.pieceType%2] << 3;
+                    pieces[_nRooks+currentMove.pieceType%2] -= QUEEN_ROOK_POS[currentMove.pieceType%2];
+                    pieces[_nRooks+currentMove.pieceType%2] += QUEEN_ROOK_POS[currentMove.pieceType%2] << 3;
                 }
             }
+        }
 
-            return test;
+        void unMovePieces(moveInfo currentMove)
+        {
+            //remove piece from destination square.
+            int finishPieceType = currentMove.promotionPieceType>=_nQueens ? currentMove.promotionPieceType : currentMove.pieceType;
+            pieces[finishPieceType] -= convertToBitboard(currentMove.finishSquare);
+
+            //add piece to start square.
+            pieces[currentMove.pieceType] += convertToBitboard(currentMove.startSquare);
+
+            //add back captured pieces.
+            if (currentMove.capturedPieceType!=-1)
+            {
+                pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.capturedPieceSquare);
+            }
+
+            //if castles move the rook back.
+            if (currentMove.pieceType/2 == _nKing/2 && abs(currentMove.finishSquare-currentMove.startSquare)==2)
+            {
+                if (currentMove.finishSquare-currentMove.startSquare==2)
+                {
+                    //kingside.
+                    pieces[_nRooks+currentMove.pieceType%2] -= KING_ROOK_POS[currentMove.pieceType%2] >> 2;
+                    pieces[_nRooks+currentMove.pieceType%2] += KING_ROOK_POS[currentMove.pieceType%2];
+                }
+                else
+                {
+                    //queenside.
+                    pieces[_nRooks+currentMove.pieceType%2] -= QUEEN_ROOK_POS[currentMove.pieceType%2] << 3;
+                    pieces[_nRooks+currentMove.pieceType%2] += QUEEN_ROOK_POS[currentMove.pieceType%2];
+                }
+            }
         }
 
         void makeMove(moveInfo currentMove)
@@ -499,7 +510,7 @@ class Board {
             moveHistory.push_back(currentMove);
 
             //move pieces.
-            current = movePieces(current, currentMove);
+            movePieces(currentMove);
 
             //update game-state.
 
@@ -526,6 +537,8 @@ class Board {
             //unmake most recent move and update gameState.
 
             current = stateHistory.back();
+            unMovePieces(moveHistory.back());
+
             stateHistory.pop_back();
             moveHistory.pop_back();
         }
