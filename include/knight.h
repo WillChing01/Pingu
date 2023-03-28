@@ -3,7 +3,7 @@
 
 #include "constants.h"
 
-U64 knightAttacks(U64 b)
+inline U64 knightAttacks(U64 b)
 {
     U64 r1 = (b & NOT_A_FILE) >> 1;
     r1 |= (b & NOT_H_FILE) << 1;

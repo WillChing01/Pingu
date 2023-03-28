@@ -7,7 +7,8 @@ using namespace std;
 
 int main()
 {
-    testKiwipetePosition();
+    testInitialPosition();
 
+    system("pause");
     return 0;
 }

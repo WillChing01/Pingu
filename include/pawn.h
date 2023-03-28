@@ -3,7 +3,7 @@
 
 #include "constants.h"
 
-U64 pawnAttacks(U64 b, int side)
+inline U64 pawnAttacks(U64 b, int side)
 {
     U64 res=0;
 

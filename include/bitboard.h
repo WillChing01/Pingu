@@ -21,14 +21,14 @@ void displayBitboard(U64 bitboard)
     } cout << endl;
 }
 
-int popLSB(U64 &b)
+inline int popLSB(U64 &b)
 {
     int i=__builtin_ctzll(b);
     b &= b-1;
     return i;
 }
 
-U64 convertToBitboard(int x)
+inline U64 convertToBitboard(int x)
 {
     return (U64)(1ull << x);
 }
