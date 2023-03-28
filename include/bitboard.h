@@ -21,14 +21,9 @@ void displayBitboard(U64 bitboard)
     } cout << endl;
 }
 
-int getLSB(U64 b)
-{
-    return b==0 ? -1 : __builtin_ctzll(b);
-}
-
 int popLSB(U64 &b)
 {
-    int i=getLSB(b);
+    int i=__builtin_ctzll(b);
     b &= b-1;
     return i;
 }

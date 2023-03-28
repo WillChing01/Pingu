@@ -7,9 +7,7 @@ using namespace std;
 
 int main()
 {
-    Board b;
-
-    testInitialPosition();
+    testKiwipetePosition();
 
     return 0;
 }
