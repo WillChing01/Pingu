@@ -9,5 +9,6 @@ int main()
 {
     testInitialPosition();
 
+    system("pause");
     return 0;
 }
