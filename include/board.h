@@ -18,7 +18,6 @@ using namespace std;
 
 struct gameState
 {
-    bool turn;
     bool hasKingMoved[2];
     bool hasKingSideRookMoved[2];
     bool hasQueenSideRookMoved[2];
@@ -37,6 +36,8 @@ struct moveInfo
 
 class Board {
     public:
+        bool turn=0;
+
         vector<U64> attackTables{vector<U64>(12,0)};
         vector<U64> pieces{vector<U64>(12,0)};
 
@@ -49,7 +50,6 @@ class Board {
         vector<moveInfo> moveBuffer;
 
         gameState current = {
-            .turn=0,
             .hasKingMoved={false,false},
             .hasKingSideRookMoved={false,false},
             .hasQueenSideRookMoved={false,false},
@@ -180,6 +180,10 @@ class Board {
             res.first=!current.hasKingSideRookMoved[(int)(side)] && !current.hasKingMoved[(int)(side)];
             res.second=!current.hasQueenSideRookMoved[(int)(side)] && !current.hasKingMoved[(int)(side)];
 
+            //rooks must not have been captured.
+            res.first &= (bool)(pieces[_nRooks+(int)(side)] & KING_ROOK_POS[(int)(side)]);
+            res.second &= (bool)(pieces[_nRooks+(int)(side)] & QUEEN_ROOK_POS[(int)(side)]);
+
             //no pieces between king and rook.
             res.first &= !(bool)(KING_CASTLE_OCCUPIED[(int)(side)] & (occupied[0] | occupied[1]));
             res.second &= !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & (occupied[0] | occupied[1]));
@@ -277,7 +281,7 @@ class Board {
             //king.
 
             //get position of king.
-            int kingPos = getLSB(pieces[_nKing+(int)(side)]);
+            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
 
             //get position of move-squares.
             //the king cannot go to a square which is attacked by the enemy.
@@ -486,10 +490,10 @@ class Board {
 
             //check if the move was legal.
             updateOccupied();
-            updateAttackTables(!current.turn);
+            updateAttackTables(!turn);
             updateAttacked();
 
-            bool inCheck = isInCheck(current.turn);
+            bool inCheck = isInCheck(turn);
 
             if (inCheck)
             {
@@ -517,7 +521,7 @@ class Board {
                     current.enPassantSquare = -1;
                 }
 
-                current.turn = !current.turn;
+                turn = !turn;
                 current.hasKingMoved[currentMove.pieceType%2] |= currentMove.pieceType/2 == _nKing/2;
                 current.hasKingSideRookMoved[currentMove.pieceType%2] |= (currentMove.pieceType/2 == _nRooks/2) && (currentMove.startSquare == 7 + 56 * (currentMove.pieceType%2));
                 current.hasQueenSideRookMoved[currentMove.pieceType%2] |= (currentMove.pieceType/2 == _nRooks/2) && (currentMove.startSquare == 0 + 56 * (currentMove.pieceType%2));
@@ -529,7 +533,7 @@ class Board {
         void unmakeMove()
         {
             //unmake most recent move and update gameState.
-
+            turn = !turn;
             current = stateHistory.back();
             unMovePieces(moveHistory.back());
 
