@@ -315,6 +315,7 @@ class Board {
             {
                 int queenPos = popLSB(queens);
 
+//                U64 x = magicQueenAttacks(~p,queenPos);
                 U64 x = queenAttacks(convertToBitboard(queenPos),p);
                 x &= ~occupied[(int)(side)];
 
@@ -332,6 +333,7 @@ class Board {
             {
                 int rookPos = popLSB(rooks);
 
+//                U64 x = magicRookAttacks(~p,rookPos);]
                 U64 x = rookAttacks(convertToBitboard(rookPos),p);
                 x &= ~occupied[(int)(side)];
 
@@ -349,6 +351,7 @@ class Board {
             {
                 int bishopPos = popLSB(bishops);
 
+//                U64 x = magicBishopAttacks(~p,bishopPos);
                 U64 x = bishopAttacks(convertToBitboard(bishopPos),p);
                 x &= ~occupied[(int)(side)];
 
