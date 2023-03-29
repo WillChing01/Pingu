@@ -11,12 +11,23 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-pg" />
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add option="-pg -lgmon" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/Chess_3" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Linker>
+					<Add option="-O3" />
+					<Add option="-s" />
+				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
@@ -24,9 +35,6 @@
 			<Add option="-fexceptions" />
 			<Add directory="include" />
 		</Compiler>
-		<Linker>
-			<Add option="-O3" />
-		</Linker>
 		<Unit filename="include/bitboard.h" />
 		<Unit filename="include/board.h" />
 		<Unit filename="include/constants.h" />

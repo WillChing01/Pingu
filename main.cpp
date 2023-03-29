@@ -7,7 +7,7 @@ using namespace std;
 
 int main()
 {
-    testInitialPosition();
+    testInitialPosition(5);
 
     system("pause");
     return 0;

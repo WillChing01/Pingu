@@ -38,12 +38,12 @@
 	<chrono>
 	"board.h"
 
-1680094922 source:c:\users\william\documents\github\chess_3\main.cpp
+1680107581 source:c:\users\william\documents\github\chess_3\main.cpp
 	<iostream>
 	"board.h"
 	"test-suite.h"
 
-1680094608 c:\users\william\documents\github\chess_3\include\board.h
+1680108044 c:\users\william\documents\github\chess_3\include\board.h
 	<vector>
 	<bitset>
 	<windows.h>
@@ -54,6 +54,7 @@
 	"knight.h"
 	"pawn.h"
 	"slider.h"
+	"magic.h"
 
 1680094552 c:\users\william\documents\github\chess_3\include\constants.h
 
@@ -73,9 +74,9 @@
 1680023552 c:\users\william\documents\github\chess_3\include\slider.h
 	"constants.h"
 
-1680093690 c:\users\william\documents\github\chess_3\include\test-suite.h
+1680097160 c:\users\william\documents\github\chess_3\include\test-suite.h
 	<chrono>
 	"board.h"
 
-1680093977 c:\users\william\documents\github\chess_3\include\magic.h
+1680097073 c:\users\william\documents\github\chess_3\include\magic.h
 

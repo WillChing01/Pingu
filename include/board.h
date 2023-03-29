@@ -13,6 +13,7 @@
 #include "knight.h"
 #include "pawn.h"
 #include "slider.h"
+#include "magic.h"
 
 using namespace std;
 
@@ -29,7 +30,7 @@ struct moveInfo
     int pieceType;
     int startSquare;
     int finishSquare;
-    int capturedPieceSquare;
+    bool enPassant;
     int capturedPieceType;
     int promotionPieceType;
 };
@@ -38,8 +39,10 @@ class Board {
     public:
         bool turn=0;
 
-        vector<U64> attackTables{vector<U64>(12,0)};
-        vector<U64> pieces{vector<U64>(12,0)};
+        U64 attackTables[12]={};
+        U64 pieces[12]={};
+        //vector<U64> attackTables{vector<U64>(12,0)};
+        //vector<U64> pieces{vector<U64>(12,0)};
 
         U64 occupied[2]={0,0};
         U64 attacked[2]={0,0};
@@ -54,9 +57,6 @@ class Board {
             .hasKingSideRookMoved={false,false},
             .hasQueenSideRookMoved={false,false},
         };
-
-        int _kingPos[2] = {4,60};
-        vector<int> _queensPos[2] = {{3},{59}};
 
         const int _nKing=0;
         const int _nQueens=2;
@@ -100,37 +100,68 @@ class Board {
                 .pieceType=pieceType,
                 .startSquare=startSquare,
                 .finishSquare=finishSquare,
-                .capturedPieceSquare=-1,
+                .enPassant=false,
                 .capturedPieceType=-1,
                 .promotionPieceType=-1,
             };
 
             //check for captured pieces (including en passant).
+//            if ((convertToBitboard(finishSquare) & occupied[(pieceType+1)%2])!=0)
+//            {
+//                //regular capture.
+//                newMove.capturedPieceSquare = finishSquare;
+//            }
+//            else if (pieceType/2 == _nPawns/2 && finishSquare/8 == 5-3*(pieceType%2))
+//            {
+//                //en-passant capture.
+//                newMove.capturedPieceSquare = finishSquare-8+16*(pieceType%2);
+//            }
             if ((convertToBitboard(finishSquare) & occupied[(pieceType+1)%2])!=0)
             {
-                //regular capture.
-                newMove.capturedPieceSquare = finishSquare;
-            }
-            else if (pieceType/2 == _nPawns/2 && finishSquare/8 == 5-3*(pieceType%2))
-            {
-                //en-passant capture.
-                newMove.capturedPieceSquare = finishSquare-8+16*(pieceType%2);
-            }
-
-            if (newMove.capturedPieceSquare>0)
-            {
-                //find the piece type of the captured piece.
-                U64 x = convertToBitboard(newMove.capturedPieceSquare);
+                //check for captures.
+                U64 x = convertToBitboard(finishSquare);
                 for (int i=_nQueens+(pieceType+1)%2;i<12;i+=2)
                 {
                     if ((x & pieces[i]) != 0)
                     {
-                        //found the captured piece.
-                        newMove.capturedPieceType = i;
+                        newMove.capturedPieceType=i;
                         break;
                     }
                 }
             }
+            else if ((pieceType/2 == _nPawns/2 && finishSquare/8 == 5-3*(pieceType%2)) && (finishSquare%8 != startSquare%8))
+            {
+                //en-passant capture.
+                newMove.enPassant=true;
+
+                //check for captured piece.
+                U64 x = convertToBitboard(finishSquare-8+16*(pieceType%2));
+                for (int i=_nQueens+(pieceType+1)%2;i<12;i+=2)
+                {
+                    if ((x & pieces[i]) != 0)
+                    {
+                        newMove.capturedPieceType=i;
+                        break;
+                    }
+                }
+            }
+
+
+
+//            if (newMove.capturedPieceSquare>0)
+//            {
+//                //find the piece type of the captured piece.
+//                U64 x = convertToBitboard(newMove.capturedPieceSquare);
+//                for (int i=_nQueens+(pieceType+1)%2;i<12;i+=2)
+//                {
+//                    if ((x & pieces[i]) != 0)
+//                    {
+//                        //found the captured piece.
+//                        newMove.capturedPieceType = i;
+//                        break;
+//                    }
+//                }
+//            }
 
             //check for pawn promotion.
             if (pieceType/2 == _nPawns/2 && finishSquare/8 == 7-7*(pieceType%2))
@@ -151,20 +182,14 @@ class Board {
 
         void updateOccupied()
         {
-            occupied[0]=0; occupied[1]=0;
-            for (int i=0;i<(int)pieces.size();i++)
-            {
-                occupied[i%2] |= pieces[i];
-            }
+            occupied[0] = pieces[_nKing] | pieces[_nQueens] | pieces[_nRooks] | pieces[_nBishops] | pieces[_nKnights] | pieces[_nPawns];
+            occupied[1] = pieces[_nKing+1] | pieces[_nQueens+1] | pieces[_nRooks+1] | pieces[_nBishops+1] | pieces[_nKnights+1] | pieces[_nPawns+1];
         }
 
         void updateAttacked()
         {
-            attacked[0]=0; attacked[1]=0;
-            for (int i=0;i<(int)attackTables.size();i++)
-            {
-                attacked[i%2] |= attackTables[i];
-            }
+            attacked[0] = attackTables[_nKing] | attackTables[_nQueens] | attackTables[_nRooks] | attackTables[_nBishops] | attackTables[_nKnights] | attackTables[_nPawns];
+            attacked[1] = attackTables[_nKing+1] | attackTables[_nQueens+1] | attackTables[_nRooks+1] | attackTables[_nBishops+1] | attackTables[_nKnights+1] | attackTables[_nPawns+1];
         }
 
         bool isInCheck(bool side)
@@ -217,7 +242,7 @@ class Board {
             }
 
             string temp=bitset<64>(0).to_string();
-            for (int i=0;i<(int)pieces.size();i++)
+            for (int i=0;i<12;i++)
             {
                 temp=bitset<64>(pieces[i]).to_string();
                 for (int j=0;j<64;j++)
@@ -432,7 +457,14 @@ class Board {
             //remove any captured pieces.
             if (currentMove.capturedPieceType!=-1)
             {
-                pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.capturedPieceSquare);
+                if (currentMove.enPassant==true)
+                {
+                    pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.finishSquare-8+16*(currentMove.pieceType%2));
+                }
+                else
+                {
+                    pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.finishSquare);
+                }
             }
 
             //if castles, then move the rook too.
@@ -463,9 +495,20 @@ class Board {
             pieces[currentMove.pieceType] += convertToBitboard(currentMove.startSquare);
 
             //add back captured pieces.
+//            if (currentMove.capturedPieceType!=-1)
+//            {
+//                pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.capturedPieceSquare);
+//            }
             if (currentMove.capturedPieceType!=-1)
             {
-                pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.capturedPieceSquare);
+                if (currentMove.enPassant==true)
+                {
+                    pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.finishSquare-8+16*(currentMove.pieceType%2));
+                }
+                else
+                {
+                    pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.finishSquare);
+                }
             }
 
             //if castles move the rook back.
@@ -496,9 +539,7 @@ class Board {
             updateAttackTables(!turn);
             updateAttacked();
 
-            bool inCheck = isInCheck(turn);
-
-            if (inCheck)
+            if ((pieces[_nKing+(int)(turn)] & attacked[(int)(!turn)]) != 0)
             {
                 //illegal move.
                 unMovePieces(currentMove);
