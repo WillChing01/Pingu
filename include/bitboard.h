@@ -33,6 +33,13 @@ inline U64 convertToBitboard(int x)
     return (U64)(1ull << x);
 }
 
+inline int countOnes(U64 b)
+{
+    int r;
+    for (r=0; b; r++, b &= b-1);
+    return r;
+}
+
 string toCoord(int square)
 {
     string cols = "abcdefgh";
