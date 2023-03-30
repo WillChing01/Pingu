@@ -39,10 +39,7 @@ class Board {
     public:
         bool turn=0;
 
-        U64 attackTables[12]={};
         U64 pieces[12]={};
-        //vector<U64> attackTables{vector<U64>(12,0)};
-        //vector<U64> pieces{vector<U64>(12,0)};
 
         U64 occupied[2]={0,0};
         U64 attacked[2]={0,0};
@@ -87,9 +84,7 @@ class Board {
             pieces[_nPawns+1]=BLACK_PAWNS;
 
             updateOccupied();
-            updateAttackTables(0);
-            updateAttackTables(1);
-            updateAttacked();
+            updateAttacked(0); updateAttacked(1);
         };
 
         void appendMove(int pieceType, int startSquare, int finishSquare)
@@ -106,16 +101,6 @@ class Board {
             };
 
             //check for captured pieces (including en passant).
-//            if ((convertToBitboard(finishSquare) & occupied[(pieceType+1)%2])!=0)
-//            {
-//                //regular capture.
-//                newMove.capturedPieceSquare = finishSquare;
-//            }
-//            else if (pieceType/2 == _nPawns/2 && finishSquare/8 == 5-3*(pieceType%2))
-//            {
-//                //en-passant capture.
-//                newMove.capturedPieceSquare = finishSquare-8+16*(pieceType%2);
-//            }
             if ((convertToBitboard(finishSquare) & occupied[(pieceType+1)%2])!=0)
             {
                 //check for captures.
@@ -146,23 +131,6 @@ class Board {
                 }
             }
 
-
-
-//            if (newMove.capturedPieceSquare>0)
-//            {
-//                //find the piece type of the captured piece.
-//                U64 x = convertToBitboard(newMove.capturedPieceSquare);
-//                for (int i=_nQueens+(pieceType+1)%2;i<12;i+=2)
-//                {
-//                    if ((x & pieces[i]) != 0)
-//                    {
-//                        //found the captured piece.
-//                        newMove.capturedPieceType = i;
-//                        break;
-//                    }
-//                }
-//            }
-
             //check for pawn promotion.
             if (pieceType/2 == _nPawns/2 && finishSquare/8 == 7-7*(pieceType%2))
             {
@@ -186,10 +154,43 @@ class Board {
             occupied[1] = pieces[_nKing+1] | pieces[_nQueens+1] | pieces[_nRooks+1] | pieces[_nBishops+1] | pieces[_nKnights+1] | pieces[_nPawns+1];
         }
 
-        void updateAttacked()
+        void updateAttacked(bool side)
         {
-            attacked[0] = attackTables[_nKing] | attackTables[_nQueens] | attackTables[_nRooks] | attackTables[_nBishops] | attackTables[_nKnights] | attackTables[_nPawns];
-            attacked[1] = attackTables[_nKing+1] | attackTables[_nQueens+1] | attackTables[_nRooks+1] | attackTables[_nBishops+1] | attackTables[_nKnights+1] | attackTables[_nPawns+1];
+            int x = (int)(side);
+
+            //king.
+            attacked[x] = kingAttacks(pieces[_nKing+x]);
+
+            //queen.
+            U64 b = occupied[0] | occupied[1];
+            U64 temp = pieces[_nQueens+x];
+            while (temp!=0)
+            {
+                int lsb = popLSB(temp);
+                attacked[x] |= magicQueenAttacks(b,lsb);
+            }
+
+            //rooks.
+            temp = pieces[_nRooks+x];
+            while (temp!=0)
+            {
+                int lsb = popLSB(temp);
+                attacked[x] |= magicRookAttacks(b,lsb);
+            }
+
+            //bishops.
+            temp = pieces[_nBishops+x];
+            while (temp!=0)
+            {
+                int lsb = popLSB(temp);
+                attacked[x] |= magicBishopAttacks(b,lsb);
+            }
+
+            //knights.
+            attacked[x] |= knightAttacks(pieces[_nKnights+x]);
+
+            //pawns.
+            attacked[x] |= pawnAttacks(pieces[_nPawns+x],x);
         }
 
         bool isInCheck(bool side)
@@ -285,23 +286,12 @@ class Board {
             cout << " A  B  C  D  E  F  G  H" << endl;
         }
 
-        void updateAttackTables(bool side)
-        {
-            //generate tables of attacked squares.
-            U64 p = ~(occupied[0] | occupied[1]);
-
-            attackTables[_nKing+side]=kingAttacks(pieces[_nKing+(int)(side)]);
-            attackTables[_nQueens+side]=queenAttacks(pieces[_nQueens+(int)(side)],p);
-            attackTables[_nRooks+side]=rookAttacks(pieces[_nRooks+(int)(side)],p);
-            attackTables[_nBishops+side]=bishopAttacks(pieces[_nBishops+(int)(side)],p);
-            attackTables[_nKnights+side]=knightAttacks(pieces[_nKnights+(int)(side)]);
-            attackTables[_nPawns+side]=pawnAttacks(pieces[_nPawns+(int)(side)],(int)(side));
-        }
-
         void generatePseudoMoves(bool side)
         {
             //generate all pseudo-legal moves.
             //assume occupancy and attack bitboards are up-to-date.
+            updateOccupied();
+            updateAttacked(!turn);
 
             //king.
 
@@ -309,9 +299,8 @@ class Board {
             int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
 
             //get position of move-squares.
-            //the king cannot go to a square which is attacked by the enemy.
-            U64 x = attackTables[_nKing+(int)(side)] & ~occupied[(int)(side)];
-            x &= ~attacked[(int)(!side)];
+            U64 x = kingAttacks(pieces[_nKing+(int)(side)]);
+            x &= ~occupied[(int)(side)];
 
             while (x!=0)
             {
@@ -340,8 +329,8 @@ class Board {
             {
                 int queenPos = popLSB(queens);
 
-//                U64 x = magicQueenAttacks(~p,queenPos);
-                U64 x = queenAttacks(convertToBitboard(queenPos),p);
+                U64 x = magicQueenAttacks(~p,queenPos);
+//                U64 x = queenAttacks(convertToBitboard(queenPos),p);
                 x &= ~occupied[(int)(side)];
 
                 while (x!=0)
@@ -358,8 +347,8 @@ class Board {
             {
                 int rookPos = popLSB(rooks);
 
-//                U64 x = magicRookAttacks(~p,rookPos);]
-                U64 x = rookAttacks(convertToBitboard(rookPos),p);
+                U64 x = magicRookAttacks(~p,rookPos);
+//                U64 x = rookAttacks(convertToBitboard(rookPos),p);
                 x &= ~occupied[(int)(side)];
 
                 while (x!=0)
@@ -376,8 +365,8 @@ class Board {
             {
                 int bishopPos = popLSB(bishops);
 
-//                U64 x = magicBishopAttacks(~p,bishopPos);
-                U64 x = bishopAttacks(convertToBitboard(bishopPos),p);
+                U64 x = magicBishopAttacks(~p,bishopPos);
+//                U64 x = bishopAttacks(convertToBitboard(bishopPos),p);
                 x &= ~occupied[(int)(side)];
 
                 while (x!=0)
@@ -495,10 +484,6 @@ class Board {
             pieces[currentMove.pieceType] += convertToBitboard(currentMove.startSquare);
 
             //add back captured pieces.
-//            if (currentMove.capturedPieceType!=-1)
-//            {
-//                pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.capturedPieceSquare);
-//            }
             if (currentMove.capturedPieceType!=-1)
             {
                 if (currentMove.enPassant==true)
@@ -536,8 +521,7 @@ class Board {
 
             //check if the move was legal.
             updateOccupied();
-            updateAttackTables(!turn);
-            updateAttacked();
+            updateAttacked(!turn);
 
             if ((pieces[_nKing+(int)(turn)] & attacked[(int)(!turn)]) != 0)
             {

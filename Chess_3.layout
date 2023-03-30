@@ -1,48 +1,29 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
-	<ActiveTarget name="Debug" />
-	<File name="include\constants.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<ActiveTarget name="Release" />
+	<File name="include\king.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="925" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="main.cpp" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="137" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="include\slider.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="860" topLine="48" />
-		</Cursor>
-	</File>
-	<File name="include\magic.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="10166" topLine="235" />
-		</Cursor>
-		<Folding>
-			<Collapse line="210" />
-			<Collapse line="221" />
-			<Collapse line="226" />
-			<Collapse line="241" />
-			<Collapse line="275" />
-			<Collapse line="309" />
-			<Collapse line="326" />
-			<Collapse line="343" />
-			<Collapse line="358" />
-			<Collapse line="379" />
-			<Collapse line="387" />
-		</Folding>
-	</File>
-	<File name="include\knight.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="89" topLine="0" />
+			<Cursor1 position="85" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="include\bitboard.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="505" topLine="16" />
+			<Cursor1 position="505" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\test-suite.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="525" topLine="33" />
+		</Cursor>
+		<Folding>
+			<Collapse line="51" />
+			<Collapse line="98" />
+		</Folding>
+	</File>
+	<File name="main.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="163" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="include\pawn.h" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -50,37 +31,49 @@
 			<Cursor1 position="76" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="include\king.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\magic.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="85" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="include\test-suite.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="739" topLine="44" />
+			<Cursor1 position="12038" topLine="275" />
 		</Cursor>
 		<Folding>
-			<Collapse line="57" />
-			<Collapse line="104" />
+			<Collapse line="210" />
+			<Collapse line="221" />
+			<Collapse line="226" />
+			<Collapse line="241" />
+			<Collapse line="309" />
+			<Collapse line="343" />
+			<Collapse line="357" />
+			<Collapse line="371" />
+			<Collapse line="377" />
+			<Collapse line="385" />
+			<Collapse line="393" />
 		</Folding>
 	</File>
-	<File name="include\board.h" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\knight.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="19262" topLine="94" />
+			<Cursor1 position="89" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\constants.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="925" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\board.h" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="774" topLine="57" />
 		</Cursor>
 		<Folding>
-			<Collapse line="68" />
-			<Collapse line="95" />
-			<Collapse line="183" />
-			<Collapse line="189" />
-			<Collapse line="195" />
-			<Collapse line="200" />
-			<Collapse line="223" />
-			<Collapse line="288" />
-			<Collapse line="301" />
-			<Collapse line="448" />
-			<Collapse line="488" />
-			<Collapse line="577" />
+			<Collapse line="65" />
+			<Collapse line="90" />
+			<Collapse line="151" />
+			<Collapse line="157" />
+			<Collapse line="224" />
 		</Folding>
+	</File>
+	<File name="include\slider.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="860" topLine="0" />
+		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

@@ -314,9 +314,9 @@ void testRookMagics()
         for (int i=0;i< (1 << rBits[square]);i++)
         {
             U64 b = getBlocker(rookMasks[square],i,rBits[square]);
+            U64 check = rookAttacks(convertToBitboard(square),~b);
             b *= rookMagics[square]; b >>= 52;
             U64 a = rookMagicMoves[square][b];
-            U64 check = rookAttacks(convertToBitboard(square),~b);
             if (a != check) {good=false; break;}
         }
         cout << square << " - " << good << endl;
@@ -331,9 +331,9 @@ void testBishopMagics()
         for (int i=0;i< (1 << bBits[square]);i++)
         {
             U64 b = getBlocker(bishopMasks[square],i,bBits[square]);
+            U64 check = bishopAttacks(convertToBitboard(square),~b);
             b *= bishopMagics[square]; b >>= 55;
             U64 a = bishopMagicMoves[square][b];
-            U64 check = bishopAttacks(convertToBitboard(square),~b);
             if (a != check) {good=false; break;}
         }
         cout << square << " - " << good << endl;
@@ -347,9 +347,8 @@ void populateMagicRookTables()
         for (int i=0;i<(1 << rBits[square]);i++)
         {
             U64 b = getBlocker(rookMasks[square],i,rBits[square]);
-            b *= rookMagics[square]; b >>= 52;
-
             U64 attackSet = rookAttacks(convertToBitboard(square),~b);
+            b *= rookMagics[square]; b >>= 52;
             rookMagicMoves[square][b] = attackSet;
         }
     }
@@ -361,10 +360,9 @@ void populateMagicBishopTables()
     {
         for (int i=0;i<512;i++)
         {
-            U64 b = getBlocker(bishopMasks[square],i,9);
-            b *= bishopMagics[square]; b >>= 55;
-
+            U64 b = getBlocker(bishopMasks[square],i,bBits[square]);
             U64 attackSet = bishopAttacks(convertToBitboard(square),~b);
+            b *= bishopMagics[square]; b >>= 55;
             bishopMagicMoves[square][b] = attackSet;
         }
     }

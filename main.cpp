@@ -8,7 +8,7 @@ using namespace std;
 int main()
 {
     populateMagicTables();
-    testInitialPosition(5);
+    testInitialPosition();
 
     system("pause");
     return 0;
