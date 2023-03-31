@@ -255,7 +255,7 @@ U64 getRookMagic(int square)
     {
         //get potential magicNum.
         U64 magic = getRandomU64FewBits();
-        if (countOnes((rookMasks[square]*magic) & 0xFF00000000000000ULL) < 6) {continue;}
+        if (__builtin_popcountll((rookMasks[square]*magic) & 0xFF00000000000000ULL) < 6) {continue;}
 
         U64 magicMoves[4096]={};
         bool good=true;
@@ -289,7 +289,7 @@ U64 getBishopMagic(int square)
     {
         //get potential magicNum.
         U64 magic = getRandomU64FewBits();
-        if (countOnes((bishopMasks[square]*magic) & 0xFF00000000000000ULL) < 6) {continue;}
+        if (__builtin_popcountll((bishopMasks[square]*magic) & 0xFF00000000000000ULL) < 6) {continue;}
 
         U64 magicMoves[512]={};
         bool good=true;
@@ -376,12 +376,12 @@ void populateMagicTables()
 
 inline U64 magicRookAttacks(U64 b, int square)
 {
-    return rookMagicMoves[square][((b & rookMasks[square]) * rookMagics[square]) >> 52];
+    return rookMagicMoves[square][((b & rookMasks[square]) * rookMagics[square]) >> 52ull];
 }
 
 inline U64 magicBishopAttacks(U64 b, int square)
 {
-    return bishopMagicMoves[square][((b & bishopMasks[square]) * bishopMagics[square]) >> 55];
+    return bishopMagicMoves[square][((b & bishopMasks[square]) * bishopMagics[square]) >> 55ull];
 }
 
 inline U64 magicQueenAttacks(U64 b, int square)
