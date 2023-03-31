@@ -441,14 +441,7 @@ class Board {
             //remove any captured pieces.
             if (currentMove.capturedPieceType!=-1)
             {
-                if (currentMove.enPassant==true)
-                {
-                    pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
-                }
-                else
-                {
-                    pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.finishSquare);
-                }
+                pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
             }
 
             //if castles, then move the rook too.
@@ -481,14 +474,7 @@ class Board {
             //add back captured pieces.
             if (currentMove.capturedPieceType!=-1)
             {
-                if (currentMove.enPassant==true)
-                {
-                    pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
-                }
-                else
-                {
-                    pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.finishSquare);
-                }
+                pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
             }
 
             //if castles move the rook back.
@@ -545,9 +531,9 @@ class Board {
                 }
 
                 turn = !turn;
-                current.hasKingMoved[currentMove.pieceType & 1] |= currentMove.pieceType >> 1 == _nKing >> 1;
-                current.hasKingSideRookMoved[currentMove.pieceType & 1] |= (currentMove.pieceType >> 1 == _nRooks >> 1) && (currentMove.startSquare == 7 + 56 * (currentMove.pieceType & 1));
-                current.hasQueenSideRookMoved[currentMove.pieceType & 1] |= (currentMove.pieceType >> 1 == _nRooks >> 1) && (currentMove.startSquare == 0 + 56 * (currentMove.pieceType & 1));
+                current.hasKingMoved[currentMove.pieceType & 1] |= (currentMove.pieceType >> 1 == _nKing >> 1);
+                current.hasKingSideRookMoved[currentMove.pieceType & 1] |= ((currentMove.pieceType >> 1) == (_nRooks >> 1)) && (currentMove.startSquare == (7 + 56 * (currentMove.pieceType & 1)));
+                current.hasQueenSideRookMoved[currentMove.pieceType & 1] |= ((currentMove.pieceType >> 1) == (_nRooks >> 1)) && (currentMove.startSquare == (0 + 56 * (currentMove.pieceType & 1)));
 
                 return true;
             }
