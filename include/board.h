@@ -164,26 +164,23 @@ class Board {
             //queen.
             U64 b = occupied[0] | occupied[1];
             U64 temp = pieces[_nQueens+x];
-            while (temp!=0)
+            while (temp)
             {
-                int lsb = popLSB(temp);
-                attacked[x] |= magicQueenAttacks(b,lsb);
+                attacked[x] |= magicQueenAttacks(b,popLSB(temp));
             }
 
             //rooks.
             temp = pieces[_nRooks+x];
-            while (temp!=0)
+            while (temp)
             {
-                int lsb = popLSB(temp);
-                attacked[x] |= magicRookAttacks(b,lsb);
+                attacked[x] |= magicRookAttacks(b,popLSB(temp));
             }
 
             //bishops.
             temp = pieces[_nBishops+x];
-            while (temp!=0)
+            while (temp)
             {
-                int lsb = popLSB(temp);
-                attacked[x] |= magicBishopAttacks(b,lsb);
+                attacked[x] |= magicBishopAttacks(b,popLSB(temp));
             }
 
             //knights.

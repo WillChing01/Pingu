@@ -7,7 +7,7 @@
 
 typedef const unsigned long long C64;
 
-const U64 rookMasks[64]=
+static const U64 rookMasks[64]=
 {
 	C64(0x000101010101017E), C64(0x000202020202027C), C64(0x000404040404047A), C64(0x0008080808080876),
 	C64(0x001010101010106E), C64(0x002020202020205E), C64(0x004040404040403E), C64(0x008080808080807E),
@@ -38,7 +38,7 @@ const int rBits[64] = {
   12, 11, 11, 11, 11, 11, 11, 12
 };
 
-const U64 rookMagics[64]={
+static const U64 rookMagics[64]={
     36029071906791552ull,
     1154047718063083552ull,
     45040394859186176ull,
@@ -105,7 +105,7 @@ const U64 rookMagics[64]={
     569839240356098ull,
 };
 
-const U64 bishopMasks[64]=
+static const U64 bishopMasks[64]=
 {
 	C64(0x0040201008040200), C64(0x0000402010080400), C64(0x0000004020100A00), C64(0x0000000040221400),
 	C64(0x0000000002442800), C64(0x0000000204085000), C64(0x0000020408102000), C64(0x0002040810204000),
@@ -136,7 +136,7 @@ const int bBits[64] = {
   6, 5, 5, 5, 5, 5, 5, 6
 };
 
-const U64 bishopMagics[64]=
+static const U64 bishopMagics[64]=
 {
     54052133425123392ull,
     36150806904832ull,
@@ -204,8 +204,8 @@ const U64 bishopMagics[64]=
     38280768765640720ull,
 };
 
-U64 rookMagicMoves[64][4096]={};
-U64 bishopMagicMoves[64][512]={};
+static U64 rookMagicMoves[64][4096]={};
+static U64 bishopMagicMoves[64][512]={};
 
 U64 getRandomU64()
 {
@@ -376,18 +376,12 @@ void populateMagicTables()
 
 inline U64 magicRookAttacks(U64 b, int square)
 {
-    b &= rookMasks[square];
-    b *= rookMagics[square];
-    b >>= 52;
-    return rookMagicMoves[square][b];
+    return rookMagicMoves[square][((b & rookMasks[square]) * rookMagics[square]) >> 52];
 }
 
 inline U64 magicBishopAttacks(U64 b, int square)
 {
-    b &= bishopMasks[square];
-    b *= bishopMagics[square];
-    b >>= 55;
-    return bishopMagicMoves[square][b];
+    return bishopMagicMoves[square][((b & bishopMasks[square]) * bishopMagics[square]) >> 55];
 }
 
 inline U64 magicQueenAttacks(U64 b, int square)

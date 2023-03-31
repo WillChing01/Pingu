@@ -38,12 +38,12 @@
 	<chrono>
 	"board.h"
 
-1680213245 source:c:\users\william\documents\github\chess_3\main.cpp
+1680255485 source:c:\users\william\documents\github\chess_3\main.cpp
 	<iostream>
 	"board.h"
 	"test-suite.h"
 
-1680213396 c:\users\william\documents\github\chess_3\include\board.h
+1680256400 c:\users\william\documents\github\chess_3\include\board.h
 	<vector>
 	<bitset>
 	<windows.h>
@@ -62,9 +62,8 @@
 	<string>
 	"constants.h"
 
-1680213396 c:\users\william\documents\github\chess_3\include\king.h
+1680213562 c:\users\william\documents\github\chess_3\include\king.h
 	"constants.h"
-	"bitboard.h"
 
 1680023552 c:\users\william\documents\github\chess_3\include\knight.h
 	"constants.h"
@@ -79,6 +78,6 @@
 	<chrono>
 	"board.h"
 
-1680206711 c:\users\william\documents\github\chess_3\include\magic.h
+1680255255 c:\users\william\documents\github\chess_3\include\magic.h
 	"slider.h"
 
