@@ -12,8 +12,12 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-pg" />
 					<Add option="-g" />
 				</Compiler>
+				<Linker>
+					<Add option="-pg -lgmon" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/Chess_3" prefix_auto="1" extension_auto="1" />
@@ -21,7 +25,7 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-O2" />
+					<Add option="-Os" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -33,14 +37,12 @@
 			<Add option="-fexceptions" />
 			<Add directory="include" />
 		</Compiler>
-		<Linker>
-			<Add option="-O3" />
-		</Linker>
 		<Unit filename="include/bitboard.h" />
 		<Unit filename="include/board.h" />
 		<Unit filename="include/constants.h" />
 		<Unit filename="include/king.h" />
 		<Unit filename="include/knight.h" />
+		<Unit filename="include/magic.h" />
 		<Unit filename="include/pawn.h" />
 		<Unit filename="include/slider.h" />
 		<Unit filename="include/test-suite.h" />

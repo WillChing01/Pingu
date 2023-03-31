@@ -38,12 +38,12 @@
 	<chrono>
 	"board.h"
 
-1680020122 source:c:\users\william\documents\github\chess_3\main.cpp
+1680255485 source:c:\users\william\documents\github\chess_3\main.cpp
 	<iostream>
 	"board.h"
 	"test-suite.h"
 
-1680017059 c:\users\william\documents\github\chess_3\include\board.h
+1680256400 c:\users\william\documents\github\chess_3\include\board.h
 	<vector>
 	<bitset>
 	<windows.h>
@@ -54,26 +54,30 @@
 	"knight.h"
 	"pawn.h"
 	"slider.h"
+	"magic.h"
 
-1679861365 c:\users\william\documents\github\chess_3\include\constants.h
+1680094552 c:\users\william\documents\github\chess_3\include\constants.h
 
-1680022235 c:\users\william\documents\github\chess_3\include\bitboard.h
+1680212723 c:\users\william\documents\github\chess_3\include\bitboard.h
 	<string>
 	"constants.h"
 
-1680022235 c:\users\william\documents\github\chess_3\include\king.h
+1680213562 c:\users\william\documents\github\chess_3\include\king.h
 	"constants.h"
 
-1680022235 c:\users\william\documents\github\chess_3\include\knight.h
+1680023552 c:\users\william\documents\github\chess_3\include\knight.h
 	"constants.h"
 
-1680022235 c:\users\william\documents\github\chess_3\include\pawn.h
+1680023552 c:\users\william\documents\github\chess_3\include\pawn.h
 	"constants.h"
 
-1680020333 c:\users\william\documents\github\chess_3\include\slider.h
+1680023552 c:\users\william\documents\github\chess_3\include\slider.h
 	"constants.h"
 
-1680014787 c:\users\william\documents\github\chess_3\include\test-suite.h
+1680208915 c:\users\william\documents\github\chess_3\include\test-suite.h
 	<chrono>
 	"board.h"
+
+1680255255 c:\users\william\documents\github\chess_3\include\magic.h
+	"slider.h"
 

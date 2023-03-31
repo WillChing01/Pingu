@@ -19,11 +19,6 @@ long long perft(Board &b, int depth, bool display=false, bool rootNode=true)
     {
         long long total=0;
 
-        b.updateOccupied();
-        b.updateAttackTables(0);
-        b.updateAttackTables(1);
-        b.updateAttacked();
-
         b.moveBuffer.clear();
         b.generatePseudoMoves(b.turn);
 

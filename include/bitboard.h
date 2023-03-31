@@ -21,16 +21,25 @@ void displayBitboard(U64 bitboard)
     } cout << endl;
 }
 
+static int _i=0;
+
 inline int popLSB(U64 &b)
 {
-    int i=__builtin_ctzll(b);
+    _i=__builtin_ctzll(b);
     b &= b-1;
-    return i;
+    return _i;
 }
 
 inline U64 convertToBitboard(int x)
 {
     return (U64)(1ull << x);
+}
+
+inline int countOnes(U64 b)
+{
+    int r;
+    for (r=0; b; r++, b &= b-1);
+    return r;
 }
 
 string toCoord(int square)
