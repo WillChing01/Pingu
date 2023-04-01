@@ -192,7 +192,17 @@ class Board {
 
         bool isInCheck(bool side)
         {
-            return bool(pieces[_nKing+(int)(side)] & attacked[(int)(!side)]);
+            //check if the king's square is attacked.
+            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+            U64 b = occupied[0] | occupied[1];
+
+            bool inCheck = kingAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKing+(int)(!side)];
+            inCheck |= magicRookAttacks(b,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+            inCheck |= magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+            inCheck |= knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)];
+            inCheck |= pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)];
+
+            return inCheck;
         }
 
         pair<bool,bool> canCastle(bool side)
@@ -502,9 +512,10 @@ class Board {
 
             //check if the move was legal.
             updateOccupied();
-            updateAttacked(!turn);
+            //updateAttacked(!turn);
 
-            if ((pieces[_nKing+(int)(turn)] & attacked[(int)(!turn)]) != 0)
+            //if ((pieces[_nKing+(int)(turn)] & attacked[(int)(!turn)]) != 0)
+            if (isInCheck(turn))
             {
                 //illegal move.
                 unMovePieces(currentMove);
