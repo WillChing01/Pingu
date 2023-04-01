@@ -30,11 +30,6 @@ inline int popLSB(U64 &b)
     return _i;
 }
 
-inline U64 convertToBitboard(int x)
-{
-    return (U64)(1ull << x);
-}
-
 string toCoord(int square)
 {
     string cols = "abcdefgh";

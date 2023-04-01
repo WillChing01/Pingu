@@ -100,18 +100,18 @@ void testKiwipetePosition(int depth = 5)
     Board b;
 
     //set up the pieces.
-    b.pieces[b._nQueens] = convertToBitboard(21);
-    b.pieces[b._nQueens+1] = convertToBitboard(52);
-    b.pieces[b._nBishops] = convertToBitboard(11) + convertToBitboard(12);
-    b.pieces[b._nBishops+1] = convertToBitboard(40) + convertToBitboard(54);
-    b.pieces[b._nKnights] = convertToBitboard(18) + convertToBitboard(36);
-    b.pieces[b._nKnights+1] = convertToBitboard(41) + convertToBitboard(45);
-    b.pieces[b._nPawns] += convertToBitboard(35) - convertToBitboard(11)
-    + convertToBitboard(28) - convertToBitboard(12);
-    b.pieces[b._nPawns+1] += convertToBitboard(25) - convertToBitboard(49)
-    + convertToBitboard(44) - convertToBitboard(52)
-    + convertToBitboard(46) - convertToBitboard(54)
-    + convertToBitboard(23) - convertToBitboard(55);
+    b.pieces[b._nQueens] = 1ull << (21);
+    b.pieces[b._nQueens+1] = 1ull << (52);
+    b.pieces[b._nBishops] = (1ull << (11)) + (1ull << (12));
+    b.pieces[b._nBishops+1] = (1ull << (40)) + (1ull << (54));
+    b.pieces[b._nKnights] = (1ull << (18)) + (1ull << (36));
+    b.pieces[b._nKnights+1] = (1ull << (41)) + (1ull << (45));
+    b.pieces[b._nPawns] += (1ull << (35)) - (1ull << (11))
+    + (1ull << (28)) - (1ull << (12));
+    b.pieces[b._nPawns+1] += (1ull << (25)) - (1ull << (49))
+    + (1ull << (44)) - (1ull << (52))
+    + (1ull << (46)) - (1ull << (54))
+    + (1ull << (23)) - (1ull << (55));
 
     bool good=true;
 

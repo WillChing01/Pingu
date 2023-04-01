@@ -1,30 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
-	<ActiveTarget name="Release" />
-	<File name="include\constants.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="925" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="include\magic.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="12706" topLine="0" />
-		</Cursor>
-		<Folding>
-			<Collapse line="210" />
-			<Collapse line="221" />
-			<Collapse line="226" />
-			<Collapse line="241" />
-			<Collapse line="275" />
-			<Collapse line="309" />
-			<Collapse line="326" />
-			<Collapse line="343" />
-			<Collapse line="357" />
-			<Collapse line="371" />
-			<Collapse line="387" />
-		</Folding>
-	</File>
+	<ActiveTarget name="Debug" />
 	<File name="include\knight.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="89" topLine="0" />
@@ -35,42 +12,15 @@
 			<Cursor1 position="76" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\magic.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="165" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="include\slider.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="126" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="include\board.h" open="1" top="1" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="19722" topLine="134" />
+			<Cursor1 position="12102" topLine="336" />
 		</Cursor>
 		<Folding>
-			<Collapse line="22" />
-			<Collapse line="30" />
-			<Collapse line="67" />
-			<Collapse line="92" />
-			<Collapse line="153" />
-			<Collapse line="159" />
-			<Collapse line="193" />
-			<Collapse line="198" />
+			<Collapse line="210" />
 			<Collapse line="221" />
-			<Collapse line="286" />
-			<Collapse line="432" />
-			<Collapse line="465" />
-		</Folding>
-	</File>
-	<File name="include\test-suite.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="394" topLine="0" />
-		</Cursor>
-		<Folding>
-			<Collapse line="51" />
-			<Collapse line="98" />
+			<Collapse line="371" />
+			<Collapse line="387" />
 		</Folding>
 	</File>
 	<File name="include\evaluation.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -78,14 +28,54 @@
 			<Cursor1 position="2553" topLine="139" />
 		</Cursor>
 	</File>
-	<File name="include\bitboard.h" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\board.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="601" topLine="26" />
+			<Cursor1 position="17955" topLine="352" />
 		</Cursor>
+		<Folding>
+			<Collapse line="54" />
+			<Collapse line="68" />
+			<Collapse line="155" />
+			<Collapse line="161" />
+			<Collapse line="195" />
+			<Collapse line="236" />
+			<Collapse line="259" />
+			<Collapse line="534" />
+			<Collapse line="576" />
+			<Collapse line="587" />
+		</Folding>
 	</File>
 	<File name="include\king.h" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="74" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\test-suite.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3256" topLine="58" />
+		</Cursor>
+		<Folding>
+			<Collapse line="51" />
+		</Folding>
+	</File>
+	<File name="main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="238" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\constants.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="925" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\bitboard.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="526" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\slider.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="126" topLine="0" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>
