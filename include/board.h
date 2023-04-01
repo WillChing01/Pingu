@@ -15,6 +15,8 @@
 #include "slider.h"
 #include "magic.h"
 
+#include "evaluation.h"
+
 using namespace std;
 
 struct gameState
@@ -33,6 +35,7 @@ struct moveInfo
     bool enPassant;
     int capturedPieceType;
     int promotionPieceType;
+    bool shouldCheck;
 };
 
 class Board {
@@ -53,6 +56,7 @@ class Board {
             .hasKingMoved={false,false},
             .hasKingSideRookMoved={false,false},
             .hasQueenSideRookMoved={false,false},
+            .enPassantSquare=-1,
         };
 
         const int _nKing=0;
@@ -87,7 +91,7 @@ class Board {
             updateAttacked(0); updateAttacked(1);
         };
 
-        void appendMove(int pieceType, int startSquare, int finishSquare)
+        void appendMove(int pieceType, int startSquare, int finishSquare, bool shouldCheck=false)
         {
             //will automatically detect promotion and generate all permutations.
             //will automatically detect captured piece (including en passant).
@@ -98,14 +102,15 @@ class Board {
                 .enPassant=false,
                 .capturedPieceType=-1,
                 .promotionPieceType=-1,
+                .shouldCheck=shouldCheck,
             };
 
             //check for captured pieces (including en passant).
-            if ((convertToBitboard(finishSquare) & occupied[(pieceType+1)%2])!=0)
+            if (((1ull << finishSquare) & occupied[(pieceType+1) & 1])!=0)
             {
                 //check for captures.
-                U64 x = convertToBitboard(finishSquare);
-                for (int i=_nQueens+(pieceType+1)%2;i<12;i+=2)
+                U64 x = 1ull << finishSquare;
+                for (int i=_nQueens+((pieceType+1) & 1);i<12;i+=2)
                 {
                     if ((x & pieces[i]) != 0)
                     {
@@ -114,14 +119,14 @@ class Board {
                     }
                 }
             }
-            else if ((pieceType/2 == _nPawns/2 && finishSquare/8 == 5-3*(pieceType%2)) && (finishSquare%8 != startSquare%8))
+            else if ((pieceType >> 1 == _nPawns >> 1 && finishSquare >> 3 == 5-3*(pieceType & 1)) && (finishSquare%8 != startSquare%8))
             {
                 //en-passant capture.
                 newMove.enPassant=true;
 
                 //check for captured piece.
-                U64 x = convertToBitboard(finishSquare-8+16*(pieceType%2));
-                for (int i=_nQueens+(pieceType+1)%2;i<12;i+=2)
+                U64 x = 1ull << (finishSquare-8+16*(pieceType%2));
+                for (int i=_nQueens+((pieceType+1) & 1);i<12;i+=2)
                 {
                     if ((x & pieces[i]) != 0)
                     {
@@ -132,10 +137,10 @@ class Board {
             }
 
             //check for pawn promotion.
-            if (pieceType/2 == _nPawns/2 && finishSquare/8 == 7-7*(pieceType%2))
+            if (pieceType >> 1 == _nPawns >> 1 && finishSquare >> 3 == 7-7*(pieceType & 1))
             {
                 //promotion.
-                for (int i=_nQueens+pieceType%2;i<_nPawns;i+=2)
+                for (int i=_nQueens+(pieceType & 1);i<_nPawns;i+=2)
                 {
                     newMove.promotionPieceType=i;
                     moveBuffer.push_back(newMove);
@@ -156,43 +161,77 @@ class Board {
 
         void updateAttacked(bool side)
         {
-            int x = (int)(side);
-
             //king.
-            attacked[x] = kingAttacks(pieces[_nKing+x]);
+            attacked[(int)(side)] = kingAttacks(pieces[_nKing+(int)(side)]);
 
             //queen.
             U64 b = occupied[0] | occupied[1];
-            U64 temp = pieces[_nQueens+x];
+            U64 temp = pieces[_nQueens+(int)(side)];
             while (temp)
             {
-                attacked[x] |= magicQueenAttacks(b,popLSB(temp));
+                attacked[(int)(side)] |= magicQueenAttacks(b,popLSB(temp));
             }
 
             //rooks.
-            temp = pieces[_nRooks+x];
+            temp = pieces[_nRooks+(int)(side)];
             while (temp)
             {
-                attacked[x] |= magicRookAttacks(b,popLSB(temp));
+                attacked[(int)(side)] |= magicRookAttacks(b,popLSB(temp));
             }
 
             //bishops.
-            temp = pieces[_nBishops+x];
+            temp = pieces[_nBishops+(int)(side)];
             while (temp)
             {
-                attacked[x] |= magicBishopAttacks(b,popLSB(temp));
+                attacked[(int)(side)] |= magicBishopAttacks(b,popLSB(temp));
             }
 
             //knights.
-            attacked[x] |= knightAttacks(pieces[_nKnights+x]);
+            attacked[(int)(side)] |= knightAttacks(pieces[_nKnights+(int)(side)]);
 
             //pawns.
-            attacked[x] |= pawnAttacks(pieces[_nPawns+x],x);
+            attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],(int)(side));
         }
 
         bool isInCheck(bool side)
         {
-            return bool(pieces[_nKing+(int)(side)] & attacked[(int)(!side)]);
+            //check if the king's square is attacked.
+            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+            U64 b = occupied[0] | occupied[1];
+
+            bool inCheck = kingAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKing+(int)(!side)];
+            inCheck |= magicRookAttacks(b,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+            inCheck |= magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+            inCheck |= knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)];
+            inCheck |= pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)];
+
+            return inCheck;
+        }
+
+        U64 getPinnedPieces(bool side)
+        {
+            //generate attacks to the king.
+            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+            U64 b = occupied[0] | occupied[1];
+
+            U64 pinned = 0;
+
+            //for each potentially pinned piece, loop through and recalculate the attacks.
+            U64 potentialPinned = magicRookAttacks(b,kingPos) & occupied[(int)(side)];
+            while (potentialPinned)
+            {
+                U64 x = 1ull << popLSB(potentialPinned);
+                if ((magicRookAttacks(b & ~x,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) != 0) {pinned |= x;}
+            }
+
+            potentialPinned = magicBishopAttacks(b,kingPos) & occupied[(int)(side)];
+            while (potentialPinned)
+            {
+                U64 x = 1ull << popLSB(potentialPinned);
+                if ((magicBishopAttacks(b & ~x,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) != 0) {pinned |= x;}
+            }
+
+            return pinned;
         }
 
         pair<bool,bool> canCastle(bool side)
@@ -290,19 +329,19 @@ class Board {
             updateOccupied();
             updateAttacked(!turn);
 
+            bool kingInCheck = (bool)(pieces[_nKing+(int)(side)] & attacked[(int)(!side)]);
+
             //king.
 
             //get position of king.
             int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
 
             //get position of move-squares.
-            U64 x = kingAttacks(pieces[_nKing+(int)(side)]);
-            x &= ~occupied[(int)(side)];
+            U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!turn)] & ~occupied[(int)(side)];
 
-            while (x!=0)
+            while (x)
             {
-                int finishSquare = popLSB(x);
-                appendMove(_nKing+(int)(side), kingPos, finishSquare);
+                appendMove(_nKing+(int)(side), kingPos, popLSB(x), kingInCheck);
             }
 
             //castling.
@@ -318,93 +357,83 @@ class Board {
                 appendMove(_nKing+(int)(side), kingPos, kingPos-2);
             }
 
-            U64 p = ~(occupied[0] | occupied[1]);
+            U64 pinned = getPinnedPieces(side);
+
+            U64 p = (occupied[0] | occupied[1]);
             //queen.
             U64 queens = pieces[_nQueens+(int)(side)];
 
-            while (queens!=0)
+            while (queens)
             {
                 int queenPos = popLSB(queens);
 
-                U64 x = magicQueenAttacks(~p,queenPos);
-//                U64 x = queenAttacks(convertToBitboard(queenPos),p);
-                x &= ~occupied[(int)(side)];
+                U64 x = magicQueenAttacks(p,queenPos) & ~occupied[(int)(side)];
 
-                while (x!=0)
+                while (x)
                 {
-                    int finishSquare = popLSB(x);
-                    appendMove(_nQueens+(int)(side), queenPos, finishSquare);
+                    appendMove(_nQueens+(int)(side), queenPos, popLSB(x), kingInCheck || ((1ull << queenPos) & pinned)!=0);
                 }
             }
 
             //rook.
             U64 rooks = pieces[_nRooks+(int)(side)];
 
-            while (rooks!=0)
+            while (rooks)
             {
                 int rookPos = popLSB(rooks);
 
-                U64 x = magicRookAttacks(~p,rookPos);
-//                U64 x = rookAttacks(convertToBitboard(rookPos),p);
-                x &= ~occupied[(int)(side)];
+                U64 x = magicRookAttacks(p,rookPos) & ~occupied[(int)(side)];
 
-                while (x!=0)
+                while (x)
                 {
-                    int finishSquare = popLSB(x);
-                    appendMove(_nRooks+(int)(side), rookPos, finishSquare);
+                    appendMove(_nRooks+(int)(side), rookPos, popLSB(x), kingInCheck || ((1ull << rookPos) & pinned)!=0);
                 }
             }
 
             //bishops.
             U64 bishops = pieces[_nBishops+(int)(side)];
 
-            while (bishops!=0)
+            while (bishops)
             {
                 int bishopPos = popLSB(bishops);
 
-                U64 x = magicBishopAttacks(~p,bishopPos);
-//                U64 x = bishopAttacks(convertToBitboard(bishopPos),p);
-                x &= ~occupied[(int)(side)];
+                U64 x = magicBishopAttacks(p,bishopPos) & ~occupied[(int)(side)];
 
-                while (x!=0)
+                while (x)
                 {
-                    int finishSquare = popLSB(x);
-                    appendMove(_nBishops+(int)(side), bishopPos, finishSquare);
+                    appendMove(_nBishops+(int)(side), bishopPos, popLSB(x), kingInCheck || ((1ull << bishopPos) & pinned)!=0);
                 }
             }
 
             //knights.
             U64 knights = pieces[_nKnights+(int)(side)];
 
-            while (knights!=0)
+            while (knights)
             {
                 int knightPos = popLSB(knights);
 
-                U64 x = knightAttacks(convertToBitboard(knightPos));
-                x &= ~occupied[(int)(side)];
+                U64 x = knightAttacks(1ull << knightPos) & ~occupied[(int)(side)];
 
-                while (x!=0)
+                while (x)
                 {
-                    int finishSquare = popLSB(x);
-                    appendMove(_nKnights+(int)(side), knightPos, finishSquare);
+                    appendMove(_nKnights+(int)(side), knightPos, popLSB(x), kingInCheck || ((1ull << knightPos) & pinned)!=0);
                 }
             }
 
             //pawns.
             U64 pawns = pieces[_nPawns+(int)(side)];
 
-            while (pawns!=0)
+            while (pawns)
             {
                 int pawnPos = popLSB(pawns);
-                U64 pawnPosBoard = convertToBitboard(pawnPos);
+                U64 pawnPosBoard = 1ull << pawnPos;
 
                 //en passant square included.
-                U64 x = pawnAttacks(pawnPosBoard,side);
-                x &= ~occupied[(int)(side)];
+                U64 x = pawnAttacks(pawnPosBoard,side) & ~occupied[(int)(side)];
 
                 if (current.enPassantSquare != -1)
                 {
-                    x &= (occupied[(int)(!side)] | convertToBitboard(current.enPassantSquare));
+                    x &= (occupied[(int)(!side)] | (1ull << current.enPassantSquare));
                 }
                 else
                 {
@@ -414,19 +443,18 @@ class Board {
                 //move forward.
                 if (side==0)
                 {
-                    x |= (pawnPosBoard << 8) & p;
-                    x |= ((((pawnPosBoard & FILE_2) << 8) & p) << 8) & p;
+                    x |= (pawnPosBoard << 8) & (~p);
+                    x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
                 }
                 else
                 {
-                    x |= (pawnPosBoard >> 8 & p);
-                    x |= ((((pawnPosBoard & FILE_7) >> 8) & p) >> 8) & p;
+                    x |= (pawnPosBoard >> 8 & (~p));
+                    x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
                 }
 
-                while (x!=0)
+                while (x)
                 {
-                    int finishSquare = popLSB(x);
-                    appendMove(_nPawns+(int)(side), pawnPos,finishSquare);
+                    appendMove(_nPawns+(int)(side), pawnPos,popLSB(x), kingInCheck || ((1ull << pawnPos) & pinned)!=0);
                 }
             }
         }
@@ -434,39 +462,32 @@ class Board {
         void movePieces(moveInfo currentMove)
         {
             //remove piece from start square;
-            pieces[currentMove.pieceType] -= convertToBitboard(currentMove.startSquare);
+            pieces[currentMove.pieceType] -= 1ull << (currentMove.startSquare);
 
             //add piece to end square, accounting for promotion.
             int finishPieceType = currentMove.promotionPieceType>=_nQueens ? currentMove.promotionPieceType : currentMove.pieceType;
-            pieces[finishPieceType] += convertToBitboard(currentMove.finishSquare);
+            pieces[finishPieceType] += 1ull << (currentMove.finishSquare);
 
             //remove any captured pieces.
             if (currentMove.capturedPieceType!=-1)
             {
-                if (currentMove.enPassant==true)
-                {
-                    pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.finishSquare-8+16*(currentMove.pieceType%2));
-                }
-                else
-                {
-                    pieces[currentMove.capturedPieceType] -= convertToBitboard(currentMove.finishSquare);
-                }
+                pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
             }
 
             //if castles, then move the rook too.
-            if (currentMove.pieceType/2 == _nKing/2 && abs(currentMove.finishSquare-currentMove.startSquare)==2)
+            if (currentMove.pieceType >> 1 == _nKing >> 1 && abs(currentMove.finishSquare-currentMove.startSquare)==2)
             {
                 if (currentMove.finishSquare-currentMove.startSquare==2)
                 {
                     //kingside.
-                    pieces[_nRooks+currentMove.pieceType%2] -= KING_ROOK_POS[currentMove.pieceType%2];
-                    pieces[_nRooks+currentMove.pieceType%2] += KING_ROOK_POS[currentMove.pieceType%2] >> 2;
+                    pieces[_nRooks+(currentMove.pieceType & 1)] -= KING_ROOK_POS[currentMove.pieceType & 1];
+                    pieces[_nRooks+(currentMove.pieceType & 1)] += KING_ROOK_POS[currentMove.pieceType & 1] >> 2;
                 }
                 else
                 {
                     //queenside.
-                    pieces[_nRooks+currentMove.pieceType%2] -= QUEEN_ROOK_POS[currentMove.pieceType%2];
-                    pieces[_nRooks+currentMove.pieceType%2] += QUEEN_ROOK_POS[currentMove.pieceType%2] << 3;
+                    pieces[_nRooks+(currentMove.pieceType & 1)] -= QUEEN_ROOK_POS[currentMove.pieceType & 1];
+                    pieces[_nRooks+(currentMove.pieceType & 1)] += QUEEN_ROOK_POS[currentMove.pieceType & 1] << 3;
                 }
             }
         }
@@ -475,38 +496,31 @@ class Board {
         {
             //remove piece from destination square.
             int finishPieceType = currentMove.promotionPieceType>=_nQueens ? currentMove.promotionPieceType : currentMove.pieceType;
-            pieces[finishPieceType] -= convertToBitboard(currentMove.finishSquare);
+            pieces[finishPieceType] -= 1ull << (currentMove.finishSquare);
 
             //add piece to start square.
-            pieces[currentMove.pieceType] += convertToBitboard(currentMove.startSquare);
+            pieces[currentMove.pieceType] += 1ull << (currentMove.startSquare);
 
             //add back captured pieces.
             if (currentMove.capturedPieceType!=-1)
             {
-                if (currentMove.enPassant==true)
-                {
-                    pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.finishSquare-8+16*(currentMove.pieceType%2));
-                }
-                else
-                {
-                    pieces[currentMove.capturedPieceType] += convertToBitboard(currentMove.finishSquare);
-                }
+                pieces[currentMove.capturedPieceType] += 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
             }
 
             //if castles move the rook back.
-            if (currentMove.pieceType/2 == _nKing/2 && abs(currentMove.finishSquare-currentMove.startSquare)==2)
+            if (currentMove.pieceType >> 1 == _nKing >> 1 && abs(currentMove.finishSquare-currentMove.startSquare)==2)
             {
                 if (currentMove.finishSquare-currentMove.startSquare==2)
                 {
                     //kingside.
-                    pieces[_nRooks+currentMove.pieceType%2] -= KING_ROOK_POS[currentMove.pieceType%2] >> 2;
-                    pieces[_nRooks+currentMove.pieceType%2] += KING_ROOK_POS[currentMove.pieceType%2];
+                    pieces[_nRooks+(currentMove.pieceType & 1)] -= KING_ROOK_POS[currentMove.pieceType & 1] >> 2;
+                    pieces[_nRooks+(currentMove.pieceType & 1)] += KING_ROOK_POS[currentMove.pieceType & 1];
                 }
                 else
                 {
                     //queenside.
-                    pieces[_nRooks+currentMove.pieceType%2] -= QUEEN_ROOK_POS[currentMove.pieceType%2] << 3;
-                    pieces[_nRooks+currentMove.pieceType%2] += QUEEN_ROOK_POS[currentMove.pieceType%2];
+                    pieces[_nRooks+(currentMove.pieceType & 1)] -= QUEEN_ROOK_POS[currentMove.pieceType & 1] << 3;
+                    pieces[_nRooks+(currentMove.pieceType & 1)] += QUEEN_ROOK_POS[currentMove.pieceType & 1];
                 }
             }
         }
@@ -517,41 +531,50 @@ class Board {
             movePieces(currentMove);
 
             //check if the move was legal.
-            updateOccupied();
-            updateAttacked(!turn);
-
-            if ((pieces[_nKing+(int)(turn)] & attacked[(int)(!turn)]) != 0)
-            {
-                //illegal move.
-                unMovePieces(currentMove);
-                return false;
-            }
-            else
+            if (!currentMove.shouldCheck)
             {
                 //update history.
                 stateHistory.push_back(current);
                 moveHistory.push_back(currentMove);
 
-                //update game-state.
-
                 //if double-pawn push, set en-passant square.
                 //otherwise, set en-passant square to -1.
-                if (currentMove.pieceType/2 == _nPawns/2 && abs(currentMove.finishSquare-currentMove.startSquare) == 16)
+                bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs(currentMove.finishSquare-currentMove.startSquare) == 16;
+                current.enPassantSquare = -1 + (int)(x)*(1+currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
+
+                turn = !turn;
+                current.hasKingMoved[currentMove.pieceType & 1] |= (currentMove.pieceType >> 1 == _nKing >> 1);
+                current.hasKingSideRookMoved[currentMove.pieceType & 1] |= ((currentMove.pieceType >> 1) == (_nRooks >> 1)) && (currentMove.startSquare == (7 + 56 * (currentMove.pieceType & 1)));
+                current.hasQueenSideRookMoved[currentMove.pieceType & 1] |= ((currentMove.pieceType >> 1) == (_nRooks >> 1)) && (currentMove.startSquare == (0 + 56 * (currentMove.pieceType & 1)));
+
+                return true;
+            }
+            else
+            {
+                updateOccupied();
+                if (isInCheck(turn))
                 {
-                    //en-passant is possible immediately.
-                    current.enPassantSquare = currentMove.finishSquare-8+16*(currentMove.pieceType%2);
+                    unMovePieces(currentMove);
+                    return false;
                 }
                 else
                 {
-                    current.enPassantSquare = -1;
+                    //update history.
+                    stateHistory.push_back(current);
+                    moveHistory.push_back(currentMove);
+
+                    //if double-pawn push, set en-passant square.
+                    //otherwise, set en-passant square to -1.
+                    bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs(currentMove.finishSquare-currentMove.startSquare) == 16;
+                    current.enPassantSquare = -1 + (int)(x)*(1+currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
+
+                    turn = !turn;
+                    current.hasKingMoved[currentMove.pieceType & 1] |= (currentMove.pieceType >> 1 == _nKing >> 1);
+                    current.hasKingSideRookMoved[currentMove.pieceType & 1] |= ((currentMove.pieceType >> 1) == (_nRooks >> 1)) && (currentMove.startSquare == (7 + 56 * (currentMove.pieceType & 1)));
+                    current.hasQueenSideRookMoved[currentMove.pieceType & 1] |= ((currentMove.pieceType >> 1) == (_nRooks >> 1)) && (currentMove.startSquare == (0 + 56 * (currentMove.pieceType & 1)));
+
+                    return true;
                 }
-
-                turn = !turn;
-                current.hasKingMoved[currentMove.pieceType%2] |= currentMove.pieceType/2 == _nKing/2;
-                current.hasKingSideRookMoved[currentMove.pieceType%2] |= (currentMove.pieceType/2 == _nRooks/2) && (currentMove.startSquare == 7 + 56 * (currentMove.pieceType%2));
-                current.hasQueenSideRookMoved[currentMove.pieceType%2] |= (currentMove.pieceType/2 == _nRooks/2) && (currentMove.startSquare == 0 + 56 * (currentMove.pieceType%2));
-
-                return true;
             }
         }
 
@@ -564,6 +587,18 @@ class Board {
 
             stateHistory.pop_back();
             moveHistory.pop_back();
+        }
+
+        int evalPieces(int pieceType)
+        {
+            int total=0;
+            U64 temp = pieces[pieceType] ^ (63ull * ((U64)pieceType & 1ull));
+            while (temp)
+            {
+                //only mid-game eval at the moment.
+                total += PIECE_VALUES_START[pieceType >> 1] + PIECE_TABLES_START[pieceType >> 1][popLSB(temp)];
+            }
+            return total;
         }
 };
 

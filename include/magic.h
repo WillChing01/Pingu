@@ -232,7 +232,7 @@ U64 getBlocker(U64 mask, int index, int bits)
         int lsb = popLSB(temp);
         if ((index >> i)%2 == 1)
         {
-            b |= convertToBitboard(lsb);
+            b |= 1ull << (lsb);
         }
     }
     return b;
@@ -246,7 +246,7 @@ U64 getRookMagic(int square)
     for (int i=0;i< (1 << rBits[square]);i++)
     {
         blockers[i] = getBlocker(rookMasks[square],i,rBits[square]);
-        attackSets[i] = rookAttacks(convertToBitboard(square),~blockers[i]);
+        attackSets[i] = rookAttacks(1ull << (square),~blockers[i]);
     }
 
     U64 res = 0;
@@ -255,7 +255,7 @@ U64 getRookMagic(int square)
     {
         //get potential magicNum.
         U64 magic = getRandomU64FewBits();
-        if (countOnes((rookMasks[square]*magic) & 0xFF00000000000000ULL) < 6) {continue;}
+        if (__builtin_popcountll((rookMasks[square]*magic) & 0xFF00000000000000ULL) < 6) {continue;}
 
         U64 magicMoves[4096]={};
         bool good=true;
@@ -280,7 +280,7 @@ U64 getBishopMagic(int square)
     for (int i=0;i< (1 << bBits[square]);i++)
     {
         blockers[i] = getBlocker(bishopMasks[square],i,bBits[square]);
-        attackSets[i] = bishopAttacks(convertToBitboard(square),~blockers[i]);
+        attackSets[i] = bishopAttacks(1ull << (square),~blockers[i]);
     }
 
     U64 res = 0;
@@ -289,7 +289,7 @@ U64 getBishopMagic(int square)
     {
         //get potential magicNum.
         U64 magic = getRandomU64FewBits();
-        if (countOnes((bishopMasks[square]*magic) & 0xFF00000000000000ULL) < 6) {continue;}
+        if (__builtin_popcountll((bishopMasks[square]*magic) & 0xFF00000000000000ULL) < 6) {continue;}
 
         U64 magicMoves[512]={};
         bool good=true;
@@ -314,7 +314,7 @@ void testRookMagics()
         for (int i=0;i< (1 << rBits[square]);i++)
         {
             U64 b = getBlocker(rookMasks[square],i,rBits[square]);
-            U64 check = rookAttacks(convertToBitboard(square),~b);
+            U64 check = rookAttacks(1ull << (square),~b);
             b *= rookMagics[square]; b >>= 52;
             U64 a = rookMagicMoves[square][b];
             if (a != check) {good=false; break;}
@@ -331,7 +331,7 @@ void testBishopMagics()
         for (int i=0;i< (1 << bBits[square]);i++)
         {
             U64 b = getBlocker(bishopMasks[square],i,bBits[square]);
-            U64 check = bishopAttacks(convertToBitboard(square),~b);
+            U64 check = bishopAttacks(1ull << (square),~b);
             b *= bishopMagics[square]; b >>= 55;
             U64 a = bishopMagicMoves[square][b];
             if (a != check) {good=false; break;}
@@ -347,7 +347,7 @@ void populateMagicRookTables()
         for (int i=0;i<(1 << rBits[square]);i++)
         {
             U64 b = getBlocker(rookMasks[square],i,rBits[square]);
-            U64 attackSet = rookAttacks(convertToBitboard(square),~b);
+            U64 attackSet = rookAttacks(1ull << (square),~b);
             b *= rookMagics[square]; b >>= 52;
             rookMagicMoves[square][b] = attackSet;
         }
@@ -361,7 +361,7 @@ void populateMagicBishopTables()
         for (int i=0;i<512;i++)
         {
             U64 b = getBlocker(bishopMasks[square],i,bBits[square]);
-            U64 attackSet = bishopAttacks(convertToBitboard(square),~b);
+            U64 attackSet = bishopAttacks(1ull << (square),~b);
             b *= bishopMagics[square]; b >>= 55;
             bishopMagicMoves[square][b] = attackSet;
         }
@@ -376,12 +376,12 @@ void populateMagicTables()
 
 inline U64 magicRookAttacks(U64 b, int square)
 {
-    return rookMagicMoves[square][((b & rookMasks[square]) * rookMagics[square]) >> 52];
+    return rookMagicMoves[square][((b & rookMasks[square]) * rookMagics[square]) >> 52ull];
 }
 
 inline U64 magicBishopAttacks(U64 b, int square)
 {
-    return bishopMagicMoves[square][((b & bishopMasks[square]) * bishopMagics[square]) >> 55];
+    return bishopMagicMoves[square][((b & bishopMasks[square]) * bishopMagics[square]) >> 55ull];
 }
 
 inline U64 magicQueenAttacks(U64 b, int square)

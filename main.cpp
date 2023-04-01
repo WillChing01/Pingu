@@ -9,6 +9,7 @@ int main()
 {
     populateMagicTables();
     testInitialPosition();
+//    testKiwipetePosition();
 
     system("pause");
     return 0;
