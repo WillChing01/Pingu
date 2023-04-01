@@ -56,6 +56,7 @@ class Board {
             .hasKingMoved={false,false},
             .hasKingSideRookMoved={false,false},
             .hasQueenSideRookMoved={false,false},
+            .enPassantSquare=-1,
         };
 
         const int _nKing=0;
@@ -336,9 +337,7 @@ class Board {
             int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
 
             //get position of move-squares.
-            U64 x = kingAttacks(pieces[_nKing+(int)(side)]);
-            x &= ~attacked[!turn];
-            x &= ~occupied[(int)(side)];
+            U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!turn)] & ~occupied[(int)(side)];
 
             while (x)
             {
@@ -368,8 +367,7 @@ class Board {
             {
                 int queenPos = popLSB(queens);
 
-                U64 x = magicQueenAttacks(p,queenPos);
-                x &= ~occupied[(int)(side)];
+                U64 x = magicQueenAttacks(p,queenPos) & ~occupied[(int)(side)];
 
                 while (x)
                 {
@@ -384,8 +382,7 @@ class Board {
             {
                 int rookPos = popLSB(rooks);
 
-                U64 x = magicRookAttacks(p,rookPos);
-                x &= ~occupied[(int)(side)];
+                U64 x = magicRookAttacks(p,rookPos) & ~occupied[(int)(side)];
 
                 while (x)
                 {
@@ -400,8 +397,7 @@ class Board {
             {
                 int bishopPos = popLSB(bishops);
 
-                U64 x = magicBishopAttacks(p,bishopPos);
-                x &= ~occupied[(int)(side)];
+                U64 x = magicBishopAttacks(p,bishopPos) & ~occupied[(int)(side)];
 
                 while (x)
                 {
@@ -416,8 +412,7 @@ class Board {
             {
                 int knightPos = popLSB(knights);
 
-                U64 x = knightAttacks(1ull << knightPos);
-                x &= ~occupied[(int)(side)];
+                U64 x = knightAttacks(1ull << knightPos) & ~occupied[(int)(side)];
 
                 while (x)
                 {
@@ -434,8 +429,7 @@ class Board {
                 U64 pawnPosBoard = 1ull << pawnPos;
 
                 //en passant square included.
-                U64 x = pawnAttacks(pawnPosBoard,side);
-                x &= ~occupied[(int)(side)];
+                U64 x = pawnAttacks(pawnPosBoard,side) & ~occupied[(int)(side)];
 
                 if (current.enPassantSquare != -1)
                 {
@@ -537,32 +531,16 @@ class Board {
             movePieces(currentMove);
 
             //check if the move was legal.
-            updateOccupied();
-            //updateAttacked(!turn);
-            if (currentMove.shouldCheck && isInCheck(turn))
-            {
-                unMovePieces(currentMove);
-                return false;
-            }
-            else
+            if (!currentMove.shouldCheck)
             {
                 //update history.
                 stateHistory.push_back(current);
                 moveHistory.push_back(currentMove);
 
-                //update game-state.
-
                 //if double-pawn push, set en-passant square.
                 //otherwise, set en-passant square to -1.
-                if (currentMove.pieceType >> 1 == _nPawns >> 1 && abs(currentMove.finishSquare-currentMove.startSquare) == 16)
-                {
-                    //en-passant is possible immediately.
-                    current.enPassantSquare = currentMove.finishSquare-8+16*(currentMove.pieceType & 1);
-                }
-                else
-                {
-                    current.enPassantSquare = -1;
-                }
+                bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs(currentMove.finishSquare-currentMove.startSquare) == 16;
+                current.enPassantSquare = -1 + (int)(x)*(1+currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
 
                 turn = !turn;
                 current.hasKingMoved[currentMove.pieceType & 1] |= (currentMove.pieceType >> 1 == _nKing >> 1);
@@ -570,6 +548,33 @@ class Board {
                 current.hasQueenSideRookMoved[currentMove.pieceType & 1] |= ((currentMove.pieceType >> 1) == (_nRooks >> 1)) && (currentMove.startSquare == (0 + 56 * (currentMove.pieceType & 1)));
 
                 return true;
+            }
+            else
+            {
+                updateOccupied();
+                if (isInCheck(turn))
+                {
+                    unMovePieces(currentMove);
+                    return false;
+                }
+                else
+                {
+                    //update history.
+                    stateHistory.push_back(current);
+                    moveHistory.push_back(currentMove);
+
+                    //if double-pawn push, set en-passant square.
+                    //otherwise, set en-passant square to -1.
+                    bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs(currentMove.finishSquare-currentMove.startSquare) == 16;
+                    current.enPassantSquare = -1 + (int)(x)*(1+currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
+
+                    turn = !turn;
+                    current.hasKingMoved[currentMove.pieceType & 1] |= (currentMove.pieceType >> 1 == _nKing >> 1);
+                    current.hasKingSideRookMoved[currentMove.pieceType & 1] |= ((currentMove.pieceType >> 1) == (_nRooks >> 1)) && (currentMove.startSquare == (7 + 56 * (currentMove.pieceType & 1)));
+                    current.hasQueenSideRookMoved[currentMove.pieceType & 1] |= ((currentMove.pieceType >> 1) == (_nRooks >> 1)) && (currentMove.startSquare == (0 + 56 * (currentMove.pieceType & 1)));
+
+                    return true;
+                }
             }
         }
 
