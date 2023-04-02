@@ -29,12 +29,12 @@ struct gameState
 
 struct moveInfo
 {
-    int pieceType;
-    int startSquare;
-    int finishSquare;
+    U32 pieceType;
+    U32 startSquare;
+    U32 finishSquare;
     bool enPassant;
-    int capturedPieceType;
-    int promotionPieceType;
+    U32 capturedPieceType;
+    U32 promotionPieceType;
     bool shouldCheck;
 };
 
@@ -48,9 +48,9 @@ class Board {
         U64 attacked[2]={0,0};
 
         vector<gameState> stateHistory;
-        vector<moveInfo> moveHistory;
+        vector<U32> moveHistory;
 
-        vector<moveInfo> moveBuffer;
+        vector<U32> moveBuffer;
 
         gameState current = {
             .hasKingMoved={false,false},
@@ -59,12 +59,12 @@ class Board {
             .enPassantSquare=-1,
         };
 
-        const int _nKing=0;
-        const int _nQueens=2;
-        const int _nRooks=4;
-        const int _nBishops=6;
-        const int _nKnights=8;
-        const int _nPawns=10;
+        const U32 _nKing=0;
+        const U32 _nQueens=2;
+        const U32 _nRooks=4;
+        const U32 _nBishops=6;
+        const U32 _nKnights=8;
+        const U32 _nPawns=10;
 
         Board()
         {
@@ -91,19 +91,16 @@ class Board {
             updateAttacked(0); updateAttacked(1);
         };
 
-        void appendMove(int pieceType, int startSquare, int finishSquare, bool shouldCheck=false)
+        void appendMove(U32 pieceType, U32 startSquare, U32 finishSquare, bool shouldCheck=false)
         {
             //will automatically detect promotion and generate all permutations.
             //will automatically detect captured piece (including en passant).
-            moveInfo newMove = {
-                .pieceType=pieceType,
-                .startSquare=startSquare,
-                .finishSquare=finishSquare,
-                .enPassant=false,
-                .capturedPieceType=-1,
-                .promotionPieceType=-1,
-                .shouldCheck=shouldCheck,
-            };
+            U32 newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
+            (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
+            (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
+            ((U32)(shouldCheck) << MOVEINFO_SHOULDCHECK_OFFSET) |
+            MOVEINFO_CAPTUREDPIECETYPE_MASK |
+            MOVEINFO_PROMOTIONPIECETYPE_MASK;
 
             //check for captured pieces (including en passant).
             if (((1ull << finishSquare) & occupied[(pieceType+1) & 1])!=0)
@@ -114,15 +111,16 @@ class Board {
                 {
                     if ((x & pieces[i]) != 0)
                     {
-                        newMove.capturedPieceType=i;
+                        newMove &= ~MOVEINFO_CAPTUREDPIECETYPE_MASK;
+                        newMove |= i << MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                         break;
                     }
                 }
             }
-            else if ((pieceType >> 1 == _nPawns >> 1 && finishSquare >> 3 == 5-3*(pieceType & 1)) && (finishSquare%8 != startSquare%8))
+            else if ((pieceType >> 1 == _nPawns >> 1 && finishSquare >> 3 == 5u-3u*(pieceType & 1u)) && (finishSquare%8 != startSquare%8))
             {
                 //en-passant capture.
-                newMove.enPassant=true;
+                newMove |= 1 << MOVEINFO_ENPASSANT_OFFSET;
 
                 //check for captured piece.
                 U64 x = 1ull << (finishSquare-8+16*(pieceType%2));
@@ -130,7 +128,8 @@ class Board {
                 {
                     if ((x & pieces[i]) != 0)
                     {
-                        newMove.capturedPieceType=i;
+                        newMove &= ~MOVEINFO_CAPTUREDPIECETYPE_MASK;
+                        newMove |= i << MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                         break;
                     }
                 }
@@ -140,9 +139,10 @@ class Board {
             if (pieceType >> 1 == _nPawns >> 1 && finishSquare >> 3 == 7-7*(pieceType & 1))
             {
                 //promotion.
-                for (int i=_nQueens+(pieceType & 1);i<_nPawns;i+=2)
+                for (U32 i=_nQueens+(pieceType & 1);i<_nPawns;i+=2)
                 {
-                    newMove.promotionPieceType=i;
+                    newMove &= ~MOVEINFO_PROMOTIONPIECETYPE_MASK;
+                    newMove |= i << MOVEINFO_PROMOTIONPIECETYPE_OFFSET;
                     moveBuffer.push_back(newMove);
                 }
             }
@@ -465,17 +465,17 @@ class Board {
             pieces[currentMove.pieceType] -= 1ull << (currentMove.startSquare);
 
             //add piece to end square, accounting for promotion.
-            int finishPieceType = currentMove.promotionPieceType>=_nQueens ? currentMove.promotionPieceType : currentMove.pieceType;
+            int finishPieceType = currentMove.promotionPieceType!=15 ? currentMove.promotionPieceType : currentMove.pieceType;
             pieces[finishPieceType] += 1ull << (currentMove.finishSquare);
 
             //remove any captured pieces.
-            if (currentMove.capturedPieceType!=-1)
+            if (currentMove.capturedPieceType != 15)
             {
                 pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
             }
 
             //if castles, then move the rook too.
-            if (currentMove.pieceType >> 1 == _nKing >> 1 && abs(currentMove.finishSquare-currentMove.startSquare)==2)
+            if (currentMove.pieceType >> 1 == _nKing >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare))==2)
             {
                 if (currentMove.finishSquare-currentMove.startSquare==2)
                 {
@@ -495,20 +495,20 @@ class Board {
         void unMovePieces(moveInfo currentMove)
         {
             //remove piece from destination square.
-            int finishPieceType = currentMove.promotionPieceType>=_nQueens ? currentMove.promotionPieceType : currentMove.pieceType;
+            int finishPieceType = currentMove.promotionPieceType!=15 ? currentMove.promotionPieceType : currentMove.pieceType;
             pieces[finishPieceType] -= 1ull << (currentMove.finishSquare);
 
             //add piece to start square.
             pieces[currentMove.pieceType] += 1ull << (currentMove.startSquare);
 
             //add back captured pieces.
-            if (currentMove.capturedPieceType!=-1)
+            if (currentMove.capturedPieceType != 15)
             {
                 pieces[currentMove.capturedPieceType] += 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
             }
 
             //if castles move the rook back.
-            if (currentMove.pieceType >> 1 == _nKing >> 1 && abs(currentMove.finishSquare-currentMove.startSquare)==2)
+            if (currentMove.pieceType >> 1 == _nKing >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare))==2)
             {
                 if (currentMove.finishSquare-currentMove.startSquare==2)
                 {
@@ -525,8 +525,24 @@ class Board {
             }
         }
 
-        bool makeMove(moveInfo currentMove)
+        moveInfo unpackMove(U32 chessMove)
         {
+            return moveInfo
+            {
+                .pieceType = (chessMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET,
+                .startSquare = (chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET,
+                .finishSquare = (chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET,
+                .enPassant = (chessMove & MOVEINFO_ENPASSANT_MASK),
+                .capturedPieceType = (chessMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET,
+                .promotionPieceType = (chessMove & MOVEINFO_PROMOTIONPIECETYPE_MASK) >> MOVEINFO_PROMOTIONPIECETYPE_OFFSET,
+                .shouldCheck = (chessMove & MOVEINFO_SHOULDCHECK_MASK),
+            };
+        }
+
+        bool makeMove(U32 chessMove)
+        {
+            moveInfo currentMove = unpackMove(chessMove);
+
             //move pieces.
             movePieces(currentMove);
 
@@ -535,11 +551,11 @@ class Board {
             {
                 //update history.
                 stateHistory.push_back(current);
-                moveHistory.push_back(currentMove);
+                moveHistory.push_back(chessMove);
 
                 //if double-pawn push, set en-passant square.
                 //otherwise, set en-passant square to -1.
-                bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs(currentMove.finishSquare-currentMove.startSquare) == 16;
+                bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16;
                 current.enPassantSquare = -1 + (int)(x)*(1+currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
 
                 turn = !turn;
@@ -561,11 +577,11 @@ class Board {
                 {
                     //update history.
                     stateHistory.push_back(current);
-                    moveHistory.push_back(currentMove);
+                    moveHistory.push_back(chessMove);
 
                     //if double-pawn push, set en-passant square.
                     //otherwise, set en-passant square to -1.
-                    bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs(currentMove.finishSquare-currentMove.startSquare) == 16;
+                    bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16;
                     current.enPassantSquare = -1 + (int)(x)*(1+currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
 
                     turn = !turn;
@@ -583,7 +599,7 @@ class Board {
             //unmake most recent move and update gameState.
             turn = !turn;
             current = stateHistory.back();
-            unMovePieces(moveHistory.back());
+            unMovePieces(unpackMove(moveHistory.back()));
 
             stateHistory.pop_back();
             moveHistory.pop_back();

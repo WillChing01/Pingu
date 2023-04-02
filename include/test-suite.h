@@ -8,11 +8,10 @@
 const long long INITIAL_POSITION_NODES[7] = {1,20,400,8902,197281,4865609,119060324};
 const long long KIWIPETE_POSITION_NODES[6] = {1,48,2039,97862,4085603,193690690};
 
-long long perft(Board &b, int depth, bool display=false, bool rootNode=true)
+long long childPerft(Board &b, int depth)
 {
     if (depth==0)
     {
-        if (display) {b.display();}
         return 1;
     }
     else
@@ -22,22 +21,49 @@ long long perft(Board &b, int depth, bool display=false, bool rootNode=true)
         b.moveBuffer.clear();
         b.generatePseudoMoves(b.turn);
 
-        vector<moveInfo> moveCache = b.moveBuffer;
+        vector<U32> moveCache = b.moveBuffer;
 
         for (int i=0;i<(int)moveCache.size();i++)
         {
             //execute the move.
-            bool isLegal = b.makeMove(moveCache[i]);
-
-            if (isLegal==true)
+            if (b.makeMove(moveCache[i]))
             {
                 //go one deeper.
-                long long res=perft(b,depth-1,display,false);
+                total+=childPerft(b,depth-1);
+
+                //unmake the move.
+                b.unmakeMove();
+            }
+        }
+
+        return total;
+    }
+}
+
+long long perft(Board &b, int depth)
+{
+    if (depth==0)
+    {
+        return 1;
+    }
+    else
+    {
+        long long total=0;
+
+        b.moveBuffer.clear();
+        b.generatePseudoMoves(b.turn);
+
+        vector<U32> moveCache = b.moveBuffer;
+
+        for (int i=0;i<(int)moveCache.size();i++)
+        {
+            //execute the move.
+            if (b.makeMove(moveCache[i]))
+            {
+                //go one deeper.
+                long long res=childPerft(b,depth-1);
                 total+=res;
-                if (rootNode==true)
-                {
-                    cout << toCoord(moveCache[i].startSquare) << toCoord(moveCache[i].finishSquare) << " : " << res << endl;
-                }
+                cout << toCoord((moveCache[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET) << toCoord((moveCache[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET) << " : " << res << endl;
 
                 //unmake the move.
                 b.unmakeMove();
@@ -67,7 +93,7 @@ void testInitialPosition(int depth = 6)
         cout << "DEPTH - " << i << endl;
         cout << "Expected - " << INITIAL_POSITION_NODES[i] << endl;
 
-        long long result = perft(b,i,false,i==depth);
+        long long result = i==depth ? perft(b,i) : childPerft(b,i);
         cout << "Received - " << result << endl;
 
         if (result!=INITIAL_POSITION_NODES[i])
@@ -127,7 +153,7 @@ void testKiwipetePosition(int depth = 5)
         cout << "DEPTH - " << i << endl;
         cout << "Expected - " << KIWIPETE_POSITION_NODES[i] << endl;
 
-        long long result = perft(b,i,false,i==depth);
+        long long result = i==depth ? perft(b,i) : childPerft(b,i);
         cout << "Received - " << result << endl;
 
         if (result!=KIWIPETE_POSITION_NODES[i])
