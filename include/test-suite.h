@@ -19,7 +19,7 @@ long long childPerft(Board &b, int depth)
         long long total=0;
 
         b.moveBuffer.clear();
-        b.generatePseudoMoves(b.turn);
+        b.generatePseudoMoves(b.moveHistory.size()%2);
 
         vector<U32> moveCache = b.moveBuffer;
 
@@ -51,7 +51,7 @@ long long perft(Board &b, int depth)
         long long total=0;
 
         b.moveBuffer.clear();
-        b.generatePseudoMoves(b.turn);
+        b.generatePseudoMoves(b.moveHistory.size() & 1);
 
         vector<U32> moveCache = b.moveBuffer;
 
