@@ -1,10 +1,10 @@
 # depslib dependency file v1.0
-1680537995 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
+1680545851 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
 	<iostream>
 	"board.h"
 	"test-suite.h"
 
-1680537688 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
+1680546814 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
 	<vector>
 	<bitset>
 	<windows.h>
@@ -18,7 +18,7 @@
 	"magic.h"
 	"evaluation.h"
 
-1680471480 c:\users\willi\onedrive\desktop\coding\chess_3\include\constants.h
+1680545166 c:\users\willi\onedrive\desktop\coding\chess_3\include\constants.h
 
 1680460739 c:\users\willi\onedrive\desktop\coding\chess_3\include\king.h
 	"constants.h"
