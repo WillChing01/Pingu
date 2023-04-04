@@ -5,8 +5,8 @@
 
 #include "board.h"
 
-const long long INITIAL_POSITION_NODES[7] = {1,20,400,8902,197281,4865609,119060324};
-const long long KIWIPETE_POSITION_NODES[6] = {1,48,2039,97862,4085603,193690690};
+const unsigned long long INITIAL_POSITION_NODES[7] = {1,20,400,8902,197281,4865609,119060324};
+const unsigned long long KIWIPETE_POSITION_NODES[6] = {1,48,2039,97862,4085603,193690690};
 
 long long childPerft(Board &b, int depth)
 {
@@ -19,7 +19,7 @@ long long childPerft(Board &b, int depth)
         long long total=0;
 
         b.moveBuffer.clear();
-        b.generatePseudoMoves(b.moveHistory.size()%2);
+        b.generatePseudoMoves(b.moveHistory.size() & 1);
 
         vector<U32> moveCache = b.moveBuffer;
 
@@ -85,16 +85,17 @@ void testInitialPosition(int depth = 6)
     cout << "PERFT - INITIAL POSITION" << endl;
     cout << "------------------------" << endl;
 
-    auto t1 = std::chrono::high_resolution_clock::now();
-
     for (int i=0;i<depth+1;i++)
     {
         cout << endl;
         cout << "DEPTH - " << i << endl;
         cout << "Expected - " << INITIAL_POSITION_NODES[i] << endl;
 
-        long long result = i==depth ? perft(b,i) : childPerft(b,i);
-        cout << "Received - " << result << endl;
+        auto t1 = std::chrono::high_resolution_clock::now();
+        unsigned long long result = i==depth ? perft(b,i) : childPerft(b,i);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        cout << "Nodes searched - " << result << endl;
+        cout << "Time (ms) - " << std::chrono::duration<double, std::milli>(t2-t1).count() << endl;
 
         if (result!=INITIAL_POSITION_NODES[i])
         {
@@ -105,8 +106,6 @@ void testInitialPosition(int depth = 6)
         }
     }
 
-    auto t2 = std::chrono::high_resolution_clock::now();
-
     if (good)
     {
         cout << endl;
@@ -114,11 +113,6 @@ void testInitialPosition(int depth = 6)
         cout << "ALL CHECKS PASSED" << endl;
         cout << "-----------------" << endl;
     }
-
-    cout << "-----------------" << endl;
-    cout << "TIME ELAPSED (ms)" << endl;
-    cout << std::chrono::duration<double, std::milli>(t2-t1).count() << endl;
-    cout << "-----------------" << endl;
 }
 
 void testKiwipetePosition(int depth = 5)
@@ -145,16 +139,17 @@ void testKiwipetePosition(int depth = 5)
     cout << "PERFT - KIWIPETE POSITION" << endl;
     cout << "------------------------" << endl;
 
-    auto t1 = std::chrono::high_resolution_clock::now();
-
     for (int i=0;i<depth+1;i++)
     {
         cout << endl;
         cout << "DEPTH - " << i << endl;
         cout << "Expected - " << KIWIPETE_POSITION_NODES[i] << endl;
 
-        long long result = i==depth ? perft(b,i) : childPerft(b,i);
-        cout << "Received - " << result << endl;
+        auto t1 = std::chrono::high_resolution_clock::now();
+        unsigned long long result = i==depth ? perft(b,i) : childPerft(b,i);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        cout << "Nodes searched - " << result << endl;
+        cout << "Time (ms) - " << std::chrono::duration<double, std::milli>(t2-t1).count() << endl;
 
         if (result!=KIWIPETE_POSITION_NODES[i])
         {
@@ -165,8 +160,6 @@ void testKiwipetePosition(int depth = 5)
         }
     }
 
-    auto t2 = std::chrono::high_resolution_clock::now();
-
     if (good)
     {
         cout << endl;
@@ -174,11 +167,6 @@ void testKiwipetePosition(int depth = 5)
         cout << "ALL CHECKS PASSED" << endl;
         cout << "-----------------" << endl;
     }
-
-    cout << "-----------------" << endl;
-    cout << "TIME ELAPSED (ms)" << endl;
-    cout << std::chrono::duration<double, std::milli>(t2-t1).count() << endl;
-    cout << "-----------------" << endl;
 }
 
 #endif // TEST-SUITE_H_INCLUDED

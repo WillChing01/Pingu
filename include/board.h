@@ -105,7 +105,7 @@ class Board {
             {
                 //check for captures.
                 U64 x = 1ull << finishSquare;
-                for (int i=_nQueens+((pieceType+1) & 1);i<12;i+=2)
+                for (U32 i=_nQueens+((pieceType+1) & 1);i<12;i+=2)
                 {
                     if ((x & pieces[i]) != 0)
                     {
@@ -115,14 +115,14 @@ class Board {
                     }
                 }
             }
-            else if ((pieceType >> 1 == _nPawns >> 1 && finishSquare >> 3 == 5u-3u*(pieceType & 1u)) && (finishSquare%8 != startSquare%8))
+            else if ((pieceType >> 1 == _nPawns >> 1) && (finishSquare >> 3 == 5u-3u*(pieceType & 1u)) && ((finishSquare & 7) != (startSquare & 7)))
             {
                 //en-passant capture.
                 newMove |= 1 << MOVEINFO_ENPASSANT_OFFSET;
 
                 //check for captured piece.
                 U64 x = 1ull << (finishSquare-8+16*(pieceType & 1));
-                for (int i=_nQueens+((pieceType+1) & 1);i<12;i+=2)
+                for (U32 i=_nQueens+((pieceType+1u) & 1u);i<12;i+=2)
                 {
                     if ((x & pieces[i]) != 0)
                     {
@@ -234,6 +234,33 @@ class Board {
 //            return __builtin_popcountll(isAttacked);
 //        }
 
+        std::pair<U32,U32> getCheckPiece(bool side, U32 square)
+        {
+            //assumes a single piece is giving check.
+            U64 b = occupied[0] | occupied[1];
+
+            if (U64 bishop = magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
+            {
+                //diagonal attack.
+                return pair<U32,U32>(_nBishops,__builtin_ctzll(bishop));
+            }
+            else if (U64 rook = magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
+            {
+                //rook-like attack.
+                return pair<U32,U32>(_nRooks,__builtin_ctzll(rook));
+            }
+            else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)])
+            {
+                //knight attack.
+                return pair<U32,U32>(_nKnights,__builtin_ctzll(knight));
+            }
+            else
+            {
+                //pawn.
+                return pair<U32,U32>(_nPawns,__builtin_ctzll(pawnAttacks(1ull << square,(int)(side)) & pieces[_nPawns+(int)(!side)]));
+            }
+        }
+
         U64 getPinnedPieces(bool side)
         {
             //generate attacks to the king.
@@ -331,19 +358,14 @@ class Board {
             updateOccupied();
             updateAttacked(!side);
 
-            bool kingInCheck = (bool)(pieces[_nKing+(int)(side)] & attacked[(int)(!side)]);
-
-            if (!kingInCheck)
+            if (!(bool)(pieces[_nKing+(int)(side)] & attacked[(int)(!side)]))
             {
                 //regular moves.
 
                 //king.
                 U32 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
                 U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & ~occupied[(int)(side)];
-                while (x)
-                {
-                    appendMove(_nKing+(int)(side), pos, popLSB(x));
-                }
+                while (x) {appendMove(_nKing+(int)(side), pos, popLSB(x), false);}
 
                 //castling.
                 if (current.canKingCastle[(int)(side)] &&
@@ -352,7 +374,7 @@ class Board {
                     (bool)(pieces[_nRooks+(int)(side)] & KING_ROOK_POS[(int)(side)]))
                 {
                     //kingside castle.
-                    appendMove(_nKing+(int)(side), pos, pos+2);
+                    appendMove(_nKing+(int)(side), pos, pos+2, false);
                 }
                 if (current.canQueenCastle[(int)(side)] &&
                     !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & (occupied[0] | occupied[1])) &&
@@ -360,7 +382,7 @@ class Board {
                     (bool)(pieces[_nRooks+(int)(side)] & QUEEN_ROOK_POS[(int)(side)]))
                 {
                     //queenside castle.
-                    appendMove(_nKing+(int)(side), pos, pos-2);
+                    appendMove(_nKing+(int)(side), pos, pos-2, false);
                 }
 
                 U64 pinned = getPinnedPieces(side);
@@ -372,10 +394,7 @@ class Board {
                 {
                     pos = popLSB(queens);
                     x = magicQueenAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nQueens+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);
-                    }
+                    while (x) {appendMove(_nQueens+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);}
                 }
 
                 //rook.
@@ -384,10 +403,7 @@ class Board {
                 {
                     pos = popLSB(rooks);
                     x = magicRookAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nRooks+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);
-                    }
+                    while (x) {appendMove(_nRooks+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);}
                 }
 
                 //bishops.
@@ -396,22 +412,16 @@ class Board {
                 {
                     pos = popLSB(bishops);
                     x = magicBishopAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nBishops+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);
-                    }
+                    while (x) {appendMove(_nBishops+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);}
                 }
 
                 //knights.
-                U64 knights = pieces[_nKnights+(int)(side)];
+                U64 knights = pieces[_nKnights+(int)(side)] & ~pinned;
                 while (knights)
                 {
                     pos = popLSB(knights);
                     x = knightAttacks(1ull << pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nKnights+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);
-                    }
+                    while (x) {appendMove(_nKnights+(int)(side), pos, popLSB(x), false);}
                 }
 
                 //pawns.
@@ -424,14 +434,8 @@ class Board {
                     //en passant square included.
                     x = pawnAttacks(pawnPosBoard,side) & ~occupied[(int)(side)];
 
-                    if (current.enPassantSquare != -1)
-                    {
-                        x &= (occupied[(int)(!side)] | (1ull << current.enPassantSquare));
-                    }
-                    else
-                    {
-                        x &= occupied[(int)(!side)];
-                    }
+                    if (current.enPassantSquare != -1) {x &= (occupied[(int)(!side)] | (1ull << current.enPassantSquare));}
+                    else {x &= occupied[(int)(!side)];}
 
                     //move forward.
                     if (side==0)
@@ -445,23 +449,15 @@ class Board {
                         x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
                     }
 
-                    while (x)
-                    {
-                        appendMove(_nPawns+(int)(side), pos,popLSB(x), (pawnPosBoard & pinned)!=0);
-                    }
+                    while (x) {appendMove(_nPawns+(int)(side), pos,popLSB(x), (pawnPosBoard & pinned)!=0);}
                 }
             }
             else if (isInCheckDetailed(side) == 1)
             {
                 //single check.
-
-                //king.
                 U32 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
                 U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & ~occupied[(int)(side)];
-                while (x)
-                {
-                    appendMove(_nKing+(int)(side), pos, popLSB(x),true);
-                }
+                while (x) {appendMove(_nKing+(int)(side), pos, popLSB(x),true);}
 
                 U64 p = (occupied[0] | occupied[1]);
                 //queen.
@@ -470,10 +466,7 @@ class Board {
                 {
                     pos = popLSB(queens);
                     x = magicQueenAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nQueens+(int)(side), pos, popLSB(x), true);
-                    }
+                    while (x) {appendMove(_nQueens+(int)(side), pos, popLSB(x), true);}
                 }
 
                 //rook.
@@ -482,10 +475,7 @@ class Board {
                 {
                     pos = popLSB(rooks);
                     x = magicRookAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nRooks+(int)(side), pos, popLSB(x), true);
-                    }
+                    while (x) {appendMove(_nRooks+(int)(side), pos, popLSB(x), true);}
                 }
 
                 //bishops.
@@ -494,10 +484,7 @@ class Board {
                 {
                     pos = popLSB(bishops);
                     x = magicBishopAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nBishops+(int)(side), pos, popLSB(x), true);
-                    }
+                    while (x) {appendMove(_nBishops+(int)(side), pos, popLSB(x), true);}
                 }
 
                 //knights.
@@ -506,10 +493,7 @@ class Board {
                 {
                     pos = popLSB(knights);
                     x = knightAttacks(1ull << pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nKnights+(int)(side), pos, popLSB(x), true);
-                    }
+                    while (x) {appendMove(_nKnights+(int)(side), pos, popLSB(x), true);}
                 }
 
                 //pawns.
@@ -523,14 +507,8 @@ class Board {
                     //en passant square included.
                     x = pawnAttacks(pawnPosBoard,side) & ~occupied[(int)(side)];
 
-                    if (current.enPassantSquare != -1)
-                    {
-                        x &= (occupied[(int)(!side)] | (1ull << current.enPassantSquare));
-                    }
-                    else
-                    {
-                        x &= occupied[(int)(!side)];
-                    }
+                    if (current.enPassantSquare != -1) {x &= (occupied[(int)(!side)] | (1ull << current.enPassantSquare));}
+                    else {x &= occupied[(int)(!side)];}
 
                     //move forward.
                     if (side==0)
@@ -544,10 +522,7 @@ class Board {
                         x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
                     }
 
-                    while (x)
-                    {
-                        appendMove(_nPawns+(int)(side), pos,popLSB(x), true);
-                    }
+                    while (x) {appendMove(_nPawns+(int)(side), pos,popLSB(x), true);}
                 }
             }
             else
@@ -555,14 +530,10 @@ class Board {
                 //multiple check. only king moves allowed.
                 U32 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
                 U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & ~occupied[(int)(side)];
-                while (x)
-                {
-                    appendMove(_nKing+(int)(side), pos, popLSB(x));
-                }
+                while (x) {appendMove(_nKing+(int)(side), pos, popLSB(x), true);}
             }
         }
 
-//        void movePieces(moveInfo currentMove)
         void movePieces()
         {
             //remove piece from start square;
@@ -629,7 +600,7 @@ class Board {
 
         void unpackMove(U32 chessMove)
         {
-            currentMove.pieceType = (chessMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            currentMove.pieceType = (chessMove & MOVEINFO_PIECETYPE_MASK);
             currentMove.startSquare = (chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
             currentMove.finishSquare = (chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
             currentMove.enPassant = (chessMove & MOVEINFO_ENPASSANT_MASK);
@@ -659,11 +630,11 @@ class Board {
 
                 if (currentMove.pieceType >> 1 == _nRooks >> 1)
                 {
-                    if (currentMove.startSquare == (7 + 56 * (currentMove.pieceType & 1)))
+                    if ((currentMove.startSquare & 7) == 7)
                     {
                         current.canKingCastle[currentMove.pieceType & 1] = false;
                     }
-                    else if (currentMove.startSquare == (56 * (currentMove.pieceType & 1)))
+                    else if ((currentMove.startSquare & 7) == 0)
                     {
                         current.canQueenCastle[currentMove.pieceType & 1] = false;
                     }
@@ -697,11 +668,11 @@ class Board {
 
                     if (currentMove.pieceType >> 1 == _nRooks >> 1)
                     {
-                        if (currentMove.startSquare == (7 + 56 * (currentMove.pieceType & 1)))
+                        if ((currentMove.startSquare & 7) == 7)
                         {
                             current.canKingCastle[currentMove.pieceType & 1] = false;
                         }
-                        else if (currentMove.startSquare == (56 * (currentMove.pieceType & 1)))
+                        else if ((currentMove.startSquare & 7) == 0)
                         {
                             current.canQueenCastle[currentMove.pieceType & 1] = false;
                         }
