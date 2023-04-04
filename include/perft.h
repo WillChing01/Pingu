@@ -1,5 +1,5 @@
-#ifndef TEST-SUITE_H_INCLUDED
-#define TEST-SUITE_H_INCLUDED
+#ifndef PERFT_H_INCLUDED
+#define PERFT_H_INCLUDED
 
 #include <chrono>
 
@@ -169,4 +169,4 @@ void testKiwipetePosition(int depth = 5)
     }
 }
 
-#endif // TEST-SUITE_H_INCLUDED
+#endif // PERFT_H_INCLUDED

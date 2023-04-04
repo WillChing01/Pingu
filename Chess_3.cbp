@@ -45,8 +45,9 @@
 		<Unit filename="include/knight.h" />
 		<Unit filename="include/magic.h" />
 		<Unit filename="include/pawn.h" />
+		<Unit filename="include/perft.h" />
+		<Unit filename="include/search.h" />
 		<Unit filename="include/slider.h" />
-		<Unit filename="include/test-suite.h" />
 		<Unit filename="main.cpp" />
 		<Extensions />
 	</Project>

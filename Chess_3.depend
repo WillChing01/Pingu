@@ -1,10 +1,11 @@
 # depslib dependency file v1.0
-1680602378 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
+1680646977 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
 	<iostream>
 	"board.h"
-	"test-suite.h"
+	"perft.h"
+	"search.h"
 
-1680601817 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
+1680647071 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
 	<vector>
 	<bitset>
 	<windows.h>
@@ -18,7 +19,7 @@
 	"magic.h"
 	"evaluation.h"
 
-1680545166 c:\users\willi\onedrive\desktop\coding\chess_3\include\constants.h
+1680603772 c:\users\willi\onedrive\desktop\coding\chess_3\include\constants.h
 
 1680460739 c:\users\willi\onedrive\desktop\coding\chess_3\include\king.h
 	"constants.h"
@@ -32,11 +33,11 @@
 1680460739 c:\users\willi\onedrive\desktop\coding\chess_3\include\slider.h
 	"constants.h"
 
-1680460739 c:\users\willi\onedrive\desktop\coding\chess_3\include\bitboard.h
+1680607153 c:\users\willi\onedrive\desktop\coding\chess_3\include\bitboard.h
 	<string>
 	"constants.h"
 
-1680602627 c:\users\willi\onedrive\desktop\coding\chess_3\include\test-suite.h
+1680621769 c:\users\willi\onedrive\desktop\coding\chess_3\include\test-suite.h
 	<chrono>
 	"board.h"
 
@@ -89,5 +90,12 @@
 1680460739 c:\users\willi\onedrive\desktop\coding\chess_3\include\magic.h
 	"slider.h"
 
-1680460739 c:\users\willi\onedrive\desktop\coding\chess_3\include\evaluation.h
+1680610226 c:\users\willi\onedrive\desktop\coding\chess_3\include\evaluation.h
+
+1680644930 c:\users\willi\onedrive\desktop\coding\chess_3\include\search.h
+	"bitboard.h"
+
+1680621907 c:\users\willi\onedrive\desktop\coding\chess_3\include\perft.h
+	<chrono>
+	"board.h"
 
