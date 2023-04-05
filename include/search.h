@@ -7,7 +7,6 @@ static vector<U32> bestMoves;
 
 short alphaBetaQuiescence(Board &b, short alpha, short beta)
 {
-    b.moveBuffer.clear();
     bool inCheck = b.generatePseudoQMoves(b.moveHistory.size() & 1);
 
     bool movesLeft = false;
@@ -61,7 +60,6 @@ short alphaBeta(Board &b, short alpha, short beta, int depth)
     if (depth == 0) {return alphaBetaQuiescence(b, alpha, beta);}
     else
     {
-        b.moveBuffer.clear();
         bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
         bool movesLeft=false;
@@ -108,11 +106,9 @@ short alphaBeta(Board &b, short alpha, short beta, int depth)
 
 short alphaBetaRoot(Board &b, short alpha, short beta, int depth)
 {
-    bestMoves.clear();
     if (depth == 0) {return alphaBetaQuiescence(b, alpha, beta);}
     else
     {
-        b.moveBuffer.clear();
         bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
         bool movesLeft=false;
@@ -130,16 +126,28 @@ short alphaBetaRoot(Board &b, short alpha, short beta, int depth)
         if (movesLeft)
         {
             vector<U32> moveCache = b.moveBuffer;
+            int pvIndex = 0;
             short score;
-            for (int i=0;i<(int)(moveCache.size());i++)
+            for (int itDepth = 1; itDepth <= depth; itDepth++)
             {
-                if (b.makeMove(moveCache[i]))
+                alpha = -SHRT_MAX; beta = SHRT_MAX; bestMoves.clear();
+                //try pv first.
+                if (b.makeMove(moveCache[pvIndex]))
                 {
-                    cout << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << " ";
-                    score = -alphaBeta(b, -beta, -alpha, depth-1);
-                    cout << score << endl;
+                    score = -alphaBeta(b, -beta, -alpha, itDepth-1);
                     b.unmakeMove();
-                    if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[i]);}
+                    if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[pvIndex]);}
+                }
+
+                for (int i=0;i<(int)(moveCache.size());i++)
+                {
+                    if (i==pvIndex) {continue;}
+                    if (b.makeMove(moveCache[i]))
+                    {
+                        score = -alphaBeta(b, -beta, -alpha, itDepth-1);
+                        b.unmakeMove();
+                        if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[i]); pvIndex = i;}
+                    }
                 }
             }
             return alpha;
@@ -164,7 +172,6 @@ short negaMax(Board &b, int depth)
     else
     {
         int top = -SHRT_MAX;
-        b.moveBuffer.clear();
         bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
         bool movesLeft=false;
@@ -215,7 +222,6 @@ short negaMaxRoot(Board &b, int depth)
     else
     {
         int top = -SHRT_MAX;
-        b.moveBuffer.clear();
         bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
         bool movesLeft=false;
@@ -260,6 +266,24 @@ short negaMaxRoot(Board &b, int depth)
             return 0;
         }
     }
+}
+
+void searchSpeedTest(int depth)
+{
+    //plays initial position for 10 ply.
+    Board b; b.display();
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    for (int i=0;i<10;i++)
+    {
+        alphaBetaRoot(b,-SHRT_MAX,SHRT_MAX,depth);
+        if (bestMoves.size()==0) {break;}
+        b.makeMove(bestMoves[0]);
+        cout << i+1 << " " << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << endl;
+    }
+    auto t2 = std::chrono::high_resolution_clock::now();
+    b.display();
+    cout << "Time (ms) - " << std::chrono::duration<double, std::milli>(t2-t1).count() << endl;
 }
 
 #endif // SEARCH_H_INCLUDED

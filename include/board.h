@@ -5,6 +5,7 @@
 #include <bitset>
 #include <windows.h>
 #include <cctype>
+#include <algorithm>
 
 #include "constants.h"
 #include "bitboard.h"
@@ -37,6 +38,12 @@ struct moveInfo
     bool shouldCheck;
 };
 
+bool captureLessThan(U32 a, U32 b)
+{
+    return (((a & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) - ((a & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET)) <
+    (((b & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) - ((b & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET));
+}
+
 class Board {
     public:
         U64 pieces[12]={};
@@ -47,6 +54,8 @@ class Board {
         vector<gameState> stateHistory;
         vector<U32> moveHistory;
 
+        vector<U32> captureBuffer;
+        vector<U32> nonCaptureBuffer;
         vector<U32> moveBuffer;
 
         gameState current = {
@@ -119,6 +128,10 @@ class Board {
             {
                 //en-passant capture.
                 newMove |= 1 << MOVEINFO_ENPASSANT_OFFSET;
+
+                //always check en-passant.
+                newMove &= ~MOVEINFO_SHOULDCHECK_MASK;
+                newMove |= (U32)(1) << MOVEINFO_SHOULDCHECK_OFFSET;
 
                 //check for captured piece.
                 U64 x = 1ull << (finishSquare-8+16*(pieceType & 1));
@@ -354,6 +367,7 @@ class Board {
 
         bool generatePseudoQMoves(bool side)
         {
+            moveBuffer.clear();
             //generate captures/ check evasions for a quiescence search.
             updateOccupied();
             updateAttacked(!side);
@@ -514,6 +528,7 @@ class Board {
 
         bool generatePseudoMoves(bool side)
         {
+            moveBuffer.clear();
             //generate all pseudo-legal moves.
             updateOccupied();
             updateAttacked(!side);
@@ -526,8 +541,7 @@ class Board {
                 //castling.
                 if (current.canKingCastle[(int)(side)] &&
                     !(bool)(KING_CASTLE_OCCUPIED[(int)(side)] & (occupied[0] | occupied[1])) &&
-                    !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]) &&
-                    (bool)(pieces[_nRooks+(int)(side)] & KING_ROOK_POS[(int)(side)]))
+                    !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
                 {
                     //kingside castle.
                     pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
@@ -535,8 +549,7 @@ class Board {
                 }
                 if (current.canQueenCastle[(int)(side)] &&
                     !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & (occupied[0] | occupied[1])) &&
-                    !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]) &&
-                    (bool)(pieces[_nRooks+(int)(side)] & QUEEN_ROOK_POS[(int)(side)]))
+                    !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
                 {
                     //queenside castle.
                     pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
@@ -815,6 +828,18 @@ class Board {
                     current.canQueenCastle[currentMove.pieceType & 1] = false;
                 }
 
+                if (currentMove.capturedPieceType >> 1 == _nRooks >> 1)
+                {
+                    if ((currentMove.finishSquare & 7) == 7)
+                    {
+                        current.canKingCastle[currentMove.capturedPieceType & 1] = false;
+                    }
+                    else if ((currentMove.finishSquare & 7) == 0)
+                    {
+                        current.canQueenCastle[currentMove.capturedPieceType & 1] = false;
+                    }
+                }
+
                 return true;
             }
             else
@@ -853,6 +878,18 @@ class Board {
                         current.canQueenCastle[currentMove.pieceType & 1] = false;
                     }
 
+                    if (currentMove.capturedPieceType >> 1 == _nRooks >> 1)
+                    {
+                        if ((currentMove.finishSquare & 7) == 7)
+                        {
+                            current.canKingCastle[currentMove.capturedPieceType & 1] = false;
+                        }
+                        else if ((currentMove.finishSquare & 7) == 0)
+                        {
+                            current.canQueenCastle[currentMove.capturedPieceType & 1] = false;
+                        }
+                    }
+
                     return true;
                 }
             }
@@ -872,14 +909,24 @@ class Board {
         short evalPieces(int pieceType)
         {
             short total=0;
-            U64 temp;
-            if (pieceType & 1) {temp = rotate180(pieces[pieceType]);}
-            else {temp = pieces[pieceType];}
-            while (temp)
+            U64 temp = pieces[pieceType];
+            if (pieceType & 1)
             {
-                //only mid-game eval at the moment.
-                total += PIECE_VALUES_START[pieceType >> 1] + PIECE_TABLES_START[pieceType >> 1][63-popLSB(temp)];
+                while (temp)
+                {
+                    //only mid-game eval at the moment.
+                    total += PIECE_VALUES_START[pieceType >> 1] + PIECE_TABLES_START[pieceType >> 1][popLSB(temp)];
+                }
             }
+            else
+            {
+                while (temp)
+                {
+                    //only mid-game eval at the moment.
+                    total += PIECE_VALUES_START[pieceType >> 1] + PIECE_TABLES_START[pieceType >> 1][63-popLSB(temp)];
+                }
+            }
+
             return total;
         }
 

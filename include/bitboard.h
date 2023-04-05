@@ -37,6 +37,18 @@ string toCoord(int square)
     return cols[square%8]+to_string(square/8+1);
 }
 
+int toSquare(string coord)
+{
+    string cols = "abcdefgh";
+    int square = 0;
+    for (int i=0;i<(int)cols.length();i++)
+    {
+        if (cols[i] == coord[0]) {square += i; break;}
+    }
+    square += 8*(coord[1] - '0')-8;
+    return square;
+}
+
 const U64 h1 = (0x5555555555555555);
 const U64 h2 = (0x3333333333333333);
 const U64 h4 = (0x0F0F0F0F0F0F0F0F);
