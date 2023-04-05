@@ -6,8 +6,8 @@ A basic chess engine, currently in the early stages of development.
 
 ### Move generation
 - Bitboard representation
-- Plain magic bitboards for sliding pieces
 - Pseudo-legal move generation
+- Plain magic bitboards for sliding pieces
 
 ### Testing
 - Perft function (initial and Kiwipete positions)
@@ -15,3 +15,8 @@ A basic chess engine, currently in the early stages of development.
 ### Evaluation
 - Material
 - Piece square tables
+
+### Search
+- Alpha-beta with quiescence search
+- Search PV (principal variation first)
+- Iterative deepening to approximate PV
