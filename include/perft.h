@@ -1,5 +1,5 @@
-#ifndef TEST-SUITE_H_INCLUDED
-#define TEST-SUITE_H_INCLUDED
+#ifndef PERFT_H_INCLUDED
+#define PERFT_H_INCLUDED
 
 #include <chrono>
 
@@ -18,7 +18,6 @@ long long childPerft(Board &b, int depth)
     {
         long long total=0;
 
-        b.moveBuffer.clear();
         b.generatePseudoMoves(b.moveHistory.size() & 1);
 
         vector<U32> moveCache = b.moveBuffer;
@@ -50,7 +49,6 @@ long long perft(Board &b, int depth)
     {
         long long total=0;
 
-        b.moveBuffer.clear();
         b.generatePseudoMoves(b.moveHistory.size() & 1);
 
         vector<U32> moveCache = b.moveBuffer;
@@ -169,4 +167,4 @@ void testKiwipetePosition(int depth = 5)
     }
 }
 
-#endif // TEST-SUITE_H_INCLUDED
+#endif // PERFT_H_INCLUDED
