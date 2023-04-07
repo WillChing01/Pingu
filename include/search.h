@@ -23,6 +23,7 @@ short alphaBetaQuiescence(Board &b, short alpha, short beta)
 
     if (movesLeft)
     {
+        b.updateOccupied(); b.orderMoves();
         vector<U32> moveCache = b.moveBuffer;
         short score;
 
@@ -76,6 +77,7 @@ short alphaBeta(Board &b, short alpha, short beta, int depth)
 
         if (movesLeft)
         {
+            b.updateOccupied(); b.orderMoves();
             vector<U32> moveCache = b.moveBuffer;
             short score;
             for (int i=0;i<(int)(moveCache.size());i++)
@@ -125,6 +127,7 @@ short alphaBetaRoot(Board &b, short alpha, short beta, int depth)
 
         if (movesLeft)
         {
+            b.updateOccupied(); b.orderMoves();
             vector<U32> moveCache = b.moveBuffer;
             int pvIndex = 0;
             short score;
