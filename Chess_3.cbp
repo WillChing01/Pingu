@@ -41,6 +41,7 @@
 		<Unit filename="include/board.h" />
 		<Unit filename="include/constants.h" />
 		<Unit filename="include/evaluation.h" />
+		<Unit filename="include/game.h" />
 		<Unit filename="include/king.h" />
 		<Unit filename="include/knight.h" />
 		<Unit filename="include/magic.h" />

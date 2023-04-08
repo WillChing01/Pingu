@@ -38,12 +38,6 @@ struct moveInfo
     bool shouldCheck;
 };
 
-bool captureLessThan(U32 a, U32 b)
-{
-    return (((a & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) - ((a & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET)) <
-    (((b & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) - ((b & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET));
-}
-
 class Board {
     public:
         U64 pieces[12]={};
@@ -57,6 +51,8 @@ class Board {
         vector<U32> captureBuffer;
         vector<U32> nonCaptureBuffer;
         vector<U32> moveBuffer;
+        vector<pair<U32,short> > scoredMoves;
+        U32 killerMoves[64][2] = {};
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -449,6 +445,10 @@ class Board {
 
                     if (current.enPassantSquare != -1) {x &= (occupied[(int)(!side)] | (1ull << current.enPassantSquare));}
                     else {x &= occupied[(int)(!side)];}
+
+                    //promotion by moving forward.
+                    if (!side) {x |= ((pawnPosBoard & FILE_7) << 8) & (~p);}
+                    else {x |= ((pawnPosBoard & FILE_2) >> 8) & (~p);}
 
                     while (x) {appendMove(_nPawns+(int)(side), pos,popLSB(x), (pawnPosBoard & pinned)!=0);}
                 }
@@ -1052,8 +1052,9 @@ class Board {
 
         short regularEval()
         {
-            return evalPieces(0) + evalPieces(2) + evalPieces(4) + evalPieces(6) + evalPieces(8) + evalPieces(10)
-                 - evalPieces(1) - evalPieces(3) - evalPieces(5) - evalPieces(7) - evalPieces(9) - evalPieces(11);
+            return (evalPieces(0) + evalPieces(2) + evalPieces(4) + evalPieces(6) + evalPieces(8) + evalPieces(10)
+                    - evalPieces(1) - evalPieces(3) - evalPieces(5) - evalPieces(7) - evalPieces(9) - evalPieces(11))
+                    * (1-2*(moveHistory.size() & 1));
         }
 
         short evaluateBoard()
@@ -1061,31 +1062,29 @@ class Board {
             //see if checkmate or stalemate.
             bool turn = moveHistory.size() & 1;
 
-            moveBuffer.clear();
             bool inCheck = generatePseudoMoves(turn);
 
-            U32 validMoves = 0;
+            bool movesLeft = false;
 
             for (int i=0;i<(int)(moveBuffer.size());i++)
             {
-                if (!(bool)(moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {validMoves++; break;}
+                if (!(bool)(moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {movesLeft = true; break;}
                 else if (makeMove(moveBuffer[i]))
                 {
-                    validMoves++;
+                    movesLeft=true;
                     unmakeMove();
                     break;
                 }
             }
 
-            if (validMoves != 0)
+            if (movesLeft)
             {
-                return regularEval()*(1-2*turn);
+                return regularEval();
             }
             else if (inCheck)
             {
                 //checkmate.
-                if (!turn) {return -SHRT_MAX;}
-                else {return SHRT_MAX;}
+                return -SHRT_MAX;
             }
             else
             {
@@ -1094,10 +1093,10 @@ class Board {
             }
         }
 
-        void orderMoves()
+        void orderMoves(int depth = -1)
         {
             //assumes that occupancy is up-to-date.
-            vector<pair<U32,short> > newMoves;
+            scoredMoves.clear();
 
             for (int i=0;i<(int)(moveBuffer.size());i++)
             {
@@ -1108,23 +1107,27 @@ class Board {
                     U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                     U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
                     U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    newMoves.push_back(pair<U32,short>(moveBuffer[i], seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
+                    scoredMoves.push_back(pair<U32,short>(moveBuffer[i], seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
                 }
                 else
                 {
-                    //non-capture move.
-                    newMoves.push_back(pair<U32,short>(moveBuffer[i],0));
+                    //non-capture moves.
+                    if (depth != -1 && (moveBuffer[i] == killerMoves[depth][0] || moveBuffer[i] == killerMoves[depth][1]))
+                    {
+                        //killer.
+                        //set killer score to arbitrary 20 centipawns.
+                        scoredMoves.push_back(pair<U32,short>(moveBuffer[i],10));
+                    }
+                    else
+                    {
+                        //non-killer.
+                        scoredMoves.push_back(pair<U32,short>(moveBuffer[i],0));
+                    }
                 }
             }
 
             //sort the moves.
-            sort(newMoves.begin(), newMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-            moveBuffer.clear();
-
-            for (int i=0;i<(int)newMoves.size();i++)
-            {
-                moveBuffer.push_back(newMoves[i].first);
-            }
+            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
         }
 };
 

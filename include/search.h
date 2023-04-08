@@ -24,20 +24,21 @@ short alphaBetaQuiescence(Board &b, short alpha, short beta)
     if (movesLeft)
     {
         b.updateOccupied(); b.orderMoves();
-        vector<U32> moveCache = b.moveBuffer;
+        vector<pair<U32,short> > moveCache = b.scoredMoves;
+
         short score;
 
         if (!inCheck)
         {
             //do stand-pat check.
-            short standPat=b.regularEval()*(1-2*(b.moveHistory.size() & 1));
+            short standPat=b.regularEval();
             if (standPat >= beta) {return beta;}
             if (alpha < standPat) {alpha = standPat;}
         }
 
         for (int i=0;i<(int)(moveCache.size());i++)
         {
-            if (b.makeMove(moveCache[i]))
+            if (b.makeMove(moveCache[i].first))
             {
                 score = -alphaBetaQuiescence(b, -beta, -alpha);
                 b.unmakeMove();
@@ -77,16 +78,27 @@ short alphaBeta(Board &b, short alpha, short beta, int depth)
 
         if (movesLeft)
         {
-            b.updateOccupied(); b.orderMoves();
-            vector<U32> moveCache = b.moveBuffer;
+            b.updateOccupied(); b.orderMoves(depth);
+            vector<pair<U32,short> > moveCache = b.scoredMoves;
             short score;
             for (int i=0;i<(int)(moveCache.size());i++)
             {
-                if (b.makeMove(moveCache[i]))
+                if (b.makeMove(moveCache[i].first))
                 {
                     score = -alphaBeta(b, -beta, -alpha, depth-1);
                     b.unmakeMove();
-                    if (score >= beta) {return beta;}
+                    if (score >= beta)
+                    {
+                        //beta cut-off. add killer move.
+                        if (b.currentMove.capturedPieceType == 15 &&
+                            b.killerMoves[depth][0] != moveCache[i].first &&
+                            b.killerMoves[depth][1] != moveCache[i].first)
+                        {
+                            b.killerMoves[depth][1] = b.killerMoves[depth][0];
+                            b.killerMoves[depth][0] = moveCache[i].first;
+                        }
+                        return beta;
+                    }
                     if (score > alpha) {alpha = score;}
                 }
             }
@@ -95,8 +107,7 @@ short alphaBeta(Board &b, short alpha, short beta, int depth)
         else if (inCheck)
         {
             //checkmate.
-            if (b.moveHistory.size() & 1) {return SHRT_MAX;}
-            else {return -SHRT_MAX;}
+            return -SHRT_MAX;
         }
         else
         {
@@ -128,28 +139,28 @@ short alphaBetaRoot(Board &b, short alpha, short beta, int depth)
         if (movesLeft)
         {
             b.updateOccupied(); b.orderMoves();
-            vector<U32> moveCache = b.moveBuffer;
+            vector<pair<U32,short> > moveCache = b.scoredMoves;
             int pvIndex = 0;
             short score;
             for (int itDepth = 1; itDepth <= depth; itDepth++)
             {
                 alpha = -SHRT_MAX; beta = SHRT_MAX; bestMoves.clear();
                 //try pv first.
-                if (b.makeMove(moveCache[pvIndex]))
+                if (b.makeMove(moveCache[pvIndex].first))
                 {
                     score = -alphaBeta(b, -beta, -alpha, itDepth-1);
                     b.unmakeMove();
-                    if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[pvIndex]);}
+                    if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[pvIndex].first);}
                 }
 
                 for (int i=0;i<(int)(moveCache.size());i++)
                 {
                     if (i==pvIndex) {continue;}
-                    if (b.makeMove(moveCache[i]))
+                    if (b.makeMove(moveCache[i].first))
                     {
                         score = -alphaBeta(b, -beta, -alpha, itDepth-1);
                         b.unmakeMove();
-                        if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[i]); pvIndex = i;}
+                        if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[i].first); pvIndex = i;}
                     }
                 }
             }
@@ -158,8 +169,7 @@ short alphaBetaRoot(Board &b, short alpha, short beta, int depth)
         else if (inCheck)
         {
             //checkmate.
-            if (b.moveHistory.size() & 1) {return SHRT_MAX;}
-            else {return -SHRT_MAX;}
+            return -SHRT_MAX;
         }
         else
         {
