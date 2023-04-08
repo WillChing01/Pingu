@@ -12,9 +12,9 @@ int main()
 //    testInitialPosition();
 //    testKiwipetePosition();
 
-    searchSpeedTest(6);
+//    searchSpeedTest(6);
 
-//    playCPU(6);
+    playCPU(6);
 
     system("pause");
     return 0;
