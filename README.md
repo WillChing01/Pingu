@@ -5,8 +5,8 @@ A basic chess engine, currently in the early stages of development.
 # Features
 
 ### Move generation
-- Bitboard representation
 - Pseudo-legal move generation
+- Bitboard representation
 - Plain magic bitboards for sliding pieces
 
 ### Testing
@@ -18,5 +18,9 @@ A basic chess engine, currently in the early stages of development.
 
 ### Search
 - Alpha-beta with quiescence search
-- Search PV (principal variation first)
-- Iterative deepening to approximate PV
+- Iterative deepening
+
+### Move ordering
+- Search PV (principal variation) first
+- Killer Heuristic
+- Static evaluation exchange
