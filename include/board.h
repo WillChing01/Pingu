@@ -38,12 +38,6 @@ struct moveInfo
     bool shouldCheck;
 };
 
-bool captureLessThan(U32 a, U32 b)
-{
-    return (((a & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) - ((a & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET)) <
-    (((b & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) - ((b & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET));
-}
-
 class Board {
     public:
         U64 pieces[12]={};
@@ -57,6 +51,8 @@ class Board {
         vector<U32> captureBuffer;
         vector<U32> nonCaptureBuffer;
         vector<U32> moveBuffer;
+        vector<pair<U32,short> > scoredMoves;
+        U32 killerMoves[64][2] = {};
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -97,6 +93,63 @@ class Board {
             updateOccupied();
             updateAttacked(0); updateAttacked(1);
         };
+
+        void setPositionFen(string fen)
+        {
+            vector<string> temp; temp.push_back("");
+
+            for (int i=0;i<(int)fen.length();i++)
+            {
+                if (fen[i] == ' ') {temp.push_back("");}
+                else {temp.back() += fen[i];}
+            }
+
+            //piece placement.
+            for (int i=0;i<12;i++) {pieces[i] = 0;}
+
+            U32 square = 56;
+            for (int i=0;i<(int)temp[0].length();i++)
+            {
+                if (temp[0][i] == '/') {square -= 16;}
+                else if ((int)(temp[0][i] - '0') < 9) {square += (int)(temp[0][i] - '0');}
+                else if (temp[0][i] == 'K') {pieces[_nKing] += 1ull << square++;}
+                else if (temp[0][i] == 'Q') {pieces[_nQueens] += 1ull << square++;}
+                else if (temp[0][i] == 'R') {pieces[_nRooks] += 1ull << square++;}
+                else if (temp[0][i] == 'B') {pieces[_nBishops] += 1ull << square++;}
+                else if (temp[0][i] == 'N') {pieces[_nKnights] += 1ull << square++;}
+                else if (temp[0][i] == 'P') {pieces[_nPawns] += 1ull << square++;}
+                else if (temp[0][i] == 'k') {pieces[_nKing+1] += 1ull << square++;}
+                else if (temp[0][i] == 'q') {pieces[_nQueens+1] += 1ull << square++;}
+                else if (temp[0][i] == 'r') {pieces[_nRooks+1] += 1ull << square++;}
+                else if (temp[0][i] == 'b') {pieces[_nBishops+1] += 1ull << square++;}
+                else if (temp[0][i] == 'n') {pieces[_nKnights+1] += 1ull << square++;}
+                else if (temp[0][i] == 'p') {pieces[_nPawns+1] += 1ull << square++;}
+            }
+
+            updateOccupied();
+
+            //side to move.
+            moveHistory.clear();
+            if (temp[1] == "b") {moveHistory.push_back(0);}
+
+            current = {
+                .canKingCastle = {false,false},
+                .canQueenCastle = {false,false},
+                .enPassantSquare = -1,
+            };
+
+            //castling rights.
+            for (int i=0;i<(int)temp[2].length();i++)
+            {
+                if (temp[2][i] == 'K') {current.canKingCastle[0] = true;}
+                else if (temp[2][i] == 'k') {current.canKingCastle[1] = true;}
+                else if (temp[2][i] == 'Q') {current.canQueenCastle[0] = true;}
+                else if (temp[2][i] == 'q') {current.canQueenCastle[1] = true;}
+            }
+
+            //en passant square.
+            if (temp[3] != "-") {current.enPassantSquare = toSquare(temp[3]);}
+        }
 
         void appendMove(U32 pieceType, U32 startSquare, U32 finishSquare, bool shouldCheck=false)
         {
@@ -392,6 +445,10 @@ class Board {
 
                     if (current.enPassantSquare != -1) {x &= (occupied[(int)(!side)] | (1ull << current.enPassantSquare));}
                     else {x &= occupied[(int)(!side)];}
+
+                    //promotion by moving forward.
+                    if (!side) {x |= ((pawnPosBoard & FILE_7) << 8) & (~p);}
+                    else {x |= ((pawnPosBoard & FILE_2) >> 8) & (~p);}
 
                     while (x) {appendMove(_nPawns+(int)(side), pos,popLSB(x), (pawnPosBoard & pinned)!=0);}
                 }
@@ -906,6 +963,69 @@ class Board {
             moveHistory.pop_back();
         }
 
+        U64 getAttacksToSquare(bool side, U32 square)
+        {
+            U64 b = occupied[0] | occupied[1];
+
+            U64 isAttacked = kingAttacks(1ull << square) & pieces[_nKing+(int)(!side)];
+            isAttacked |= magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+            isAttacked |= magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+            isAttacked |= knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)];
+            isAttacked |= pawnAttacks(1ull << square,(int)(side)) & pieces[_nPawns+(int)(!side)];
+
+            return isAttacked;
+        }
+
+        U64 getLeastValuableAttacker(bool side, U64 isAttacked, U32 &attackingPiece)
+        {
+            for (int i=_nPawns+(int)(side); i >= (int)_nKing+(int)(side); i-=2)
+            {
+                U64 x = isAttacked & pieces[i];
+                if (x)
+                {
+                    attackingPiece = i;
+                    return x & (-x);
+                }
+            }
+            return 0; // no attacker found.
+        }
+
+        short seeCaptures(U32 startSquare, U32 finishSquare, U32 pieceType, U32 capturedPieceType)
+        {
+            //perform static evaluation exchange (SEE).
+            //use the currentMove struct.
+            short gain[32]={}; int d=0;
+            gain[0] = PIECE_VALUES_START[capturedPieceType >> 1];
+            U32 attackingPiece = pieceType;
+            U64 attackingPieceBB = 1ull << startSquare;
+            U64 isAttacked[2] = {getAttacksToSquare(1,finishSquare),
+                                 getAttacksToSquare(0,finishSquare)};
+            U64 occ = occupied[0] | occupied[1];
+
+            bool side = pieceType & 1;
+
+            do
+            {
+                d++;
+                gain[d] = -gain[d-1] + PIECE_VALUES_START[attackingPiece >> 1];
+                if (max((short)(-gain[d-1]),gain[d]) < 0) {break;}
+                occ ^= attackingPieceBB;
+                isAttacked[side] ^= attackingPieceBB;
+
+                side = !side;
+
+                //update possible x-ray attacks.
+                isAttacked[side] |= magicRookAttacks(occ,finishSquare) & (pieces[_nRooks+(int)(side)] | pieces[_nQueens+(int)(side)]) & occ;
+                isAttacked[side] |= magicBishopAttacks(occ,finishSquare) & (pieces[_nBishops+(int)(side)] | pieces[_nQueens+(int)(side)]) & occ;
+
+                attackingPieceBB = getLeastValuableAttacker(side, isAttacked[side], attackingPiece);
+            } while (attackingPieceBB);
+
+            while (--d) {gain[d-1] = -max((short)(-gain[d-1]), gain[d]);}
+
+            return gain[0];
+        }
+
         short evalPieces(int pieceType)
         {
             short total=0;
@@ -932,8 +1052,9 @@ class Board {
 
         short regularEval()
         {
-            return evalPieces(0) + evalPieces(2) + evalPieces(4) + evalPieces(6) + evalPieces(8) + evalPieces(10)
-                 - evalPieces(1) - evalPieces(3) - evalPieces(5) - evalPieces(7) - evalPieces(9) - evalPieces(11);
+            return (evalPieces(0) + evalPieces(2) + evalPieces(4) + evalPieces(6) + evalPieces(8) + evalPieces(10)
+                    - evalPieces(1) - evalPieces(3) - evalPieces(5) - evalPieces(7) - evalPieces(9) - evalPieces(11))
+                    * (1-2*(moveHistory.size() & 1));
         }
 
         short evaluateBoard()
@@ -941,37 +1062,72 @@ class Board {
             //see if checkmate or stalemate.
             bool turn = moveHistory.size() & 1;
 
-            moveBuffer.clear();
             bool inCheck = generatePseudoMoves(turn);
 
-            U32 validMoves = 0;
+            bool movesLeft = false;
 
             for (int i=0;i<(int)(moveBuffer.size());i++)
             {
-                if (!(bool)(moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {validMoves++; break;}
+                if (!(bool)(moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {movesLeft = true; break;}
                 else if (makeMove(moveBuffer[i]))
                 {
-                    validMoves++;
+                    movesLeft=true;
                     unmakeMove();
                     break;
                 }
             }
 
-            if (validMoves != 0)
+            if (movesLeft)
             {
-                return regularEval()*(1-2*turn);
+                return regularEval();
             }
             else if (inCheck)
             {
                 //checkmate.
-                if (!turn) {return -SHRT_MAX;}
-                else {return SHRT_MAX;}
+                return -SHRT_MAX;
             }
             else
             {
                 //stalemate.
                 return 0;
             }
+        }
+
+        void orderMoves(int depth = -1)
+        {
+            //assumes that occupancy is up-to-date.
+            scoredMoves.clear();
+
+            for (int i=0;i<(int)(moveBuffer.size());i++)
+            {
+                U32 capturedPieceType = (moveBuffer[i] & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                if (capturedPieceType != 15)
+                {
+                    //capture.
+                    U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
+                    U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                    U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                    scoredMoves.push_back(pair<U32,short>(moveBuffer[i], seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
+                }
+                else
+                {
+                    //non-capture moves.
+                    if (depth != -1 && (moveBuffer[i] == killerMoves[depth][0] || moveBuffer[i] == killerMoves[depth][1]))
+                    {
+                        //killer.
+                        //set killer score to arbitrary 20 centipawns.
+                        scoredMoves.push_back(pair<U32,short>(moveBuffer[i],10));
+                    }
+                    else
+                    {
+                        //non-killer.
+                        scoredMoves.push_back(pair<U32,short>(moveBuffer[i],0));
+                    }
+                }
+            }
+
+            //sort the moves.
+            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
         }
 };
 
