@@ -5,7 +5,7 @@
 
 //order is king,queen,rook,bishop,knight,pawn.
 
-static const short PIECE_VALUES_START[6]=
+static const int PIECE_VALUES_START[6]=
 {
     20000,
     1000,
@@ -15,7 +15,7 @@ static const short PIECE_VALUES_START[6]=
     100,
 };
 
-static const short PIECE_VALUES_END[6]=
+static const int PIECE_VALUES_END[6]=
 {
     20000,
     1000,
@@ -27,7 +27,7 @@ static const short PIECE_VALUES_END[6]=
 
 //piece-square tables.
 
-static const short PIECE_TABLES_START[6][64]=
+static const int PIECE_TABLES_START[6][64]=
 {
     {
         -30,-40,-40,-50,-50,-40,-40,-30,
@@ -91,17 +91,17 @@ static const short PIECE_TABLES_START[6][64]=
     },
 };
 
-static const short PIECE_TABLES_END[6][64]=
+static const int PIECE_TABLES_END[6][64]=
 {
     {
-        -50,-40,-30,-20,-20,-30,-40,-50,
-        -30,-20,-10,  0,  0,-10,-20,-30,
-        -30,-10, 20, 30, 30, 20,-10,-30,
-        -30,-10, 30, 40, 40, 30,-10,-30,
-        -30,-10, 30, 40, 40, 30,-10,-30,
-        -30,-10, 20, 30, 30, 20,-10,-30,
-        -30,-30,  0,  0,  0,  0,-30,-30,
-        -50,-30,-30,-30,-30,-30,-30,-50,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+          0,  5,  0,  0,  0,  0,  5, 0,
+          0,  0, 10, 10, 10, 10,  0,  0,
+          0,  0, 10, 25, 25, 10,  0,  0,
+          0,  0, 10, 25, 25, 10,  0,  0,
+          0,  0, 10, 10, 10, 10,  0,  0,
+          0,  5,  0,  0,  0,  0,  5,  0,
+        -10,  0,  0,  0,  0,  0,  0,-10,
     },
     {
         -20,-10,-10, -5, -5,-10,-10,-20,

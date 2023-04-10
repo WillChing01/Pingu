@@ -16,7 +16,7 @@ void playCPU(int depth)
 
     if (side)
     {
-        short res = alphaBetaRoot(b,-SHRT_MAX,SHRT_MAX,depth);
+        int res = alphaBetaRoot(b,-INT_MAX,INT_MAX,depth);
         cout << "Evaluation: " << res << endl;
         b.makeMove(bestMoves[0]);
         cout << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << endl;
@@ -41,12 +41,29 @@ void playCPU(int depth)
         b.moveBuffer.clear();
         b.display();
 
-        short res = alphaBetaRoot(b,-SHRT_MAX,SHRT_MAX,depth);
+        int res;
+        if (b.shiftedPhase < 200)
+        {
+            res = alphaBetaRoot(b,-INT_MAX,INT_MAX,depth+1);
+        }
+        else if (b.shiftedPhase < 150)
+        {
+            res = alphaBetaRoot(b,-INT_MAX,INT_MAX,depth+2);
+        }
+        else if (b.shiftedPhase < 100)
+        {
+            res = alphaBetaRoot(b,-INT_MAX,INT_MAX,depth+4);
+        }
+        else
+        {
+            res = alphaBetaRoot(b,-INT_MAX,INT_MAX,depth);
+        }
         cout << "Evaluation: " << res << endl;
         if (bestMoves.size()==0) {break;}
         b.makeMove(bestMoves[0]);
         cout << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << endl;
         b.display();
+        cout << b.phase << " " << b.shiftedPhase << endl;
     }
 }
 

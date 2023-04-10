@@ -51,7 +51,7 @@ class Board {
         vector<U32> captureBuffer;
         vector<U32> nonCaptureBuffer;
         vector<U32> moveBuffer;
-        vector<pair<U32,short> > scoredMoves;
+        vector<pair<U32,int> > scoredMoves;
         U32 killerMoves[64][2] = {};
 
         gameState current = {
@@ -68,6 +68,11 @@ class Board {
         const U32 _nBishops=6;
         const U32 _nKnights=8;
         const U32 _nPawns=10;
+
+        const int piecePhases[6] = {0,4,2,1,1,0};
+
+        int phase = 24;
+        int shiftedPhase = (64 * phase + 3)/6;
 
         Board()
         {
@@ -786,6 +791,10 @@ class Board {
             if (currentMove.capturedPieceType != 15)
             {
                 pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
+
+                //update the game phase.
+                phase -= piecePhases[currentMove.capturedPieceType >> 1];
+                shiftedPhase = (64 * phase + 3) / 6;
             }
 
             //if castles, then move the rook too.
@@ -818,6 +827,10 @@ class Board {
             if (currentMove.capturedPieceType != 15)
             {
                 pieces[currentMove.capturedPieceType] += 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
+
+                //update the game phase.
+                phase += piecePhases[currentMove.capturedPieceType >> 1];
+                shiftedPhase = (64 * phase + 3) / 6;
             }
 
             //if castles move the rook back.
@@ -990,11 +1003,11 @@ class Board {
             return 0; // no attacker found.
         }
 
-        short seeCaptures(U32 startSquare, U32 finishSquare, U32 pieceType, U32 capturedPieceType)
+        int seeCaptures(U32 startSquare, U32 finishSquare, U32 pieceType, U32 capturedPieceType)
         {
             //perform static evaluation exchange (SEE).
             //use the currentMove struct.
-            short gain[32]={}; int d=0;
+            int gain[32]={}; int d=0;
             gain[0] = PIECE_VALUES_START[capturedPieceType >> 1];
             U32 attackingPiece = pieceType;
             U64 attackingPieceBB = 1ull << startSquare;
@@ -1008,7 +1021,7 @@ class Board {
             {
                 d++;
                 gain[d] = -gain[d-1] + PIECE_VALUES_START[attackingPiece >> 1];
-                if (max((short)(-gain[d-1]),gain[d]) < 0) {break;}
+                if (max(-gain[d-1],gain[d]) < 0) {break;}
                 occ ^= attackingPieceBB;
                 isAttacked[side] ^= attackingPieceBB;
 
@@ -1021,43 +1034,113 @@ class Board {
                 attackingPieceBB = getLeastValuableAttacker(side, isAttacked[side], attackingPiece);
             } while (attackingPieceBB);
 
-            while (--d) {gain[d-1] = -max((short)(-gain[d-1]), gain[d]);}
+            while (--d) {gain[d-1] = -max(-gain[d-1], gain[d]);}
 
             return gain[0];
         }
 
-        short evalPieces(int pieceType)
+        int regularEval()
         {
-            short total=0;
-            U64 temp = pieces[pieceType];
-            if (pieceType & 1)
+            int startTotal = 0;
+            int endTotal = 0;
+            int x;
+
+            //kings.
+            int kingPos = __builtin_ctzll(pieces[_nKing]);
+            int kingPos2 = __builtin_ctzll(pieces[_nKing+1]);
+
+            startTotal += PIECE_TABLES_START[0][63-kingPos] - PIECE_TABLES_START[0][kingPos2];
+            endTotal += PIECE_TABLES_END[0][63-kingPos] - PIECE_TABLES_END[0][kingPos2];
+
+            //queens.
+            U64 temp = pieces[_nQueens];
+            while (temp)
             {
-                while (temp)
-                {
-                    //only mid-game eval at the moment.
-                    total += PIECE_VALUES_START[pieceType >> 1] + PIECE_TABLES_START[pieceType >> 1][popLSB(temp)];
-                }
-            }
-            else
-            {
-                while (temp)
-                {
-                    //only mid-game eval at the moment.
-                    total += PIECE_VALUES_START[pieceType >> 1] + PIECE_TABLES_START[pieceType >> 1][63-popLSB(temp)];
-                }
+                x = popLSB(temp);
+                startTotal += PIECE_VALUES_START[1] + PIECE_TABLES_START[1][63-x];
+                endTotal += PIECE_VALUES_END[1] + PIECE_TABLES_END[1][63-x];
             }
 
-            return total;
+            temp = pieces[_nQueens+1];
+            while (temp)
+            {
+                x = popLSB(temp);
+                startTotal -= PIECE_VALUES_START[1] + PIECE_TABLES_START[1][x];
+                endTotal -= PIECE_VALUES_END[1] + PIECE_TABLES_END[1][x];
+            }
+
+            //rooks.
+            temp = pieces[_nRooks];
+            while (temp)
+            {
+                x = popLSB(temp);
+                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][63-x];
+                endTotal += PIECE_VALUES_END[2] + PIECE_TABLES_END[2][63-x];
+            }
+
+            temp = pieces[_nRooks+1];
+            while (temp)
+            {
+                x = popLSB(temp);
+                startTotal -= PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x];
+                endTotal -= PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x];
+            }
+
+            //bishops.
+            temp = pieces[_nBishops];
+            while (temp)
+            {
+                x = popLSB(temp);
+                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][63-x];
+                endTotal += PIECE_VALUES_END[3] + PIECE_TABLES_END[3][63-x];
+            }
+
+            temp = pieces[_nBishops+1];
+            while (temp)
+            {
+                x = popLSB(temp);
+                startTotal -= PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x];
+                endTotal -= PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x];
+            }
+
+            //knights.
+            temp = pieces[_nKnights];
+            while (temp)
+            {
+                x = popLSB(temp);
+                startTotal += PIECE_VALUES_START[4] + PIECE_TABLES_START[4][63-x];
+                endTotal += PIECE_VALUES_END[4] + PIECE_TABLES_END[4][63-x];
+            }
+
+            temp = pieces[_nKnights+1];
+            while (temp)
+            {
+                x = popLSB(temp);
+                startTotal -= PIECE_VALUES_START[4] + PIECE_TABLES_START[4][x];
+                endTotal -= PIECE_VALUES_END[4] + PIECE_TABLES_END[4][x];
+            }
+
+            //pawns.
+            temp = pieces[_nPawns];
+            while (temp)
+            {
+                x = popLSB(temp);
+                startTotal += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][63-x];
+                endTotal += PIECE_VALUES_END[5] + PIECE_TABLES_END[5][63-x];
+            }
+
+            temp = pieces[_nPawns+1];
+            while (temp)
+            {
+                x = popLSB(temp);
+                startTotal -= PIECE_VALUES_START[5] + PIECE_TABLES_START[5][x];
+                endTotal -= PIECE_VALUES_END[5] + PIECE_TABLES_END[5][x];
+            }
+
+            return (((startTotal * shiftedPhase) + (endTotal * (256 - shiftedPhase))) / 256) * (1-2*(int)(moveHistory.size() & 1));
         }
 
-        short regularEval()
-        {
-            return (evalPieces(0) + evalPieces(2) + evalPieces(4) + evalPieces(6) + evalPieces(8) + evalPieces(10)
-                    - evalPieces(1) - evalPieces(3) - evalPieces(5) - evalPieces(7) - evalPieces(9) - evalPieces(11))
-                    * (1-2*(moveHistory.size() & 1));
-        }
-
-        short evaluateBoard()
+        int evaluateBoard()
         {
             //see if checkmate or stalemate.
             bool turn = moveHistory.size() & 1;
@@ -1084,7 +1167,7 @@ class Board {
             else if (inCheck)
             {
                 //checkmate.
-                return -SHRT_MAX;
+                return -INT_MAX;
             }
             else
             {
@@ -1107,7 +1190,7 @@ class Board {
                     U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                     U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
                     U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    scoredMoves.push_back(pair<U32,short>(moveBuffer[i], seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
+                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i], seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
                 }
                 else
                 {
@@ -1116,12 +1199,12 @@ class Board {
                     {
                         //killer.
                         //set killer score to arbitrary 20 centipawns.
-                        scoredMoves.push_back(pair<U32,short>(moveBuffer[i],10));
+                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i],10));
                     }
                     else
                     {
                         //non-killer.
-                        scoredMoves.push_back(pair<U32,short>(moveBuffer[i],0));
+                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
                     }
                 }
             }
