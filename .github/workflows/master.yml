@@ -1,0 +1,33 @@
+name: "Build Executable"
+
+on:
+  push:
+    branches:
+      - "master"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build executable on ${{ matrix.os }} with g++
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            target: Windows
+            
+          - os: ubuntu-latest
+            target: Linux
+          
+          - os: macos-latest
+            target: Macos
+    steps:
+      - name: Compile the project
+        run: g++ -Os -std=gnu++17 -Iinclude main.cpp -o obj/Release/main.o
+      - name: Create the executable
+        run: g++ -o bin/Release/Chess_3.exe obj/Release/main.o -s
+            
