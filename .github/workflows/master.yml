@@ -24,8 +24,7 @@ jobs:
         uses: actions/checkout@v2
         
       - name: Compile the project
-        run: g++ -Os -std=gnu++17 -Iinclude main.cpp -o obj/Release/main.o
+        run: g++ -Os -std=gnu++17 -Iinclude -c main.cpp -o obj/Release/main.o
         
       - name: Create the executable
         run: g++ -o bin/Release/Chess_3.exe obj/Release/main.o -s
-            
