@@ -19,12 +19,6 @@ jobs:
         include:
           - os: windows-latest
             target: Windows
-            
-          - os: ubuntu-latest
-            target: Linux
-          
-          - os: macos-latest
-            target: Macos
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
