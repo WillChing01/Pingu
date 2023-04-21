@@ -18,6 +18,8 @@
 
 #include "evaluation.h"
 
+#include "transposition.h"
+
 using namespace std;
 
 struct gameState
@@ -74,6 +76,10 @@ class Board {
         int phase = 24;
         int shiftedPhase = (64 * phase + 3)/6;
 
+        //overall zHash is XOR of these two.
+        U64 zHashPieces = 0;
+        U64 zHashState = 0;
+
         Board()
         {
             //default constructor for regular games.
@@ -97,6 +103,21 @@ class Board {
 
             updateOccupied();
             updateAttacked(0); updateAttacked(1);
+
+            //initiate the Zobrist Hash Key.
+            for (int i=0;i<12;i++)
+            {
+                U64 temp = pieces[i];
+                while (temp)
+                {
+                    zHashPieces ^= randomNums[ZHASH_PIECES[i] + popLSB(temp)];
+                }
+            }
+
+            for (int i=0;i<4;i++)
+            {
+                zHashState ^= randomNums[ZHASH_CASTLES[i]];
+            }
         };
 
         void setPositionFen(string fen)
@@ -783,14 +804,17 @@ class Board {
         {
             //remove piece from start square;
             pieces[currentMove.pieceType] -= 1ull << (currentMove.startSquare);
+            zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
 
             //add piece to end square, accounting for promotion.
             pieces[currentMove.finishPieceType] += 1ull << (currentMove.finishSquare);
+            zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
 
             //remove any captured pieces.
             if (currentMove.capturedPieceType != 15)
             {
                 pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
+                zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
 
                 //update the game phase.
                 phase -= piecePhases[currentMove.capturedPieceType >> 1];
@@ -805,12 +829,18 @@ class Board {
                     //kingside.
                     pieces[_nRooks+(currentMove.pieceType & 1)] -= KING_ROOK_POS[currentMove.pieceType & 1];
                     pieces[_nRooks+(currentMove.pieceType & 1)] += KING_ROOK_POS[currentMove.pieceType & 1] >> 2;
+
+                    zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
+                    zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
                 }
                 else
                 {
                     //queenside.
                     pieces[_nRooks+(currentMove.pieceType & 1)] -= QUEEN_ROOK_POS[currentMove.pieceType & 1];
                     pieces[_nRooks+(currentMove.pieceType & 1)] += QUEEN_ROOK_POS[currentMove.pieceType & 1] << 3;
+
+                    zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
+                    zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
                 }
             }
         }
@@ -819,14 +849,17 @@ class Board {
         {
             //remove piece from destination square.
             pieces[currentMove.finishPieceType] -= 1ull << (currentMove.finishSquare);
+            zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
 
             //add piece to start square.
             pieces[currentMove.pieceType] += 1ull << (currentMove.startSquare);
+            zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
 
             //add back captured pieces.
             if (currentMove.capturedPieceType != 15)
             {
                 pieces[currentMove.capturedPieceType] += 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
+                zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
 
                 //update the game phase.
                 phase += piecePhases[currentMove.capturedPieceType >> 1];
@@ -841,12 +874,18 @@ class Board {
                     //kingside.
                     pieces[_nRooks+(currentMove.pieceType & 1)] -= KING_ROOK_POS[currentMove.pieceType & 1] >> 2;
                     pieces[_nRooks+(currentMove.pieceType & 1)] += KING_ROOK_POS[currentMove.pieceType & 1];
+
+                    zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
+                    zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
                 }
                 else
                 {
                     //queenside.
                     pieces[_nRooks+(currentMove.pieceType & 1)] -= QUEEN_ROOK_POS[currentMove.pieceType & 1] << 3;
                     pieces[_nRooks+(currentMove.pieceType & 1)] += QUEEN_ROOK_POS[currentMove.pieceType & 1];
+
+                    zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
+                    zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
                 }
             }
         }
@@ -876,10 +915,21 @@ class Board {
                 stateHistory.push_back(current);
                 moveHistory.push_back(chessMove);
 
+                //turn increment can be done in zHashPieces.
+                zHashPieces ^= randomNums[ZHASH_TURN];
+                zHashState = 0;
+
                 //if double-pawn push, set en-passant square.
                 //otherwise, set en-passant square to -1.
-                bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16;
-                current.enPassantSquare = -1 + (int)(x)*(1+currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
+                if (currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16)
+                {
+                    current.enPassantSquare = currentMove.finishSquare-8+16*(currentMove.pieceType & 1);
+                    zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];
+                }
+                else
+                {
+                    current.enPassantSquare = -1;
+                }
 
                 if (currentMove.pieceType >> 1 == _nRooks >> 1)
                 {
@@ -910,6 +960,12 @@ class Board {
                     }
                 }
 
+                //update castling rights for zHash.
+                if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
+                if (current.canKingCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[1]];}
+                if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
+                if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
+
                 return true;
             }
             else
@@ -926,10 +982,21 @@ class Board {
                     stateHistory.push_back(current);
                     moveHistory.push_back(chessMove);
 
+                    //turn increment can be done in zHashPieces.
+                    zHashPieces ^= randomNums[ZHASH_TURN];
+                    zHashState = 0;
+
                     //if double-pawn push, set en-passant square.
                     //otherwise, set en-passant square to -1.
-                    bool x = currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16;
-                    current.enPassantSquare = -1 + (int)(x)*(1+currentMove.finishSquare-8+16*(currentMove.pieceType & 1));
+                    if (currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16)
+                    {
+                        current.enPassantSquare = currentMove.finishSquare-8+16*(currentMove.pieceType & 1);
+                        zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];
+                    }
+                    else
+                    {
+                        current.enPassantSquare = -1;
+                    }
 
                     if (currentMove.pieceType >> 1 == _nRooks >> 1)
                     {
@@ -959,6 +1026,12 @@ class Board {
                             current.canQueenCastle[currentMove.capturedPieceType & 1] = false;
                         }
                     }
+
+                    //update castling rights for zHash.
+                    if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
+                    if (current.canKingCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[1]];}
+                    if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
+                    if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
 
                     return true;
                 }

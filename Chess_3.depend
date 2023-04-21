@@ -1,11 +1,11 @@
 # depslib dependency file v1.0
-1681139129 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
+1681417980 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
 	<iostream>
 	"board.h"
 	"perft.h"
 	"game.h"
 
-1681139048 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
+1681417947 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
 	<vector>
 	<bitset>
 	<windows.h>
@@ -19,8 +19,9 @@
 	"slider.h"
 	"magic.h"
 	"evaluation.h"
+	"transposition.h"
 
-1680603772 c:\users\willi\onedrive\desktop\coding\chess_3\include\constants.h
+1681248315 c:\users\willi\onedrive\desktop\coding\chess_3\include\constants.h
 
 1680460739 c:\users\willi\onedrive\desktop\coding\chess_3\include\king.h
 	"constants.h"
@@ -103,4 +104,8 @@
 1681138995 c:\users\willi\onedrive\desktop\coding\chess_3\include\game.h
 	"board.h"
 	"search.h"
+
+1681246645 c:\users\willi\onedrive\desktop\coding\chess_3\include\transposition.h
+	<random>
+	<chrono>
 

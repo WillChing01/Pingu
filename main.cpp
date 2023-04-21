@@ -9,6 +9,7 @@ using namespace std;
 int main()
 {
     populateMagicTables();
+    populateRandomNums();
 //    testInitialPosition();
 //    testKiwipetePosition();
 

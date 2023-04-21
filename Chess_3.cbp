@@ -34,9 +34,17 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++17" />
+			<Add option="-m64" />
 			<Add option="-fexceptions" />
 			<Add directory="include" />
 		</Compiler>
+		<Linker>
+			<Add option="-static-libstdc++" />
+			<Add option="-static-libgcc" />
+			<Add option="-static" />
+			<Add option="-m64" />
+		</Linker>
 		<Unit filename="include/bitboard.h" />
 		<Unit filename="include/board.h" />
 		<Unit filename="include/constants.h" />
@@ -49,6 +57,7 @@
 		<Unit filename="include/perft.h" />
 		<Unit filename="include/search.h" />
 		<Unit filename="include/slider.h" />
+		<Unit filename="include/transposition.h" />
 		<Unit filename="main.cpp" />
 		<Extensions />
 	</Project>
