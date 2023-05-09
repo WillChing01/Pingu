@@ -2,6 +2,8 @@
 
 A basic chess engine, currently in the early stages of development.
 
+To make a move, enter the start and end squares separated by a space e.g. "e2 e4"
+
 # Features
 
 ### Move generation
