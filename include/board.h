@@ -962,7 +962,7 @@ class Board {
 
                 //update castling rights for zHash.
                 if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
-                if (current.canKingCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[1]];}
+                if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
                 if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
                 if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
 
@@ -1029,7 +1029,7 @@ class Board {
 
                     //update castling rights for zHash.
                     if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
-                    if (current.canKingCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[1]];}
+                    if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
                     if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
                     if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
 
@@ -1044,6 +1044,21 @@ class Board {
             current = stateHistory.back();
             unpackMove(moveHistory.back());
             unMovePieces();
+
+
+            //revert zhash for gamestate.
+            zHashPieces ^= randomNums[ZHASH_TURN];
+            zHashState = 0;
+
+            if (current.enPassantSquare != -1)
+            {
+                zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];
+            }
+
+            if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
+            if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
+            if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
+            if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
 
             stateHistory.pop_back();
             moveHistory.pop_back();

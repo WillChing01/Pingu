@@ -2,8 +2,11 @@
 #define SEARCH_H_INCLUDED
 
 #include "bitboard.h"
+#include "transposition.h"
 
 static vector<U32> bestMoves;
+static vector<U32> pvMoves;
+static hashEntry tableEntry;
 
 int alphaBetaQuiescence(Board &b, int alpha, int beta)
 {
@@ -59,6 +62,21 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
 
 int alphaBeta(Board &b, int alpha, int beta, int depth)
 {
+    //check transposition table for a previously calculated line.
+    U64 bHash = b.zHashPieces ^ b.zHashState;
+    if (hashTable[bHash % hashTableSize].zHash == bHash &&
+        hashTable[bHash % hashTableSize].depth >= depth)
+    {
+        tableEntry = hashTable[bHash % hashTableSize];
+
+        //PV node, score is exact.
+        if (tableEntry.isExact) {return tableEntry.evaluation;}
+        //score is a lower bound.
+        else if (tableEntry.isBeta) {if (tableEntry.evaluation >= beta) {return beta;}}
+        //all node, score is an upper bound.
+        else {if (tableEntry.evaluation < alpha) {return alpha;}}
+    }
+
     if (depth == 0) {return alphaBetaQuiescence(b, alpha, beta);}
     else
     {
@@ -76,17 +94,23 @@ int alphaBeta(Board &b, int alpha, int beta, int depth)
             }
         }
 
+        tableEntry.depth = depth;
+        tableEntry.zHash = b.zHashPieces ^ b.zHashState;
+
         if (movesLeft)
         {
             b.updateOccupied(); b.orderMoves(depth);
             vector<pair<U32,int> > moveCache = b.scoredMoves;
-            int score;
+            int score=alpha;
             for (int i=0;i<(int)(moveCache.size());i++)
             {
                 if (b.makeMove(moveCache[i].first))
                 {
                     score = -alphaBeta(b, -beta, -alpha, depth-1);
                     b.unmakeMove();
+
+                    tableEntry.evaluation = score;
+
                     if (score >= beta)
                     {
                         //beta cut-off. add killer move.
@@ -97,11 +121,26 @@ int alphaBeta(Board &b, int alpha, int beta, int depth)
                             b.killerMoves[depth][1] = b.killerMoves[depth][0];
                             b.killerMoves[depth][0] = moveCache[i].first;
                         }
+
+                        //update transposition table.
+                        tableEntry.isBeta = true; tableEntry.isExact = false;
+
+                        hashTable[tableEntry.zHash % hashTableSize] = tableEntry;
+
                         return beta;
                     }
                     if (score > alpha) {alpha = score;}
                 }
             }
+
+            //update transposition table.
+            //PV node.
+            if (score > alpha) {tableEntry.isBeta = false; tableEntry.isExact = true;}
+            //All or fail-low node.
+            else {tableEntry.isBeta = false; tableEntry.isExact = false;}
+
+            hashTable[tableEntry.zHash % hashTableSize] = tableEntry;
+
             return alpha;
         }
         else if (inCheck)

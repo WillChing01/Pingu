@@ -2,14 +2,24 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Release" />
-	<File name="include\transposition.h" open="1" top="1" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\knight.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="262" topLine="0" />
+			<Cursor1 position="89" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="include\search.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\game.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="3078" topLine="0" />
+			<Cursor1 position="2473" topLine="65" />
+		</Cursor>
+	</File>
+	<File name="include\constants.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1304" topLine="12" />
+		</Cursor>
+	</File>
+	<File name="main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="285" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="include\magic.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -32,44 +42,9 @@
 			<Collapse line="387" />
 		</Folding>
 	</File>
-	<File name="include\evaluation.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\transposition.h" open="1" top="1" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1142" topLine="71" />
-		</Cursor>
-	</File>
-	<File name="include\slider.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="126" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="include\game.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1105" topLine="3" />
-		</Cursor>
-	</File>
-	<File name="include\perft.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="4841" topLine="0" />
-		</Cursor>
-		<Folding>
-			<Collapse line="42" />
-			<Collapse line="75" />
-			<Collapse line="116" />
-		</Folding>
-	</File>
-	<File name="include\knight.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="89" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="include\pawn.h" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="76" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="include\bitboard.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="1165" topLine="20" />
+			<Cursor1 position="244" topLine="5" />
 		</Cursor>
 	</File>
 	<File name="include\king.h" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -77,39 +52,75 @@
 			<Cursor1 position="224" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="268" topLine="0" />
-		</Cursor>
-	</File>
 	<File name="include\board.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="385" topLine="12" />
+			<Cursor1 position="44567" topLine="167" />
 		</Cursor>
 		<Folding>
+			<Collapse line="123" />
+			<Collapse line="180" />
 			<Collapse line="246" />
 			<Collapse line="252" />
 			<Collapse line="286" />
 			<Collapse line="301" />
 			<Collapse line="329" />
 			<Collapse line="356" />
+			<Collapse line="382" />
 			<Collapse line="447" />
 			<Collapse line="612" />
 			<Collapse line="716" />
 			<Collapse line="792" />
+			<Collapse line="803" />
+			<Collapse line="848" />
 			<Collapse line="893" />
+			<Collapse line="904" />
 			<Collapse line="1041" />
-			<Collapse line="1052" />
-			<Collapse line="1065" />
-			<Collapse line="1079" />
-			<Collapse line="1115" />
-			<Collapse line="1216" />
-			<Collapse line="1252" />
+			<Collapse line="1067" />
+			<Collapse line="1080" />
+			<Collapse line="1094" />
+			<Collapse line="1130" />
+			<Collapse line="1231" />
+			<Collapse line="1267" />
 		</Folding>
 	</File>
-	<File name="include\constants.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="include\search.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1304" topLine="12" />
+			<Cursor1 position="2324" topLine="6" />
 		</Cursor>
+		<Folding>
+			<Collapse line="11" />
+			<Collapse line="159" />
+			<Collapse line="221" />
+		</Folding>
+	</File>
+	<File name="include\pawn.h" open="0" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="76" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\slider.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="126" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\evaluation.h" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1142" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="include\bitboard.h" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="652" topLine="20" />
+		</Cursor>
+	</File>
+	<File name="include\perft.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4841" topLine="3" />
+		</Cursor>
+		<Folding>
+			<Collapse line="42" />
+			<Collapse line="75" />
+			<Collapse line="116" />
+		</Folding>
 	</File>
 </CodeBlocks_layout_file>

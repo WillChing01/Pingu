@@ -12,7 +12,7 @@ void playCPU(int depth)
     bool side = temp == "0" ? false : true;
 
     Board b;
-    string startSquare, endSquare; int pieceType=0;
+    string startSquare, endSquare;
 
     if (side)
     {
@@ -26,20 +26,37 @@ void playCPU(int depth)
     while (true)
     {
         //player makes turn.
-        cout << "Enter move: ";
-        cin >> startSquare >> endSquare;
-
-        for (int i=0;i<12;i++)
+        b.generatePseudoMoves(side);
+        while (true)
         {
-            if ((b.pieces[i] & (1ull << toSquare(startSquare)))) {pieceType = i; break;}
+            cout << "Enter move: ";
+            cin >> startSquare >> endSquare;
+
+            bool legal = false;
+
+            for (int i=0;i<(int)b.moveBuffer.size();i++)
+            {
+                if (b.makeMove(b.moveBuffer[i]))
+                {
+                    b.unpackMove(b.moveBuffer[i]);
+                    if (b.currentMove.startSquare == (U32)toSquare(startSquare) && b.currentMove.finishSquare == (U32)toSquare(endSquare))
+                    {
+                        legal = true; break;
+                    }
+                    else
+                    {
+                        b.unmakeMove();
+                    }
+                }
+            }
+
+            if (!legal) {cout << "Illegal move." << endl;}
+            else {break;}
         }
 
         b.moveBuffer.clear();
-        b.updateOccupied();
-        b.appendMove(pieceType, toSquare(startSquare), toSquare(endSquare));
-        b.makeMove(b.moveBuffer[0]);
-        b.moveBuffer.clear();
         b.display();
+        bestMoves.clear();
 
         int res;
         if (b.shiftedPhase < 200)
@@ -59,8 +76,25 @@ void playCPU(int depth)
             res = alphaBetaRoot(b,-INT_MAX,INT_MAX,depth);
         }
         cout << "Evaluation: " << res << endl;
-        if (bestMoves.size()==0) {break;}
-        b.makeMove(bestMoves[0]);
+        if (bestMoves.size()==0)
+        {
+            b.moveBuffer.clear();
+            b.generatePseudoMoves(!side);
+            bool gotMove=false;
+            for (int i=0;i<(int)b.moveBuffer.size();i++)
+            {
+                if (b.makeMove(b.moveBuffer[i]))
+                {
+                    gotMove=true; break;
+                }
+            }
+
+            if (!gotMove) {break;}
+        }
+        else
+        {
+            b.makeMove(bestMoves[0]);
+        }
         cout << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << endl;
         b.display();
         cout << b.phase << " " << b.shiftedPhase << endl;

@@ -9,11 +9,13 @@ struct hashEntry
     U64 zHash;
     int depth;
     U32 bestMove;
+    int evaluation;
     bool isExact;
     bool isBeta;
 };
 
-hashEntry hashTable[1ull << 16] = {};
+const U64 hashTableSize = 65537;
+static hashEntry hashTable[hashTableSize] = {};
 
 U64 randomNums[781] = {};
 
