@@ -54,7 +54,7 @@ class Board {
         vector<U32> nonCaptureBuffer;
         vector<U32> moveBuffer;
         vector<pair<U32,int> > scoredMoves;
-        U32 killerMoves[64][2] = {};
+        U32 killerMoves[128][2] = {};
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -1264,35 +1264,43 @@ class Board {
             }
         }
 
-        void orderMoves(int depth = -1)
+        void orderMoves(int depth = -1, U32 bestMove = 0)
         {
             //assumes that occupancy is up-to-date.
             scoredMoves.clear();
 
             for (int i=0;i<(int)(moveBuffer.size());i++)
             {
-                U32 capturedPieceType = (moveBuffer[i] & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                if (capturedPieceType != 15)
+                if (moveBuffer[i] == bestMove)
                 {
-                    //capture.
-                    U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
-                    U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                    U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i], seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
+                    //best move from hash table should be checked first.
+                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i], INT_MAX));
                 }
                 else
                 {
-                    //non-capture moves.
-                    if (depth != -1 && (moveBuffer[i] == killerMoves[depth][0] || moveBuffer[i] == killerMoves[depth][1]))
+                    U32 capturedPieceType = (moveBuffer[i] & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                    if (capturedPieceType != 15)
                     {
-                        //killer.
-                        //set killer score to arbitrary 20 centipawns.
-                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i],10));
+                        //capture.
+                        U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
+                        U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                        U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i], seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
                     }
                     else
                     {
-                        //non-killer.
-                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
+                        //non-capture moves.
+                        if (depth != -1 && (moveBuffer[i] == killerMoves[depth][0] || moveBuffer[i] == killerMoves[depth][1]))
+                        {
+                            //killer.
+                            //set killer score to arbitrary 10 centipawns.
+                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i],10));
+                        }
+                        else
+                        {
+                            //non-killer.
+                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
+                        }
                     }
                 }
             }
