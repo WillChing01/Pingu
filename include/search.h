@@ -1,14 +1,43 @@
 #ifndef SEARCH_H_INCLUDED
 #define SEARCH_H_INCLUDED
 
+#include <atomic>
+
 #include "bitboard.h"
 #include "transposition.h"
 
+U32 storedBestMove = 0;
+int storedBestScore = 0;
 vector<U32> bestMoves;
 vector<U32> pvMoves;
 
+double timeLeft = 0; //milliseconds.
+auto startTime = std::chrono::high_resolution_clock::now();
+auto currentTime = std::chrono::high_resolution_clock::now();
+
+std::atomic_bool isSearchAborted(false);
+U32 totalNodes = 0;
+
+inline bool checkTime()
+{
+    if (std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count() > timeLeft)
+    {
+        isSearchAborted = true;
+        return false;
+    }
+    else {return true;}
+}
+
 int alphaBetaQuiescence(Board &b, int alpha, int beta)
 {
+    //check time.
+    totalNodes++;
+    if ((totalNodes & 2047) == 0)
+    {
+        if (checkTime() == false) {return 0;}
+    }
+    if (isSearchAborted) {return 0;}
+
     bool inCheck = b.generatePseudoQMoves(b.moveHistory.size() & 1);
 
     bool movesLeft = false;
@@ -61,6 +90,14 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
 
 int alphaBeta(Board &b, int alpha, int beta, int depth)
 {
+    //check time.
+    totalNodes++;
+    if ((totalNodes & 2047) == 0)
+    {
+        if (checkTime() == false) {return 0;}
+    }
+    if (isSearchAborted) {return 0;}
+
     if (depth == 0) {return alphaBetaQuiescence(b, alpha, beta);}
     else
     {
@@ -82,14 +119,17 @@ int alphaBeta(Board &b, int alpha, int beta, int depth)
         {
             //check transposition table for a previously calculated line.
             U64 bHash = b.zHashPieces ^ b.zHashState;
-            if (ttProbe(bHash, depth, tableEntry) == true)
+            if (ttProbe(bHash, tableEntry) == true)
             {
-                //PV node, score is exact.
-                if (tableEntry.isExact) {return tableEntry.evaluation;}
-                //score is a lower bound.
-                else if (tableEntry.isBeta) {if (tableEntry.evaluation >= beta) {return beta;}}
-                //all node, score is an upper bound.
-                else {if (tableEntry.evaluation < alpha) {return alpha;}}
+                if (tableEntry.depth >= depth)
+                {
+                    //PV node, score is exact.
+                    if (tableEntry.isExact) {return tableEntry.evaluation;}
+                    //score is a lower bound.
+                    else if (tableEntry.isBeta) {if (tableEntry.evaluation >= beta) {return beta;}}
+                    //all node, score is an upper bound.
+                    else {if (tableEntry.evaluation < alpha) {return alpha;}}
+                }
 
                 b.updateOccupied(); b.orderMoves(depth, tableEntry.bestMove);
             }
@@ -158,6 +198,9 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
     if (depth == 0) {return alphaBetaQuiescence(b, alpha, beta);}
     else
     {
+        rootCounter++;
+        startTime = std::chrono::high_resolution_clock::now();
+
         bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
         bool movesLeft=false;
@@ -199,8 +242,19 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                         if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[i].first); pvIndex = i;}
                     }
                 }
+
+                //check if time is up.
+                if (isSearchAborted) {break;}
+                else
+                {
+                    storedBestMove = bestMoves[0];
+                    storedBestScore = alpha;
+                    b.unpackMove(storedBestMove);
+                    cout << itDepth << " " << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << " ";
+                }
             }
-            return alpha;
+            cout << endl;
+            return storedBestScore;
         }
         else if (inCheck)
         {
@@ -221,8 +275,10 @@ void searchSpeedTest(int depth)
     Board b; b.display();
 
     auto t1 = std::chrono::high_resolution_clock::now();
+    timeLeft = INT_MAX;
     for (int i=0;i<10;i++)
     {
+        isSearchAborted = false;
         alphaBetaRoot(b,-INT_MAX,INT_MAX,depth);
         if (bestMoves.size()==0) {break;}
         b.makeMove(bestMoves[0]);

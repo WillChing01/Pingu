@@ -54,7 +54,7 @@ class Board {
         vector<U32> nonCaptureBuffer;
         vector<U32> moveBuffer;
         vector<pair<U32,int> > scoredMoves;
-        U32 killerMoves[64][2] = {};
+        U32 killerMoves[128][2] = {};
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -1271,7 +1271,7 @@ class Board {
 
             for (int i=0;i<(int)(moveBuffer.size());i++)
             {
-                if (bestMove != 0 && moveBuffer[i] == bestMove)
+                if (moveBuffer[i] == bestMove)
                 {
                     //best move from hash table should be checked first.
                     scoredMoves.push_back(pair<U32,int>(moveBuffer[i], INT_MAX));

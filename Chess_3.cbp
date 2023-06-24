@@ -49,6 +49,7 @@
 		<Unit filename="include/board.h" />
 		<Unit filename="include/constants.h" />
 		<Unit filename="include/evaluation.h" />
+		<Unit filename="include/format.h" />
 		<Unit filename="include/game.h" />
 		<Unit filename="include/king.h" />
 		<Unit filename="include/knight.h" />
@@ -58,6 +59,7 @@
 		<Unit filename="include/search.h" />
 		<Unit filename="include/slider.h" />
 		<Unit filename="include/transposition.h" />
+		<Unit filename="include/uci.h" />
 		<Unit filename="main.cpp" />
 		<Extensions />
 	</Project>

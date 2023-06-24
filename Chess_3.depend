@@ -1,11 +1,12 @@
 # depslib dependency file v1.0
-1687295976 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
+1687622742 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
 	<iostream>
 	"board.h"
 	"perft.h"
 	"game.h"
+	"uci.h"
 
-1687272803 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
+1687446153 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
 	<vector>
 	<bitset>
 	<windows.h>
@@ -94,7 +95,8 @@
 
 1681123231 c:\users\willi\onedrive\desktop\coding\chess_3\include\evaluation.h
 
-1687276656 c:\users\willi\onedrive\desktop\coding\chess_3\include\search.h
+1687561013 c:\users\willi\onedrive\desktop\coding\chess_3\include\search.h
+	<atomic>
 	"bitboard.h"
 	"transposition.h"
 
@@ -102,11 +104,23 @@
 	<chrono>
 	"board.h"
 
-1687126188 c:\users\willi\onedrive\desktop\coding\chess_3\include\game.h
+1687552183 c:\users\willi\onedrive\desktop\coding\chess_3\include\game.h
 	"board.h"
 	"search.h"
+	"format.h"
 
-1687276607 c:\users\willi\onedrive\desktop\coding\chess_3\include\transposition.h
+1687622661 c:\users\willi\onedrive\desktop\coding\chess_3\include\transposition.h
 	<random>
 	<chrono>
+
+1687552252 c:\users\willi\onedrive\desktop\coding\chess_3\include\format.h
+	"constants.h"
+	"bitboard.h"
+	"board.h"
+
+1687617195 c:\users\willi\onedrive\desktop\coding\chess_3\include\uci.h
+	<iostream>
+	<thread>
+	"format.h"
+	"search.h"
 
