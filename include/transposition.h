@@ -17,7 +17,7 @@ struct hashEntry
     bool isBeta;
 };
 
-U64 hashTableSize = 2796202; //default 64 MB for each table.
+U64 hashTableSize = 21845; //default 0.5 MB for each table.
 vector<hashEntry> hashTableAlways(hashTableSize);
 vector<hashEntry> hashTableDeep(hashTableSize);
 vector<int> hashTableAge(hashTableSize,0);

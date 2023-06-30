@@ -9,6 +9,19 @@ const string promotionLetters = "_qrbn";
 const string fileSymbols = "abcdefgh";
 const string rankSymbols = "12345678";
 
+vector<string> separateByWhiteSpace(string input)
+{
+    //assume only a single whitespace separates each word.
+    vector<string> words; words.push_back("");
+    for (int i=0;i<(int)input.length();i++)
+    {
+        if (input[i] == ' ') {words.push_back("");}
+        else {words.back() += input[i];}
+    }
+    while (words.back() == "") {words.pop_back();}
+    return words;
+}
+
 string moveToString(U32 chessMove)
 {
     string startSquare = toCoord((chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET);
@@ -52,7 +65,7 @@ U32 stringToMove(Board &b, string input)
 
     if (input.length() == 5)
     {
-        finishPiece = promotionLetters.find(input[4]) * 2;
+        finishPiece = promotionLetters.find(input[4]) * 2 + (b.moveHistory.size() & 1);
         if (finishPiece == string::npos) {return 0;}
     }
 

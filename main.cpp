@@ -18,8 +18,9 @@ int main()
 //    searchSpeedTest(6);
 
 //    playCPU(5000);
+
     uciLoop();
 
-    system("pause");
+//    system("pause");
     return 0;
 }
