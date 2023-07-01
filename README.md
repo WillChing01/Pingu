@@ -2,7 +2,7 @@
 
 A basic chess engine, currently in the early stages of development.
 
-To make a move, enter the start and end squares separated by a space e.g. "e2 e4"
+UCI compatible.
 
 # Features
 
@@ -21,8 +21,12 @@ To make a move, enter the start and end squares separated by a space e.g. "e2 e4
 ### Search
 - Alpha-beta with quiescence search
 - Iterative deepening
+- Transposition tables
+    - Always replace
+    - Depth-preferred
 
 ### Move ordering
-- Search PV (principal variation) first
+- PV move from previous iteration
+- Hash move
 - Killer Heuristic
 - Static evaluation exchange
