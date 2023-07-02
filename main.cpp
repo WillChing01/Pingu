@@ -15,12 +15,7 @@ int main()
 //    testInitialPosition();
 //    testKiwipetePosition();
 
-//    searchSpeedTest(6);
-
-//    playCPU(5000);
-
     uciLoop();
 
-//    system("pause");
     return 0;
 }

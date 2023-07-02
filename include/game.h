@@ -30,34 +30,6 @@ void playCPU(double timePerMove)
     while (true)
     {
         //player makes turn.
-//        b.generatePseudoMoves(side);
-//        while (true)
-//        {
-//            cout << "Enter move: ";
-//            cin >> startSquare >> endSquare;
-//
-//            bool legal = false;
-//
-//            for (int i=0;i<(int)b.moveBuffer.size();i++)
-//            {
-//                if (b.makeMove(b.moveBuffer[i]))
-//                {
-//                    b.unpackMove(b.moveBuffer[i]);
-//                    if (b.currentMove.startSquare == (U32)toSquare(startSquare) && b.currentMove.finishSquare == (U32)toSquare(endSquare))
-//                    {
-//                        legal = true; break;
-//                    }
-//                    else
-//                    {
-//                        b.unmakeMove();
-//                    }
-//                }
-//            }
-//
-//            if (!legal) {cout << "Illegal move." << endl;}
-//            else {break;}
-//        }
-
         b.generatePseudoMoves(side);
 
         //check if there are any legal moves left.

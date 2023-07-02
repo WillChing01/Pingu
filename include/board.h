@@ -1064,6 +1064,43 @@ class Board {
             moveHistory.pop_back();
         }
 
+        void makeNullMove()
+        {
+            stateHistory.push_back(current);
+            moveHistory.push_back(0);
+
+            zHashPieces ^= randomNums[ZHASH_TURN];
+            zHashState = 0;
+
+            current.enPassantSquare = -1;
+
+            if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
+            if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
+            if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
+            if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
+        }
+
+        void unmakeNullMove()
+        {
+            current = stateHistory.back();
+
+            zHashPieces ^= randomNums[ZHASH_TURN];
+            zHashState = 0;
+
+            if (current.enPassantSquare != -1)
+            {
+                zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];
+            }
+
+            if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
+            if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
+            if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
+            if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
+
+            stateHistory.pop_back();
+            moveHistory.pop_back();
+        }
+
         U64 getAttacksToSquare(bool side, U32 square)
         {
             U64 b = occupied[0] | occupied[1];
