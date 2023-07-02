@@ -119,7 +119,7 @@ void goCommand(Board &b, vector<string> words)
         //allocate the time to search for.
 
         //current time management is quite basic.
-        //use 5% of remaining time plus 75% of any increment.
+        //use 3% of remaining time plus 75% of any increment.
 
         double totalTime = 0;
         if (b.moveHistory.size() & 1) {totalTime = 0.03 * blackTime + 0.75 * blackInc;}
