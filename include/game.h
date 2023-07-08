@@ -20,7 +20,7 @@ void playCPU(double timePerMove)
     if (side)
     {
         isSearchAborted = false;
-        int res = alphaBetaRoot(b,-INT_MAX,INT_MAX,64);
+        int res = alphaBetaRoot(b,-MATE_SCORE,MATE_SCORE,64);
         cout << "Evaluation: " << res << endl;
         b.makeMove(storedBestMove);
         cout << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << endl;
@@ -63,7 +63,7 @@ void playCPU(double timePerMove)
         int res;
         isSearchAborted = false; storedBestMove = 0;
         startTime = std::chrono::high_resolution_clock::now();
-        res = alphaBetaRoot(b,-INT_MAX,INT_MAX,64);
+        res = alphaBetaRoot(b,-MATE_SCORE,MATE_SCORE,64);
 
         cout << "Evaluation: " << res << endl;
         if (storedBestMove==0)
