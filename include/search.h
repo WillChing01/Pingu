@@ -5,6 +5,7 @@
 
 #include "bitboard.h"
 #include "transposition.h"
+#include "evaluation.h"
 
 const int nullMoveR = 2;
 const int nullMoveDepthLimit = 3;
@@ -121,6 +122,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
     {
         //check transposition table for a previously calculated line.
         U64 bHash = b.zHashPieces ^ b.zHashState;
+        vector<pair<U32,int> > moveCache;
         if (ttProbe(bHash, tableEntry) == true)
         {
             if (tableEntry.depth >= depth)
@@ -134,17 +136,40 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
             }
 
             b.updateOccupied(); b.orderMoves(depth, tableEntry.bestMove);
+            moveCache = b.scoredMoves;
         }
         else
         {
             //no hash table hit.
             b.updateOccupied(); b.orderMoves(depth);
+            moveCache = b.scoredMoves;
+
+            //if possible, use internal iterative deepening for better move ordering.
+//            if (depth > 5)
+//            {
+//                //search to half depth to get approx best move to search first.
+//                int testScore = -INT_MAX;
+//                int testBestScore = -INT_MAX; U32 testBestMove = 0;
+//                for (int i=0;i<(int)(moveCache.size());i++)
+//                {
+//                    if (b.makeMove(moveCache[i].first))
+//                    {
+//                        testScore = -alphaBeta(b, -beta, -alpha, (depth - 1) / 2, true);
+//                        b.unmakeMove();
+//                        if (testScore > testBestScore)
+//                        {
+//                            testBestScore = testScore;
+//                            testBestMove = moveCache[i].first;
+//                        }
+//                    }
+//                }
+//                b.updateOccupied(); b.orderMoves(depth, testBestMove);
+//                moveCache = b.scoredMoves;
+//            }
         }
 
-        vector<pair<U32,int> > moveCache = b.scoredMoves;
-
         //null move pruning.
-        if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit && b.phase > 0 && beta != -INT_MAX)
+        if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit && b.phase > 16)
         {
             b.makeNullMove();
             int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR, false);
@@ -197,7 +222,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
     else if (inCheck)
     {
         //checkmate.
-        return -INT_MAX;
+        return -MATE_SCORE;
     }
     else
     {
@@ -236,7 +261,8 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
             int score;
             for (int itDepth = 1; itDepth <= depth; itDepth++)
             {
-                alpha = -INT_MAX; beta = INT_MAX; bestMoves.clear();
+                auto iterationStartTime = std::chrono::high_resolution_clock::now();
+                alpha = -MATE_SCORE; beta = MATE_SCORE; bestMoves.clear();
                 //try pv first.
                 if (b.makeMove(moveCache[pvIndex].first))
                 {
@@ -265,6 +291,18 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                     b.unpackMove(storedBestMove);
                     cout << itDepth << " " << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << " ";
                 }
+
+                //break if checkmate is reached.
+                if (alpha == MATE_SCORE) {break;}
+
+                auto iterationFinishTime = std::chrono::high_resolution_clock::now();
+
+                double iterationTime = std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
+                double realTimeLeft = max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
+
+                //assume each extra iteration is at least twice as long.
+                if (iterationTime * 2. > realTimeLeft) {break;}
+
             }
             cout << endl;
             return storedBestScore;
@@ -272,7 +310,7 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
         else if (inCheck)
         {
             //checkmate.
-            return -INT_MAX;
+            return -MATE_SCORE;
         }
         else
         {
@@ -292,7 +330,7 @@ void searchSpeedTest(int depth)
     for (int i=0;i<10;i++)
     {
         isSearchAborted = false;
-        alphaBetaRoot(b,-INT_MAX,INT_MAX,depth);
+        alphaBetaRoot(b,-MATE_SCORE,MATE_SCORE,depth);
         if (bestMoves.size()==0) {break;}
         b.makeMove(bestMoves[0]);
         cout << i+1 << " " << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << endl;

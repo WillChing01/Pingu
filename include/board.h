@@ -104,7 +104,14 @@ class Board {
             updateOccupied();
             updateAttacked(0); updateAttacked(1);
 
-            //initiate the Zobrist Hash Key.
+            zHashHardUpdate();
+        };
+
+        void zHashHardUpdate()
+        {
+            zHashPieces = 0;
+            zHashState = 0;
+
             for (int i=0;i<12;i++)
             {
                 U64 temp = pieces[i];
@@ -114,11 +121,15 @@ class Board {
                 }
             }
 
-            for (int i=0;i<4;i++)
-            {
-                zHashState ^= randomNums[ZHASH_CASTLES[i]];
-            }
-        };
+            if (moveHistory.size() & 1) {zHashPieces ^= randomNums[ZHASH_TURN];}
+
+            if (current.enPassantSquare != -1) {zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];}
+
+            if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
+            if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
+            if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
+            if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
+        }
 
         void setPositionFen(string fen)
         {
@@ -175,6 +186,8 @@ class Board {
 
             //en passant square.
             if (temp[3] != "-") {current.enPassantSquare = toSquare(temp[3]);}
+
+            zHashHardUpdate();
         }
 
         void appendMove(U32 pieceType, U32 startSquare, U32 finishSquare, bool shouldCheck=false)
@@ -1292,7 +1305,7 @@ class Board {
             else if (inCheck)
             {
                 //checkmate.
-                return -INT_MAX;
+                return -MATE_SCORE;
             }
             else
             {

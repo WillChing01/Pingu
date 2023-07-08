@@ -3,6 +3,8 @@
 
 //units are in centipawns.
 
+const int MATE_SCORE = 1000000;
+
 //order is king,queen,rook,bishop,knight,pawn.
 
 static const int PIECE_VALUES_START[6]=

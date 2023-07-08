@@ -20,10 +20,10 @@ std::atomic_bool isSearching(false);
 void searchThread(Board &b, int alpha, int beta, int depth, double moveTime)
 {
     isSearchAborted = false; totalNodes = 0; timeLeft = moveTime;
-    alphaBetaRoot(b, alpha, beta, depth);
+    int res = alphaBetaRoot(b, alpha, beta, depth);
 
     //output best move after search is complete.
-    cout << "info nodes " << totalNodes << endl;
+    cout << "info nodes " << totalNodes << " score cp " << res << endl;
     cout << "bestmove " << moveToString(storedBestMove) << endl;
 
     isSearching = false;
@@ -36,7 +36,7 @@ void uciCommand()
     cout << "id author William Ching" << endl;
 
     //tell GUI which options can be changed.
-    cout << "option name Hash type spin default 1 min 1 max 128" << endl;
+    cout << "option name Hash type spin default 1 min 1 max 8192" << endl;
 
     //confirmation command.
     cout << "uciok" << endl;
@@ -99,19 +99,19 @@ void goCommand(Board &b, vector<string> words)
     {
         //infinite search.
         isSearching = true;
-        auto calculation = std::thread(searchThread, std::ref(b), -INT_MAX, INT_MAX, 100, std::numeric_limits<double>::infinity());
+        auto calculation = std::thread(searchThread, std::ref(b), -MATE_SCORE, MATE_SCORE, 100, std::numeric_limits<double>::infinity());
         calculation.detach();
     }
     else if (depth != 0)
     {
         //search to specified depth.
-        auto calculation = std::thread(searchThread, std::ref(b), -INT_MAX, INT_MAX, depth, std::numeric_limits<double>::infinity());
+        auto calculation = std::thread(searchThread, std::ref(b), -MATE_SCORE, MATE_SCORE, depth, std::numeric_limits<double>::infinity());
         calculation.detach();
     }
     else if (moveTime != 0)
     {
         //search for a specified time.
-        auto calculation = std::thread(searchThread, std::ref(b), -INT_MAX, INT_MAX, 100, moveTime);
+        auto calculation = std::thread(searchThread, std::ref(b), -MATE_SCORE, MATE_SCORE, 100, moveTime);
         calculation.detach();
     }
     else
@@ -125,9 +125,19 @@ void goCommand(Board &b, vector<string> words)
         if (b.moveHistory.size() & 1) {totalTime = 0.03 * blackTime + 0.75 * blackInc;}
         else {totalTime = 0.03 * whiteTime + 0.75 * whiteInc;}
 
-        auto calculation = std::thread(searchThread, std::ref(b), -INT_MAX, INT_MAX, 100, totalTime);
+        auto calculation = std::thread(searchThread, std::ref(b), -MATE_SCORE, MATE_SCORE, 100, totalTime);
         calculation.detach();
     }
+}
+
+void prepareForNewGame(Board &b)
+{
+    b.stateHistory.clear();
+    b.moveHistory.clear();
+
+    //reset hash table.
+    clearTT();
+    rootCounter = 0;
 }
 
 void uciLoop()
@@ -144,7 +154,7 @@ void uciLoop()
         if (commands[0] == "uci") {uciCommand();}
         else if (commands[0] == "isready") {cout << "readyok" << endl;}
         else if (commands[0] == "setoption") {setOptionCommand(commands);}
-        else if (commands[0] == "ucinewgame") {b.stateHistory.clear(); b.moveHistory.clear();}
+        else if (commands[0] == "ucinewgame") {prepareForNewGame(b);}
         else if (commands[0] == "position") {positionCommand(b, commands);}
         else if (commands[0] == "go" && !isSearching) {goCommand(b, commands);}
         else if (commands[0] == "display") {b.display();}
