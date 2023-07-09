@@ -1200,20 +1200,13 @@ class Board {
             int endTotal = 0;
             int x;
 
-            //kings.
-            int kingPos = __builtin_ctzll(pieces[_nKing]);
-            int kingPos2 = __builtin_ctzll(pieces[_nKing+1]);
-
-            startTotal += PIECE_TABLES_START[0][63-kingPos] - PIECE_TABLES_START[0][kingPos2];
-            endTotal += PIECE_TABLES_END[0][63-kingPos] - PIECE_TABLES_END[0][kingPos2];
-
             //queens.
             U64 temp = pieces[_nQueens];
             while (temp)
             {
                 x = popLSB(temp);
                 startTotal += PIECE_VALUES_START[1] + PIECE_TABLES_START[1][63-x];
-                endTotal += PIECE_VALUES_END[1] + PIECE_TABLES_END[1][63-x];
+//                endTotal += PIECE_VALUES_END[1] + PIECE_TABLES_END[1][63-x];
             }
 
             temp = pieces[_nQueens+1];
@@ -1221,7 +1214,7 @@ class Board {
             {
                 x = popLSB(temp);
                 startTotal -= PIECE_VALUES_START[1] + PIECE_TABLES_START[1][x];
-                endTotal -= PIECE_VALUES_END[1] + PIECE_TABLES_END[1][x];
+//                endTotal -= PIECE_VALUES_END[1] + PIECE_TABLES_END[1][x];
             }
 
             //rooks.
@@ -1230,7 +1223,7 @@ class Board {
             {
                 x = popLSB(temp);
                 startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][63-x];
-                endTotal += PIECE_VALUES_END[2] + PIECE_TABLES_END[2][63-x];
+//                endTotal += PIECE_VALUES_END[2] + PIECE_TABLES_END[2][63-x];
             }
 
             temp = pieces[_nRooks+1];
@@ -1238,7 +1231,7 @@ class Board {
             {
                 x = popLSB(temp);
                 startTotal -= PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x];
-                endTotal -= PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x];
+//                endTotal -= PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x];
             }
 
             //bishops.
@@ -1247,7 +1240,7 @@ class Board {
             {
                 x = popLSB(temp);
                 startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][63-x];
-                endTotal += PIECE_VALUES_END[3] + PIECE_TABLES_END[3][63-x];
+//                endTotal += PIECE_VALUES_END[3] + PIECE_TABLES_END[3][63-x];
             }
 
             temp = pieces[_nBishops+1];
@@ -1255,7 +1248,7 @@ class Board {
             {
                 x = popLSB(temp);
                 startTotal -= PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x];
-                endTotal -= PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x];
+//                endTotal -= PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x];
             }
 
             //knights.
@@ -1264,7 +1257,7 @@ class Board {
             {
                 x = popLSB(temp);
                 startTotal += PIECE_VALUES_START[4] + PIECE_TABLES_START[4][63-x];
-                endTotal += PIECE_VALUES_END[4] + PIECE_TABLES_END[4][63-x];
+//                endTotal += PIECE_VALUES_END[4] + PIECE_TABLES_END[4][63-x];
             }
 
             temp = pieces[_nKnights+1];
@@ -1272,7 +1265,7 @@ class Board {
             {
                 x = popLSB(temp);
                 startTotal -= PIECE_VALUES_START[4] + PIECE_TABLES_START[4][x];
-                endTotal -= PIECE_VALUES_END[4] + PIECE_TABLES_END[4][x];
+//                endTotal -= PIECE_VALUES_END[4] + PIECE_TABLES_END[4][x];
             }
 
             //pawns.
@@ -1281,7 +1274,7 @@ class Board {
             {
                 x = popLSB(temp);
                 startTotal += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][63-x];
-                endTotal += PIECE_VALUES_END[5] + PIECE_TABLES_END[5][63-x];
+//                endTotal += PIECE_VALUES_END[5] + PIECE_TABLES_END[5][63-x];
             }
 
             temp = pieces[_nPawns+1];
@@ -1289,8 +1282,17 @@ class Board {
             {
                 x = popLSB(temp);
                 startTotal -= PIECE_VALUES_START[5] + PIECE_TABLES_START[5][x];
-                endTotal -= PIECE_VALUES_END[5] + PIECE_TABLES_END[5][x];
+//                endTotal -= PIECE_VALUES_END[5] + PIECE_TABLES_END[5][x];
             }
+
+            endTotal = startTotal;
+
+            //kings.
+            int kingPos = __builtin_ctzll(pieces[_nKing]);
+            int kingPos2 = __builtin_ctzll(pieces[_nKing+1]);
+
+            startTotal += PIECE_TABLES_START[0][63-kingPos] - PIECE_TABLES_START[0][kingPos2];
+            endTotal += PIECE_TABLES_END[0][63-kingPos] - PIECE_TABLES_END[0][kingPos2];
 
             return (((startTotal * shiftedPhase) + (endTotal * (256 - shiftedPhase))) / 256) * (1-2*(int)(moveHistory.size() & 1));
         }

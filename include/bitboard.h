@@ -26,7 +26,7 @@ static int _i=0;
 inline int popLSB(U64 &b)
 {
     _i=__builtin_ctzll(b);
-    b &= b-1;
+    b &= b-1ull;
     return _i;
 }
 
