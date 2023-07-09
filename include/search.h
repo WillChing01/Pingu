@@ -122,7 +122,6 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
     {
         //check transposition table for a previously calculated line.
         U64 bHash = b.zHashPieces ^ b.zHashState;
-        vector<pair<U32,int> > moveCache;
         if (ttProbe(bHash, tableEntry) == true)
         {
             if (tableEntry.depth >= depth)
@@ -136,40 +135,17 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
             }
 
             b.updateOccupied(); b.orderMoves(depth, tableEntry.bestMove);
-            moveCache = b.scoredMoves;
         }
         else
         {
             //no hash table hit.
             b.updateOccupied(); b.orderMoves(depth);
-            moveCache = b.scoredMoves;
-
-            //if possible, use internal iterative deepening for better move ordering.
-//            if (depth > 5)
-//            {
-//                //search to half depth to get approx best move to search first.
-//                int testScore = -INT_MAX;
-//                int testBestScore = -INT_MAX; U32 testBestMove = 0;
-//                for (int i=0;i<(int)(moveCache.size());i++)
-//                {
-//                    if (b.makeMove(moveCache[i].first))
-//                    {
-//                        testScore = -alphaBeta(b, -beta, -alpha, (depth - 1) / 2, true);
-//                        b.unmakeMove();
-//                        if (testScore > testBestScore)
-//                        {
-//                            testBestScore = testScore;
-//                            testBestMove = moveCache[i].first;
-//                        }
-//                    }
-//                }
-//                b.updateOccupied(); b.orderMoves(depth, testBestMove);
-//                moveCache = b.scoredMoves;
-//            }
         }
 
+        vector<pair<U32,int> > moveCache = b.scoredMoves;
+
         //null move pruning.
-        if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit && b.phase > 16)
+        if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit && b.phase > 0)
         {
             b.makeNullMove();
             int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR, false);
@@ -206,7 +182,8 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
                     }
 
                     //update transposition table.
-                    ttSave(bHash, depth, bestMove, bestScore, false, true);
+                    //dont save a mate score, in case of draw by repetition
+                    if (score != MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, false, true);}
 
                     return beta;
                 }
@@ -290,10 +267,9 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                     storedBestScore = alpha;
                     b.unpackMove(storedBestMove);
                     cout << itDepth << " " << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << " ";
+                    //break if checkmate is reached.
+                    if (storedBestScore == MATE_SCORE) {break;}
                 }
-
-                //break if checkmate is reached.
-                if (alpha == MATE_SCORE) {break;}
 
                 auto iterationFinishTime = std::chrono::high_resolution_clock::now();
 

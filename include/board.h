@@ -105,6 +105,7 @@ class Board {
             updateAttacked(0); updateAttacked(1);
 
             zHashHardUpdate();
+            phaseHardUpdate();
         };
 
         void zHashHardUpdate()
@@ -129,6 +130,21 @@ class Board {
             if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
             if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
             if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
+        }
+
+        void phaseHardUpdate()
+        {
+            phase = 0;
+            for (int i=0;i<12;i++)
+            {
+                U64 temp = pieces[i];
+                while (temp)
+                {
+                    phase += piecePhases[i >> 1];
+                    popLSB(temp);
+                }
+            }
+            shiftedPhase = (64 * phase + 3)/6;
         }
 
         void setPositionFen(string fen)
@@ -188,6 +204,7 @@ class Board {
             if (temp[3] != "-") {current.enPassantSquare = toSquare(temp[3]);}
 
             zHashHardUpdate();
+            phaseHardUpdate();
         }
 
         void appendMove(U32 pieceType, U32 startSquare, U32 finishSquare, bool shouldCheck=false)
