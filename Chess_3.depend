@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1688913075 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
+1688939810 source:c:\users\willi\onedrive\desktop\coding\chess_3\main.cpp
 	<iostream>
 	"board.h"
 	"perft.h"
@@ -36,7 +36,7 @@
 1680460739 c:\users\willi\onedrive\desktop\coding\chess_3\include\slider.h
 	"constants.h"
 
-1680733835 c:\users\willi\onedrive\desktop\coding\chess_3\include\bitboard.h
+1688939935 c:\users\willi\onedrive\desktop\coding\chess_3\include\bitboard.h
 	<string>
 	"constants.h"
 
@@ -93,9 +93,9 @@
 1688923862 c:\users\willi\onedrive\desktop\coding\chess_3\include\magic.h
 	"slider.h"
 
-1688856613 c:\users\willi\onedrive\desktop\coding\chess_3\include\evaluation.h
+1688940397 c:\users\willi\onedrive\desktop\coding\chess_3\include\evaluation.h
 
-1688937719 c:\users\willi\onedrive\desktop\coding\chess_3\include\search.h
+1689113477 c:\users\willi\onedrive\desktop\coding\chess_3\include\search.h
 	<atomic>
 	"bitboard.h"
 	"transposition.h"
@@ -110,7 +110,7 @@
 	"search.h"
 	"format.h"
 
-1688923810 c:\users\willi\onedrive\desktop\coding\chess_3\include\transposition.h
+1688939828 c:\users\willi\onedrive\desktop\coding\chess_3\include\transposition.h
 	<random>
 	<chrono>
 

@@ -61,14 +61,14 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
         b.updateOccupied(); b.orderMoves();
         vector<pair<U32,int> > moveCache = b.scoredMoves;
 
-        int score;
+        int score; int bestScore = -INT_MAX;
 
         if (!inCheck)
         {
             //do stand-pat check.
-            int standPat=b.regularEval();
-            if (standPat >= beta) {return beta;}
-            if (alpha < standPat) {alpha = standPat;}
+            bestScore=b.regularEval();
+            if (bestScore >= beta) {return bestScore;}
+            alpha = max(alpha,bestScore);
         }
 
         for (int i=0;i<(int)(moveCache.size());i++)
@@ -78,12 +78,16 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
                 score = -alphaBetaQuiescence(b, -beta, -alpha);
                 b.unmakeMove();
 
-                if (score >= beta) {return beta;}
-                if (score > alpha) {alpha = score;}
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    if (score >= beta) {return bestScore;}
+                    alpha = max(alpha,score);
+                }
             }
         }
 
-        return alpha;
+        return bestScore;
     }
     else
     {
@@ -129,9 +133,17 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
                 //PV node, score is exact.
                 if (tableEntry.isExact) {return tableEntry.evaluation;}
                 //score is a lower bound.
-                else if (tableEntry.isBeta) {if (tableEntry.evaluation >= beta) {return beta;}}
+                else if (tableEntry.isBeta)
+                {
+                    if (tableEntry.evaluation >= beta) {return tableEntry.evaluation;}
+                    alpha = max(alpha,tableEntry.evaluation);
+                }
                 //all node, score is an upper bound.
-                else {if (tableEntry.evaluation < alpha) {return alpha;}}
+                else
+                {
+                    if (tableEntry.evaluation <= alpha) {return tableEntry.evaluation;}
+                    beta = min(beta,tableEntry.evaluation);
+                }
             }
 
             b.updateOccupied(); b.orderMoves(depth, tableEntry.bestMove);
@@ -151,6 +163,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
             int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR, false);
             b.unmakeNullMove();
 
+            //fail hard only for null move pruning.
             if (nullScore >= beta) {return beta;}
         }
 
@@ -168,33 +181,33 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
                 {
                     bestScore = score;
                     bestMove = moveCache[i].first;
-                }
 
-                if (score >= beta)
-                {
-                    //beta cut-off. add killer move.
-                    if (b.currentMove.capturedPieceType == 15 &&
-                        b.killerMoves[depth][0] != moveCache[i].first &&
-                        b.killerMoves[depth][1] != moveCache[i].first)
+                    if (score >= beta)
                     {
-                        b.killerMoves[depth][1] = b.killerMoves[depth][0];
-                        b.killerMoves[depth][0] = moveCache[i].first;
+                        //beta cut-off. add killer move.
+                        if (b.currentMove.capturedPieceType == 15 &&
+                            b.killerMoves[depth][0] != moveCache[i].first &&
+                            b.killerMoves[depth][1] != moveCache[i].first)
+                        {
+                            b.killerMoves[depth][1] = b.killerMoves[depth][0];
+                            b.killerMoves[depth][0] = moveCache[i].first;
+                        }
+
+                        //update transposition table.
+                        //dont save a mate score, in case of draw by repetition
+                        if (score != MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, false, true);}
+
+                        return bestScore;
                     }
-
-                    //update transposition table.
-                    //dont save a mate score, in case of draw by repetition
-                    if (score != MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, false, true);}
-
-                    return beta;
+                    if (score > alpha) {alpha = score; isExact = true;}
                 }
-                if (score > alpha) {alpha = score; isExact = true;}
             }
         }
 
         //update transposition table.
         ttSave(bHash, depth, bestMove, bestScore, isExact, false);
 
-        return alpha;
+        return bestScore;
     }
     else if (inCheck)
     {
