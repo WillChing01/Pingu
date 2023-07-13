@@ -167,13 +167,55 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
             if (nullScore >= beta) {return beta;}
         }
 
-
         int score=alpha; bool isExact = false;
         int bestScore = -INT_MAX; U32 bestMove = 0;
+
+        //pv search.
+        //search first legal move with full window.
+//        int start = 0;
+//        for (int i=0;i<(int)(moveCache.size());i++)
+//        {
+//            if (b.makeMove(moveCache[i].first))
+//            {
+//                start = i+1;
+//                int bestScore = -alphaBeta(b, -beta, -alpha, depth-1, true);
+//                b.unmakeMove();
+//                if (bestScore > alpha)
+//                {
+//                    if (bestScore >= beta)
+//                    {
+//                        //beta cut-off. add killer move.
+//                        if (b.currentMove.capturedPieceType == 15 &&
+//                            b.killerMoves[depth][0] != moveCache[i].first &&
+//                            b.killerMoves[depth][1] != moveCache[i].first)
+//                        {
+//                            b.killerMoves[depth][1] = b.killerMoves[depth][0];
+//                            b.killerMoves[depth][0] = moveCache[i].first;
+//                        }
+//
+//                        //update transposition table.
+//                        //dont save a mate score, in case of draw by repetition
+//                        if (bestScore != MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, false, true);}
+//
+//                        return bestScore;
+//                    }
+//                    alpha = bestScore;
+//                }
+//                break;
+//            }
+//        }
+
+//        search all other moves with initial null window.
+//        for (int i=start;i<(int)(moveCache.size());i++)
         for (int i=0;i<(int)(moveCache.size());i++)
         {
             if (b.makeMove(moveCache[i].first))
             {
+//                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, true);
+//                if (score > alpha && score < beta)
+//                {
+//                    score = -alphaBeta(b, -beta, -alpha, depth-1, true);
+//                }
                 score = -alphaBeta(b, -beta, -alpha, depth-1, true);
                 b.unmakeMove();
 
