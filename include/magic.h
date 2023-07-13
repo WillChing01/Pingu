@@ -374,17 +374,17 @@ void populateMagicTables()
     populateMagicBishopTables();
 }
 
-inline U64 magicRookAttacks(U64 b, int square)
+inline U64 magicRookAttacks(const U64 b, const int square)
 {
     return rookMagicMoves[square][((b & rookMasks[square]) * rookMagics[square]) >> 52ull];
 }
 
-inline U64 magicBishopAttacks(U64 b, int square)
+inline U64 magicBishopAttacks(const U64 b, const int square)
 {
     return bishopMagicMoves[square][((b & bishopMasks[square]) * bishopMagics[square]) >> 55ull];
 }
 
-inline U64 magicQueenAttacks(U64 b, int square)
+inline U64 magicQueenAttacks(const U64 b, const int square)
 {
     return (U64)(magicRookAttacks(b, square) | magicBishopAttacks(b, square));
 }

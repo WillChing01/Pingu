@@ -17,10 +17,10 @@ std::atomic_bool isSearching(false);
 //    return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 //}
 
-void searchThread(Board &b, int alpha, int beta, int depth, double moveTime)
+void searchThread(Board &b, int depth, double moveTime)
 {
     isSearchAborted = false; totalNodes = 0; timeLeft = moveTime;
-    int res = alphaBetaRoot(b, alpha, beta, depth);
+    int res = alphaBetaRoot(b, -MATE_SCORE, MATE_SCORE, depth);
 
     //output best move after search is complete.
     cout << "info nodes " << totalNodes << " score cp " << res << endl;
@@ -99,19 +99,19 @@ void goCommand(Board &b, vector<string> words)
     {
         //infinite search.
         isSearching = true;
-        auto calculation = std::thread(searchThread, std::ref(b), -MATE_SCORE, MATE_SCORE, 100, std::numeric_limits<double>::infinity());
+        auto calculation = std::thread(searchThread, std::ref(b), 100, std::numeric_limits<double>::infinity());
         calculation.detach();
     }
     else if (depth != 0)
     {
         //search to specified depth.
-        auto calculation = std::thread(searchThread, std::ref(b), -MATE_SCORE, MATE_SCORE, depth, std::numeric_limits<double>::infinity());
+        auto calculation = std::thread(searchThread, std::ref(b), depth, std::numeric_limits<double>::infinity());
         calculation.detach();
     }
     else if (moveTime != 0)
     {
         //search for a specified time.
-        auto calculation = std::thread(searchThread, std::ref(b), -MATE_SCORE, MATE_SCORE, 100, moveTime);
+        auto calculation = std::thread(searchThread, std::ref(b), 100, moveTime);
         calculation.detach();
     }
     else
@@ -125,7 +125,7 @@ void goCommand(Board &b, vector<string> words)
         if (b.moveHistory.size() & 1) {totalTime = 0.03 * blackTime + 0.75 * blackInc;}
         else {totalTime = 0.03 * whiteTime + 0.75 * whiteInc;}
 
-        auto calculation = std::thread(searchThread, std::ref(b), -MATE_SCORE, MATE_SCORE, 100, totalTime);
+        auto calculation = std::thread(searchThread, std::ref(b), 100, totalTime);
         calculation.detach();
     }
 }
