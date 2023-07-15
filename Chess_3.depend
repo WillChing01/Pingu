@@ -6,7 +6,7 @@
 	"game.h"
 	"uci.h"
 
-1689441935 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
+1689444164 c:\users\willi\onedrive\desktop\coding\chess_3\include\board.h
 	<vector>
 	<bitset>
 	<windows.h>
@@ -105,7 +105,7 @@
 	<chrono>
 	"board.h"
 
-1689376199 c:\users\willi\onedrive\desktop\coding\chess_3\include\game.h
+1689444098 c:\users\willi\onedrive\desktop\coding\chess_3\include\game.h
 	"board.h"
 	"search.h"
 	"format.h"

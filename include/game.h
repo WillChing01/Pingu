@@ -32,20 +32,7 @@ void playCPU(double timePerMove)
         //player makes turn.
         b.generatePseudoMoves(side);
 
-        //check if there are any legal moves left.
-        bool movesLeft = false;
-        for (int i=0;i<(int)b.moveBuffer.size();i++)
-        {
-//            if (!(bool)(b.moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {movesLeft=true; break;}
-//            else if (b.makeMove(b.moveBuffer[i]))
-            {
-                movesLeft=true;
-                b.unmakeMove();
-                break;
-            }
-        }
-
-        if (!movesLeft) {break;}
+        if (b.moveBuffer.size() == 0) {break;}
 
         while (true)
         {
@@ -70,16 +57,8 @@ void playCPU(double timePerMove)
         {
             b.moveBuffer.clear();
             b.generatePseudoMoves(!side);
-            bool gotMove=false;
-            for (int i=0;i<(int)b.moveBuffer.size();i++)
-            {
-//                if (b.makeMove(b.moveBuffer[i]))
-                {
-                    gotMove=true; break;
-                }
-            }
-
-            if (!gotMove) {break;}
+            if (b.moveBuffer.size() == 0) {break;}
+            b.makeMove(b.moveBuffer[0]);
         }
         else
         {

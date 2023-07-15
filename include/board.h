@@ -233,7 +233,6 @@ class Board {
                 shouldCheck = true;
 
                 //check for captured piece.
-                U64 x = 1ull << (finishSquare-8+16*(pieceType & 1));
                 capturedPieceType = (_nPawns+((pieceType+1u) & 1u));
             }
 
