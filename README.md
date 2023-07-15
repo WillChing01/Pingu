@@ -4,7 +4,7 @@ UCI compatible chess engine built from scratch.
 
 Many thanks to the advice on [Chess Programming Wiki](www.chessprogramming.org).
 
-Play me on Lichess! My name is [William Engine](https://lichess.org/@/WilliamEngine).
+Play me on Lichess! My username is [WilliamEngine](https://lichess.org/@/WilliamEngine).
 
 # Features
 
