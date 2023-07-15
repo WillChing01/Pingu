@@ -44,24 +44,9 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
 
     bool inCheck = b.generatePseudoQMoves(b.moveHistory.size() & 1);
 
-    bool movesLeft = false;
-    for (int i=0;i<(int)(b.moveBuffer.size());i++)
+    if (b.moveBuffer.size() > 0)
     {
-        if (!(bool)(b.moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {movesLeft=true; break;}
-        else if (b.makeMove(b.moveBuffer[i]))
-        {
-            movesLeft=true;
-            b.unmakeMove();
-            break;
-        }
-    }
-
-    if (movesLeft)
-    {
-        b.updateOccupied(); b.orderMoves();
-        vector<pair<U32,int> > moveCache = b.scoredMoves;
-
-        int score; int bestScore = -INT_MAX;
+        int bestScore = -INT_MAX;
 
         if (!inCheck)
         {
@@ -71,19 +56,20 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
             alpha = max(alpha,bestScore);
         }
 
+        int score;
+        b.updateOccupied();
+        vector<pair<U32,int> > moveCache = b.orderMoves();
         for (int i=0;i<(int)(moveCache.size());i++)
         {
-            if (b.makeMove(moveCache[i].first))
-            {
-                score = -alphaBetaQuiescence(b, -beta, -alpha);
-                b.unmakeMove();
+            b.makeMove(moveCache[i].first);
+            score = -alphaBetaQuiescence(b, -beta, -alpha);
+            b.unmakeMove();
 
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    if (score >= beta) {return bestScore;}
-                    alpha = max(alpha,score);
-                }
+            if (score > bestScore)
+            {
+                if (score >= beta) {return score;}
+                bestScore = score;
+                alpha = max(alpha,score);
             }
         }
 
@@ -110,51 +96,31 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
 
     bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
-    bool movesLeft=false;
-    for (int i=0;i<(int)b.moveBuffer.size();i++)
-    {
-        if (!(bool)(b.moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {movesLeft=true; break;}
-        else if (b.makeMove(b.moveBuffer[i]))
-        {
-            movesLeft=true;
-            b.unmakeMove();
-            break;
-        }
-    }
-
-    if (movesLeft)
+    if (b.moveBuffer.size() > 0)
     {
         //check transposition table for a previously calculated line.
         U64 bHash = b.zHashPieces ^ b.zHashState;
-        if (ttProbe(bHash, tableEntry) == true)
+        vector<pair<U32,int> > moveCache;
+        if (ttProbe(bHash,tableEntry) == true)
         {
             if (tableEntry.depth >= depth)
             {
                 //PV node, score is exact.
                 if (tableEntry.isExact) {return tableEntry.evaluation;}
                 //score is a lower bound.
-                else if (tableEntry.isBeta)
-                {
-                    if (tableEntry.evaluation >= beta) {return tableEntry.evaluation;}
-                    alpha = max(alpha,tableEntry.evaluation);
-                }
+                else if (tableEntry.isBeta) {if (tableEntry.evaluation >= beta) {return tableEntry.evaluation;}}
                 //all node, score is an upper bound.
-                else
-                {
-                    if (tableEntry.evaluation <= alpha) {return tableEntry.evaluation;}
-                    beta = min(beta,tableEntry.evaluation);
-                }
+                else {if (tableEntry.evaluation <= alpha) {return tableEntry.evaluation;}}
             }
-
-            b.updateOccupied(); b.orderMoves(depth, tableEntry.bestMove);
+            b.updateOccupied();
+            moveCache = b.orderMoves(depth, tableEntry.bestMove);
         }
         else
         {
             //no hash table hit.
-            b.updateOccupied(); b.orderMoves(depth);
+            b.updateOccupied();
+            moveCache = b.orderMoves(depth);
         }
-
-        vector<pair<U32,int> > moveCache = b.scoredMoves;
 
         //null move pruning.
         if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit && b.phase > 0)
@@ -168,7 +134,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
         }
 
         int score=alpha; bool isExact = false;
-        int bestScore = -INT_MAX; U32 bestMove = 0;
+        int bestScore = -MATE_SCORE; U32 bestMove = 0;
 
         //pv search.
         //search first legal move with full window.
@@ -209,45 +175,41 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
 //        for (int i=start;i<(int)(moveCache.size());i++)
         for (int i=0;i<(int)(moveCache.size());i++)
         {
-            if (b.makeMove(moveCache[i].first))
-            {
 //                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, true);
 //                if (score > alpha && score < beta)
 //                {
 //                    score = -alphaBeta(b, -beta, -alpha, depth-1, true);
 //                }
-                score = -alphaBeta(b, -beta, -alpha, depth-1, true);
-                b.unmakeMove();
+            b.makeMove(moveCache[i].first);
+            score = -alphaBeta(b, -beta, -alpha, depth-1, true);
+            b.unmakeMove();
 
-                if (score > bestScore)
+            if (score > bestScore)
+            {
+                if (score >= beta)
                 {
-                    bestScore = score;
-                    bestMove = moveCache[i].first;
-
-                    if (score >= beta)
+                    //beta cut-off. add killer move.
+                    if (b.currentMove.capturedPieceType == 15 &&
+                        b.killerMoves[depth][0] != moveCache[i].first &&
+                        b.killerMoves[depth][1] != moveCache[i].first)
                     {
-                        //beta cut-off. add killer move.
-                        if (b.currentMove.capturedPieceType == 15 &&
-                            b.killerMoves[depth][0] != moveCache[i].first &&
-                            b.killerMoves[depth][1] != moveCache[i].first)
-                        {
-                            b.killerMoves[depth][1] = b.killerMoves[depth][0];
-                            b.killerMoves[depth][0] = moveCache[i].first;
-                        }
-
-                        //update transposition table.
-                        //dont save a mate score, in case of draw by repetition
-                        if (score != MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, false, true);}
-
-                        return bestScore;
+                        b.killerMoves[depth][1] = b.killerMoves[depth][0];
+                        b.killerMoves[depth][0] = moveCache[i].first;
                     }
-                    if (score > alpha) {alpha = score; isExact = true;}
+
+                    //update transposition table.
+                    if (score < MATE_SCORE) {ttSave(bHash, depth, moveCache[i].first, score, false, true);}
+
+                    return score;
                 }
+                if (score > alpha) {alpha = score; isExact = true;}
+                bestScore = score;
+                bestMove = moveCache[i].first;
             }
         }
 
         //update transposition table.
-        ttSave(bHash, depth, bestMove, bestScore, isExact, false);
+        if (bestScore != -MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, isExact, false);}
 
         return bestScore;
     }
@@ -273,22 +235,10 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
 
         bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
-        bool movesLeft=false;
-        for (int i=0;i<(int)b.moveBuffer.size();i++)
+        if (b.moveBuffer.size() > 0)
         {
-            if (!(bool)(b.moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {movesLeft=true; break;}
-            else if (b.makeMove(b.moveBuffer[i]))
-            {
-                movesLeft=true;
-                b.unmakeMove();
-                break;
-            }
-        }
-
-        if (movesLeft)
-        {
-            b.updateOccupied(); b.orderMoves();
-            vector<pair<U32,int> > moveCache = b.scoredMoves;
+            b.updateOccupied();
+            vector<pair<U32,int> > moveCache = b.orderMoves();
             int pvIndex = 0;
             int score;
             for (int itDepth = 1; itDepth <= depth; itDepth++)
@@ -296,22 +246,18 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                 auto iterationStartTime = std::chrono::high_resolution_clock::now();
                 alpha = -MATE_SCORE; beta = MATE_SCORE; bestMoves.clear();
                 //try pv first.
-                if (b.makeMove(moveCache[pvIndex].first))
-                {
-                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, true);
-                    b.unmakeMove();
-                    if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[pvIndex].first);}
-                }
+                b.makeMove(moveCache[pvIndex].first);
+                score = -alphaBeta(b, -beta, -alpha, itDepth-1, true);
+                b.unmakeMove();
+                if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[pvIndex].first);}
 
                 for (int i=0;i<(int)(moveCache.size());i++)
                 {
                     if (i==pvIndex) {continue;}
-                    if (b.makeMove(moveCache[i].first))
-                    {
-                        score = -alphaBeta(b, -beta, -alpha, itDepth-1, true);
-                        b.unmakeMove();
-                        if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[i].first); pvIndex = i;}
-                    }
+                    b.makeMove(moveCache[i].first);
+                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, true);
+                    b.unmakeMove();
+                    if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[i].first); pvIndex = i;}
                 }
 
                 //check if time is up.

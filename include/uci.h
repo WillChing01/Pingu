@@ -66,6 +66,7 @@ void positionCommand(Board &b, vector<string> words)
     for (int i=ind;i<(int)words.size();i++)
     {
         U32 chessMove = stringToMove(b,words[i]);
+        if (chessMove == 0) {break;}
         b.makeMove(chessMove);
     }
 }

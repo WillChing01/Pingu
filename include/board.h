@@ -37,7 +37,6 @@ struct moveInfo
     bool enPassant;
     U32 capturedPieceType;
     U32 finishPieceType;
-    bool shouldCheck;
 };
 
 class Board {
@@ -209,14 +208,7 @@ class Board {
 
         void appendMove(U32 pieceType, U32 startSquare, U32 finishSquare, bool shouldCheck=false)
         {
-            //will automatically detect promotion and generate all permutations.
-            //will automatically detect captured piece (including en passant).
-            U32 newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
-            (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
-            (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
-            ((U32)(shouldCheck) << MOVEINFO_SHOULDCHECK_OFFSET) |
-            MOVEINFO_CAPTUREDPIECETYPE_MASK |
-            (pieceType << MOVEINFO_FINISHPIECETYPE_OFFSET);
+            int capturedPieceType = 15; bool enPassant = false;
 
             //check for captured pieces (including en passant).
             if (((1ull << finishSquare) & occupied[(pieceType+1) & 1])!=0)
@@ -227,8 +219,7 @@ class Board {
                 {
                     if ((x & pieces[i]) != 0)
                     {
-                        newMove &= ~MOVEINFO_CAPTUREDPIECETYPE_MASK;
-                        newMove |= i << MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                        capturedPieceType = i;
                         break;
                     }
                 }
@@ -236,24 +227,76 @@ class Board {
             else if ((pieceType >> 1 == _nPawns >> 1) && (finishSquare >> 3 == 5u-3u*(pieceType & 1u)) && ((finishSquare & 7) != (startSquare & 7)))
             {
                 //en-passant capture.
-                newMove |= 1 << MOVEINFO_ENPASSANT_OFFSET;
+                enPassant = true;
 
                 //always check en-passant.
-                newMove &= ~MOVEINFO_SHOULDCHECK_MASK;
-                newMove |= (U32)(1) << MOVEINFO_SHOULDCHECK_OFFSET;
+                shouldCheck = true;
 
                 //check for captured piece.
-                U64 x = 1ull << (finishSquare-8+16*(pieceType & 1));
-                for (U32 i=_nQueens+((pieceType+1u) & 1u);i<12;i+=2)
+                capturedPieceType = (_nPawns+((pieceType+1u) & 1u));
+            }
+
+            if (shouldCheck)
+            {
+                //check if move is legal (does not leave king in check).
+                //move pieces.
+                pieces[pieceType] -= 1ull << (startSquare);
+                pieces[pieceType] += 1ull << (finishSquare);
+                if (capturedPieceType != 15)
                 {
-                    if ((x & pieces[i]) != 0)
+                    pieces[capturedPieceType] -= 1ull << (finishSquare+(int)(enPassant)*(-8+16*(pieceType & 1)));
+                }
+                if (pieceType >> 1 == _nKing >> 1 && abs((int)(finishSquare)-(int)(startSquare))==2)
+                {
+                    if (finishSquare-startSquare==2)
                     {
-                        newMove &= ~MOVEINFO_CAPTUREDPIECETYPE_MASK;
-                        newMove |= i << MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                        break;
+                        //kingside.
+                        pieces[_nRooks+(pieceType & 1)] -= KING_ROOK_POS[pieceType & 1];
+                        pieces[_nRooks+(pieceType & 1)] += KING_ROOK_POS[pieceType & 1] >> 2;
+                    }
+                    else
+                    {
+                        //queenside.
+                        pieces[_nRooks+(pieceType & 1)] -= QUEEN_ROOK_POS[pieceType & 1];
+                        pieces[_nRooks+(pieceType & 1)] += QUEEN_ROOK_POS[pieceType & 1] << 3;
                     }
                 }
+                updateOccupied();
+                bool isBad = isInCheck(pieceType & 1);
+
+                //unmove pieces.
+                pieces[pieceType] += 1ull << (startSquare);
+                pieces[pieceType] -= 1ull << (finishSquare);
+                if (capturedPieceType != 15)
+                {
+                    pieces[capturedPieceType] += 1ull << (finishSquare+(int)(enPassant)*(-8+16*(pieceType & 1)));
+                }
+                if (pieceType >> 1 == _nKing >> 1 && abs((int)(finishSquare)-(int)(startSquare))==2)
+                {
+                    if (finishSquare-startSquare==2)
+                    {
+                        //kingside.
+                        pieces[_nRooks+(pieceType & 1)] += KING_ROOK_POS[pieceType & 1];
+                        pieces[_nRooks+(pieceType & 1)] -= KING_ROOK_POS[pieceType & 1] >> 2;
+                    }
+                    else
+                    {
+                        //queenside.
+                        pieces[_nRooks+(pieceType & 1)] += QUEEN_ROOK_POS[pieceType & 1];
+                        pieces[_nRooks+(pieceType & 1)] -= QUEEN_ROOK_POS[pieceType & 1] << 3;
+                    }
+                }
+                updateOccupied();
+
+                if (isBad) {return;}
             }
+
+            U32 newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
+            (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
+            (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
+            (enPassant << MOVEINFO_ENPASSANT_OFFSET) |
+            (capturedPieceType << MOVEINFO_CAPTUREDPIECETYPE_OFFSET) |
+            (pieceType << MOVEINFO_FINISHPIECETYPE_OFFSET);
 
             //check for pawn promotion.
             if (pieceType >> 1 == _nPawns >> 1 && finishSquare >> 3 == 7-7*(pieceType & 1))
@@ -310,7 +353,7 @@ class Board {
             attacked[(int)(side)] |= knightAttacks(pieces[_nKnights+(int)(side)]);
 
             //pawns.
-            attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],(int)(side));
+            attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
         }
 
         bool isInCheck(bool side)
@@ -379,7 +422,7 @@ class Board {
             else
             {
                 //pawn.
-                return pair<U32,U32>(_nPawns,__builtin_ctzll(pawnAttacks(1ull << square,(int)(side)) & pieces[_nPawns+(int)(!side)]));
+                return pair<U32,U32>(_nPawns,__builtin_ctzll(pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)]));
             }
         }
 
@@ -928,144 +971,69 @@ class Board {
             currentMove.enPassant = (chessMove & MOVEINFO_ENPASSANT_MASK);
             currentMove.capturedPieceType = (chessMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
             currentMove.finishPieceType = (chessMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
-            currentMove.shouldCheck = (chessMove & MOVEINFO_SHOULDCHECK_MASK);
         }
 
-        bool makeMove(U32 chessMove)
+        void makeMove(U32 chessMove)
         {
             unpackMove(chessMove);
 
             //move pieces.
             movePieces();
 
-            //check if the move was legal.
-            if (!currentMove.shouldCheck)
+            //update history.
+            stateHistory.push_back(current);
+            moveHistory.push_back(chessMove);
+
+            //turn increment can be done in zHashPieces.
+            zHashPieces ^= randomNums[ZHASH_TURN];
+            zHashState = 0;
+
+            //if double-pawn push, set en-passant square.
+            //otherwise, set en-passant square to -1.
+            if (currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16)
             {
-                //update history.
-                stateHistory.push_back(current);
-                moveHistory.push_back(chessMove);
-
-                //turn increment can be done in zHashPieces.
-                zHashPieces ^= randomNums[ZHASH_TURN];
-                zHashState = 0;
-
-                //if double-pawn push, set en-passant square.
-                //otherwise, set en-passant square to -1.
-                if (currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16)
-                {
-                    current.enPassantSquare = currentMove.finishSquare-8+16*(currentMove.pieceType & 1);
-                    zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];
-                }
-                else
-                {
-                    current.enPassantSquare = -1;
-                }
-
-                if (currentMove.pieceType >> 1 == _nRooks >> 1)
-                {
-                    if ((currentMove.startSquare & 7) == 7)
-                    {
-                        current.canKingCastle[currentMove.pieceType & 1] = false;
-                    }
-                    else if ((currentMove.startSquare & 7) == 0)
-                    {
-                        current.canQueenCastle[currentMove.pieceType & 1] = false;
-                    }
-                }
-                else if (currentMove.pieceType >> 1 == _nKing >> 1)
-                {
-                    current.canKingCastle[currentMove.pieceType & 1] = false;
-                    current.canQueenCastle[currentMove.pieceType & 1] = false;
-                }
-
-                if (currentMove.capturedPieceType >> 1 == _nRooks >> 1)
-                {
-                    if ((currentMove.finishSquare & 7) == 7)
-                    {
-                        current.canKingCastle[currentMove.capturedPieceType & 1] = false;
-                    }
-                    else if ((currentMove.finishSquare & 7) == 0)
-                    {
-                        current.canQueenCastle[currentMove.capturedPieceType & 1] = false;
-                    }
-                }
-
-                //update castling rights for zHash.
-                if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
-                if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
-                if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
-                if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
-
-                return true;
+                current.enPassantSquare = currentMove.finishSquare-8+16*(currentMove.pieceType & 1);
+                zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];
             }
             else
             {
-                updateOccupied();
-                if (isInCheck(currentMove.pieceType & 1))
+                current.enPassantSquare = -1;
+            }
+
+            if (currentMove.pieceType >> 1 == _nRooks >> 1)
+            {
+                if ((currentMove.startSquare & 7) == 7)
                 {
-                    unMovePieces();
-                    return false;
+                    current.canKingCastle[currentMove.pieceType & 1] = false;
                 }
-                else
+                else if ((currentMove.startSquare & 7) == 0)
                 {
-                    //update history.
-                    stateHistory.push_back(current);
-                    moveHistory.push_back(chessMove);
-
-                    //turn increment can be done in zHashPieces.
-                    zHashPieces ^= randomNums[ZHASH_TURN];
-                    zHashState = 0;
-
-                    //if double-pawn push, set en-passant square.
-                    //otherwise, set en-passant square to -1.
-                    if (currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16)
-                    {
-                        current.enPassantSquare = currentMove.finishSquare-8+16*(currentMove.pieceType & 1);
-                        zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];
-                    }
-                    else
-                    {
-                        current.enPassantSquare = -1;
-                    }
-
-                    if (currentMove.pieceType >> 1 == _nRooks >> 1)
-                    {
-                        if ((currentMove.startSquare & 7) == 7)
-                        {
-                            current.canKingCastle[currentMove.pieceType & 1] = false;
-                        }
-                        else if ((currentMove.startSquare & 7) == 0)
-                        {
-                            current.canQueenCastle[currentMove.pieceType & 1] = false;
-                        }
-                    }
-                    else if (currentMove.pieceType >> 1 == _nKing >> 1)
-                    {
-                        current.canKingCastle[currentMove.pieceType & 1] = false;
-                        current.canQueenCastle[currentMove.pieceType & 1] = false;
-                    }
-
-                    if (currentMove.capturedPieceType >> 1 == _nRooks >> 1)
-                    {
-                        if ((currentMove.finishSquare & 7) == 7)
-                        {
-                            current.canKingCastle[currentMove.capturedPieceType & 1] = false;
-                        }
-                        else if ((currentMove.finishSquare & 7) == 0)
-                        {
-                            current.canQueenCastle[currentMove.capturedPieceType & 1] = false;
-                        }
-                    }
-
-                    //update castling rights for zHash.
-                    if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
-                    if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
-                    if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
-                    if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
-
-                    return true;
+                    current.canQueenCastle[currentMove.pieceType & 1] = false;
                 }
             }
+            else if (currentMove.pieceType >> 1 == _nKing >> 1)
+            {
+                current.canKingCastle[currentMove.pieceType & 1] = false;
+                current.canQueenCastle[currentMove.pieceType & 1] = false;
+            }
+
+            if (currentMove.capturedPieceType >> 1 == _nRooks >> 1)
+            {
+                if ((currentMove.finishSquare & 7) == 7)
+                {
+                    current.canKingCastle[currentMove.capturedPieceType & 1] = false;
+                }
+                else if ((currentMove.finishSquare & 7) == 0)
+                {
+                    current.canQueenCastle[currentMove.capturedPieceType & 1] = false;
+                }
+            }
+
+            //update castling rights for zHash.
+            if (current.canKingCastle[0]) {zHashState ^= randomNums[ZHASH_CASTLES[0]];}
+            if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
+            if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
+            if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
         }
 
         void unmakeMove()
@@ -1139,7 +1107,7 @@ class Board {
             isAttacked |= magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
             isAttacked |= magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
             isAttacked |= knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)];
-            isAttacked |= pawnAttacks(1ull << square,(int)(side)) & pieces[_nPawns+(int)(!side)];
+            isAttacked |= pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];
 
             return isAttacked;
         }
@@ -1198,91 +1166,70 @@ class Board {
         {
             int startTotal = 0;
             int endTotal = 0;
-            int x;
 
             //queens.
             U64 temp = pieces[_nQueens];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal += PIECE_VALUES_START[1] + PIECE_TABLES_START[1][63-x];
-//                endTotal += PIECE_VALUES_END[1] + PIECE_TABLES_END[1][63-x];
+                startTotal += PIECE_VALUES_START[1] + PIECE_TABLES_START[1][63-popLSB(temp)];
             }
 
             temp = pieces[_nQueens+1];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal -= PIECE_VALUES_START[1] + PIECE_TABLES_START[1][x];
-//                endTotal -= PIECE_VALUES_END[1] + PIECE_TABLES_END[1][x];
+                startTotal -= PIECE_VALUES_START[1] + PIECE_TABLES_START[1][popLSB(temp)];
             }
 
             //rooks.
             temp = pieces[_nRooks];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][63-x];
-//                endTotal += PIECE_VALUES_END[2] + PIECE_TABLES_END[2][63-x];
+                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][63-popLSB(temp)];
             }
 
             temp = pieces[_nRooks+1];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal -= PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x];
-//                endTotal -= PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x];
+                startTotal -= PIECE_VALUES_START[2] + PIECE_TABLES_START[2][popLSB(temp)];
             }
 
             //bishops.
             temp = pieces[_nBishops];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][63-x];
-//                endTotal += PIECE_VALUES_END[3] + PIECE_TABLES_END[3][63-x];
+                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][63-popLSB(temp)];
             }
 
             temp = pieces[_nBishops+1];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal -= PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x];
-//                endTotal -= PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x];
+                startTotal -= PIECE_VALUES_START[3] + PIECE_TABLES_START[3][popLSB(temp)];
             }
 
             //knights.
             temp = pieces[_nKnights];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal += PIECE_VALUES_START[4] + PIECE_TABLES_START[4][63-x];
-//                endTotal += PIECE_VALUES_END[4] + PIECE_TABLES_END[4][63-x];
+                startTotal += PIECE_VALUES_START[4] + PIECE_TABLES_START[4][63-popLSB(temp)];
             }
 
             temp = pieces[_nKnights+1];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal -= PIECE_VALUES_START[4] + PIECE_TABLES_START[4][x];
-//                endTotal -= PIECE_VALUES_END[4] + PIECE_TABLES_END[4][x];
+                startTotal -= PIECE_VALUES_START[4] + PIECE_TABLES_START[4][popLSB(temp)];
             }
 
             //pawns.
             temp = pieces[_nPawns];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][63-x];
-//                endTotal += PIECE_VALUES_END[5] + PIECE_TABLES_END[5][63-x];
+                startTotal += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][63-popLSB(temp)];
             }
 
             temp = pieces[_nPawns+1];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal -= PIECE_VALUES_START[5] + PIECE_TABLES_START[5][x];
-//                endTotal -= PIECE_VALUES_END[5] + PIECE_TABLES_END[5][x];
+                startTotal -= PIECE_VALUES_START[5] + PIECE_TABLES_START[5][popLSB(temp)];
             }
 
             endTotal = startTotal;
@@ -1304,20 +1251,7 @@ class Board {
 
             bool inCheck = generatePseudoMoves(turn);
 
-            bool movesLeft = false;
-
-            for (int i=0;i<(int)(moveBuffer.size());i++)
-            {
-                if (!(bool)(moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {movesLeft = true; break;}
-                else if (makeMove(moveBuffer[i]))
-                {
-                    movesLeft=true;
-                    unmakeMove();
-                    break;
-                }
-            }
-
-            if (movesLeft)
+            if (moveBuffer.size() > 0)
             {
                 return regularEval();
             }
@@ -1333,7 +1267,7 @@ class Board {
             }
         }
 
-        void orderMoves(int depth = -1, U32 bestMove = 0)
+        vector<pair<U32,int> > orderMoves(int depth = -1, U32 bestMove = 0)
         {
             //assumes that occupancy is up-to-date.
             scoredMoves.clear();
@@ -1376,6 +1310,7 @@ class Board {
 
             //sort the moves.
             sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+            return scoredMoves;
         }
 };
 

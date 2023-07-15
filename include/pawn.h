@@ -3,21 +3,14 @@
 
 #include "constants.h"
 
-inline U64 pawnAttacks(U64 b, int side)
+inline U64 pawnAttacks(U64 b, bool side)
 {
-    U64 res=0;
-
-    if (side==0)
+    if (!side)
     {
         //white.
-        res=((b & NOT_A_FILE) << 7) | ((b & NOT_H_FILE) << 9);
+        return ((b & NOT_A_FILE) << 7) | ((b & NOT_H_FILE) << 9);
     }
-    else
-    {
-        res=((b & NOT_A_FILE) >> 9) | ((b & NOT_H_FILE) >> 7);
-    }
-
-    return res;
+    return ((b & NOT_A_FILE) >> 9) | ((b & NOT_H_FILE) >> 7);
 }
 
 #endif // PAWN_H_INCLUDED
