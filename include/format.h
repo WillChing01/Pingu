@@ -85,12 +85,7 @@ U32 stringToMove(Board &b, string input)
         {
             continue;
         }
-//        if (b.makeMove(b.moveBuffer[i]))
-//        {
-//            //move is legal and correct.
-//            b.unmakeMove();
-//            return b.moveBuffer[i];
-//        }
+        return b.moveBuffer[i];
     }
 
     return 0;

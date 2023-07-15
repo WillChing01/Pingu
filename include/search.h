@@ -134,7 +134,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
         }
 
         int score=alpha; bool isExact = false;
-        int bestScore = -INT_MAX; U32 bestMove = 0;
+        int bestScore = -MATE_SCORE; U32 bestMove = 0;
 
         //pv search.
         //search first legal move with full window.
@@ -198,8 +198,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
                     }
 
                     //update transposition table.
-                    //dont save a mate score, in case of draw by repetition
-                    if (score != MATE_SCORE) {ttSave(bHash, depth, moveCache[i].first, score, false, true);}
+                    if (score < MATE_SCORE) {ttSave(bHash, depth, moveCache[i].first, score, false, true);}
 
                     return score;
                 }
@@ -210,7 +209,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
         }
 
         //update transposition table.
-        ttSave(bHash, depth, bestMove, bestScore, isExact, false);
+        if (bestScore != -MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, isExact, false);}
 
         return bestScore;
     }
