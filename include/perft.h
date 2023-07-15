@@ -25,14 +25,11 @@ long long childPerft(Board &b, int depth)
         for (int i=0;i<(int)moveCache.size();i++)
         {
             //execute the move.
-            if (b.makeMove(moveCache[i]))
-            {
-                //go one deeper.
-                total+=childPerft(b,depth-1);
-
-                //unmake the move.
-                b.unmakeMove();
-            }
+            b.makeMove(moveCache[i]);
+            //go one deeper.
+            total+=childPerft(b,depth-1);
+            //unmake the move.
+            b.unmakeMove();
         }
 
         return total;
@@ -56,16 +53,13 @@ long long perft(Board &b, int depth)
         for (int i=0;i<(int)moveCache.size();i++)
         {
             //execute the move.
-            if (b.makeMove(moveCache[i]))
-            {
-                //go one deeper.
-                long long res=childPerft(b,depth-1);
-                total+=res;
-                cout << toCoord((moveCache[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET) << toCoord((moveCache[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET) << " : " << res << endl;
-
-                //unmake the move.
-                b.unmakeMove();
-            }
+            b.makeMove(moveCache[i]);
+            //go one deeper.
+            long long res=childPerft(b,depth-1);
+            total+=res;
+            cout << toCoord((moveCache[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET) << toCoord((moveCache[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET) << " : " << res << endl;
+            //unmake the move.
+            b.unmakeMove();
         }
 
         return total;

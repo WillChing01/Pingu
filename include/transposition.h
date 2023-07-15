@@ -22,7 +22,7 @@ vector<hashEntry> hashTableAlways(hashTableSize);
 vector<hashEntry> hashTableDeep(hashTableSize);
 vector<int> hashTableAge(hashTableSize,0);
 
-hashEntry tableEntry;
+static hashEntry tableEntry;
 const hashEntry emptyEntry =
 {
     .zHash = 0,

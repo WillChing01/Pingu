@@ -36,8 +36,8 @@ void playCPU(double timePerMove)
         bool movesLeft = false;
         for (int i=0;i<(int)b.moveBuffer.size();i++)
         {
-            if (!(bool)(b.moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {movesLeft=true; break;}
-            else if (b.makeMove(b.moveBuffer[i]))
+//            if (!(bool)(b.moveBuffer[i] & MOVEINFO_SHOULDCHECK_MASK)) {movesLeft=true; break;}
+//            else if (b.makeMove(b.moveBuffer[i]))
             {
                 movesLeft=true;
                 b.unmakeMove();
@@ -73,7 +73,7 @@ void playCPU(double timePerMove)
             bool gotMove=false;
             for (int i=0;i<(int)b.moveBuffer.size();i++)
             {
-                if (b.makeMove(b.moveBuffer[i]))
+//                if (b.makeMove(b.moveBuffer[i]))
                 {
                     gotMove=true; break;
                 }
