@@ -1,8 +1,10 @@
 # Chess_3
 
-A basic chess engine, currently in the early stages of development.
+UCI compatible chess engine built from scratch.
 
-UCI compatible.
+Many thanks to the advice on [Chess Programming Wiki](www.chessprogramming.org).
+
+Play me on Lichess! My name is [William Engine](https://lichess.org/@/WilliamEngine).
 
 # Features
 
@@ -11,22 +13,26 @@ UCI compatible.
 - Bitboard representation
 - Plain magic bitboards for sliding pieces
 
-### Testing
-- Perft function (initial and Kiwipete positions)
+### Move ordering
+- PV move at root
+- Hash move
+- Static exchange evaluation
+- Killer moves
+- Quiet moves ordered at random
+
+### Search
+- Negamax with fail-soft alpha-beta
+- Quiescence search
+- Iterative deepening at root
+- Transposition tables
+    - Always replace
+    - Depth-preferred
+- Null move pruning
 
 ### Evaluation
 - Material
 - Piece square tables
+  - Tapered eval for king
 
-### Search
-- Alpha-beta with quiescence search
-- Iterative deepening
-- Transposition tables
-    - Always replace
-    - Depth-preferred
-
-### Move ordering
-- PV move from previous iteration
-- Hash move
-- Killer Heuristic
-- Static evaluation exchange
+### Testing
+- Perft function (initial and Kiwipete positions)
