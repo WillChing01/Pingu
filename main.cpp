@@ -18,7 +18,7 @@ int main()
     bool good1 = testInitialPosition();
     bool good2 = testKiwipetePosition();
 
-    return 1;
+    return !(good1 && good2);
 }
 
 #else
