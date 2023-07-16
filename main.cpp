@@ -12,14 +12,8 @@ int main()
     populateMagicTables();
     populateRandomNums();
     clearTT();
-//    testInitialPosition();
-//    testKiwipetePosition();
 
     uciLoop();
-
-//    Board b;
-//    resizeTT(4096);
-//    searchThread(b,100,10000);
 
     return 0;
 }

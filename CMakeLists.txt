@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
+
 set(CMAKE_CXX_STANDARD 17)
 
 # gcc compiler options
-
-set(CMAKE_CXX_COMPILER g++)
+set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_CXX_COMPILER "g++")
 
 set(GCC_COMPILE_DEBUG_OPTIONS "-Wall;-std=gnu++17;-fexceptions;-pg")
 set(GCC_COMPILE_RELEASE_OPTIONS "-Wall;-std=gnu++17;-fexceptions;-O3")
