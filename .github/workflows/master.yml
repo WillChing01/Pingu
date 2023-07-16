@@ -53,7 +53,10 @@ jobs:
           cd build
       
       - name: Create release
-        uses: AButler/upload-release-assets@v2.0
+        uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          files: 'Chess_3.exe'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: "Latest master"
+          files: "Chess_3.exe"
