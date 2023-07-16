@@ -50,8 +50,7 @@ jobs:
           mkdir build
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Chess_3 --config Release --
-          cd build
-      
+
       - name: Create release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -59,4 +58,4 @@ jobs:
           automatic_release_tag: "latest"
           prerelease: false
           title: "Latest master"
-          files: "Chess_3.exe"
+          files: "build/Chess_3.exe"
