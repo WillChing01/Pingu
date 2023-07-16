@@ -1,9 +1,9 @@
 name: "Build Executable"
 
-on: push
-  # push:
-    # branches:
-    #   - "master"
+on:
+  push:
+    branches:
+      - "master"
 
 defaults:
   run:
@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-        
+
       - name: Compile project with cmake
         run: |
           mkdir build
@@ -31,3 +31,29 @@ jobs:
       
       - name: Run executable and test
         run: build/perft.exe
+
+  release:
+    name: Create executable release on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ windows-latest ]
+        include:
+          - os: windows-latest
+            target: Windows
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        
+      - name: Compile project with cmake
+        run: |
+          mkdir build
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target Chess_3 --config Release --
+      
+      - name: Create release
+        uses: skx/github-action-publish-binaries@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: 'Chess_3.exe'
