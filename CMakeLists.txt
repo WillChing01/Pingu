@@ -1,10 +1,47 @@
 cmake_minimum_required(VERSION 3.0)
-project(release)
 set(CMAKE_CXX_STANDARD 17)
+
+# gcc compiler options
+
+set(CMAKE_CXX_COMPILER g++)
+
+set(GCC_COMPILE_DEBUG_OPTIONS "-Wall;-std=gnu++17;-fexceptions;-pg")
+set(GCC_COMPILE_RELEASE_OPTIONS "-Wall;-std=gnu++17;-fexceptions;-O3")
+
+set(GCC_LINK_DEBUG_OPTIONS "-static-libstdc++;-static-libgcc;-static;-pg")
+set(GCC_LINK_RELEASE_OPTIONS "-static-libstdc++;-static-libgcc;-static;-s")
+
+# include files
+
+set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include/)
+include_directories(${INCLUDE_DIR})
 
 set(SOURCE_FILES main.cpp)
 
-add_executable(Chess_3 ${SOURCE_FILES})
+set(HEADER_FILES
+    ${INCLUDE_DIR}/bitboard.h
+    ${INCLUDE_DIR}/board.h
+    ${INCLUDE_DIR}/constants.h
+    ${INCLUDE_DIR}/evaluation.h
+    ${INCLUDE_DIR}/format.h
+    ${INCLUDE_DIR}/game.h
+    ${INCLUDE_DIR}/king.h
+    ${INCLUDE_DIR}/knight.h
+    ${INCLUDE_DIR}/magic.h
+    ${INCLUDE_DIR}/pawn.h
+    ${INCLUDE_DIR}/perft.h
+    ${INCLUDE_DIR}/search.h
+    ${INCLUDE_DIR}/slider.h
+    ${INCLUDE_DIR}/transposition.h
+    ${INCLUDE_DIR}/uci.h
+)
 
-# g++.exe -Wall -std=gnu++17 -m64 -fexceptions -O3 -std=gnu++17 -Iinclude -c C:\Users\willi\OneDrive\Desktop\Coding\Chess_3\main.cpp -o obj\Release\main.o
-# g++.exe  -o bin\Release\Chess_3.exe obj\Release\main.o  -static-libstdc++ -static-libgcc -static -m64 -s
+# create the project
+
+project(Chess_3)
+
+add_executable(Chess_3 ${SOURCE_FILES} ${HEADER_FILES})
+target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_COMPILE_DEBUG_OPTIONS}>")
+target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_COMPILE_RELEASE_OPTIONS}>")
+target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_LINK_DEBUG_OPTIONS}>")
+target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_LINK_RELEASE_OPTIONS}>")
