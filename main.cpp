@@ -7,6 +7,22 @@
 
 using namespace std;
 
+#ifdef PERFT
+
+int main()
+{
+    populateMagicTables();
+    populateRandomNums();
+    clearTT();
+
+    bool good1 = testInitialPosition();
+    bool good2 = testKiwipetePosition();
+
+    return !(good1 && good2);
+}
+
+#else
+
 int main()
 {
     populateMagicTables();
@@ -17,3 +33,5 @@ int main()
 
     return 0;
 }
+
+#endif

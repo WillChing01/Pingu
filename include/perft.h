@@ -66,7 +66,7 @@ long long perft(Board &b, int depth)
     }
 }
 
-void testInitialPosition(int depth = 6)
+bool testInitialPosition(int depth = 6)
 {
     Board b;
     b.display();
@@ -105,9 +105,10 @@ void testInitialPosition(int depth = 6)
         cout << "ALL CHECKS PASSED" << endl;
         cout << "-----------------" << endl;
     }
+    return good;
 }
 
-void testKiwipetePosition(int depth = 5)
+bool testKiwipetePosition(int depth = 5)
 {
     Board b;
 
@@ -159,6 +160,7 @@ void testKiwipetePosition(int depth = 5)
         cout << "ALL CHECKS PASSED" << endl;
         cout << "-----------------" << endl;
     }
+    return good;
 }
 
 #endif // PERFT_H_INCLUDED

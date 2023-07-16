@@ -46,3 +46,12 @@ target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_COMPILE_D
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_COMPILE_RELEASE_OPTIONS}>")
 target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_LINK_DEBUG_OPTIONS}>")
 target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_LINK_RELEASE_OPTIONS}>")
+
+project(perft)
+
+add_executable(perft ${SOURCE_FILES} ${HEADER_FILES})
+target_compile_definitions(${PROJECT_NAME} PUBLIC PERFT=1)
+target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_COMPILE_DEBUG_OPTIONS}>")
+target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_COMPILE_RELEASE_OPTIONS}>")
+target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_LINK_DEBUG_OPTIONS}>")
+target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_LINK_RELEASE_OPTIONS}>")

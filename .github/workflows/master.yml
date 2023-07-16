@@ -23,13 +23,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
         
-      - name: Create build directory
-        run: mkdir build
-        
       - name: Compile project with cmake
         run: |
+          mkdir build
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --target all --config Release --
+          cmake --build build --target perft --config Release --
       
       - name: Run executable and test
-        run: build/Chess_3.exe <<< "perft" & pid1="$!"; sleep 45s; ps S; kill $pid1
+        run: build/perft.exe
