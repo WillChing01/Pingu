@@ -32,4 +32,4 @@ jobs:
           cmake --build build --target all --config Release --
       
       - name: Run executable and test
-        run: build/Chess_3.exe <<< "perft" & sleep 45s && kill $!
+        run: build/Chess_3.exe <<< "perft" & pid1="$!"; sleep 45s; kill $pid1
