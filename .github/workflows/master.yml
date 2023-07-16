@@ -53,8 +53,7 @@ jobs:
           cd build
       
       - name: Create release
-        uses: skx/github-action-publish-binaries@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: AButler/upload-release-assets@v2.0
         with:
-          args: 'Chess_3.exe'
+          files: 'Chess_3.exe'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
