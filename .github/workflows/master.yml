@@ -1,9 +1,9 @@
 name: "Build Executable"
 
-on:
-  push:
-    branches:
-      - "master"
+on: push
+  # push:
+    # branches:
+    #   - "master"
 
 defaults:
   run:
@@ -11,7 +11,7 @@ defaults:
 
 jobs:
   build:
-    name: Build executable on ${{ matrix.os }} with g++
+    name: Build and test executable on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -23,8 +23,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
         
-      - name: Compile the project
-        run: g++ -Os -std=gnu++17 -Iinclude -c main.cpp -o obj/Release/main.o
-        
-      - name: Create the executable
-        run: g++ -o bin/Release/Chess_3.exe obj/Release/main.o -s
+      - name: Compile project with cmake
+        run: |
+          mkdir build
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target perft --config Release --
+      
+      - name: Run executable and test
+        run: build/perft.exe

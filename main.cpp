@@ -7,19 +7,31 @@
 
 using namespace std;
 
+#ifdef PERFT
+
 int main()
 {
     populateMagicTables();
     populateRandomNums();
     clearTT();
-//    testInitialPosition();
-//    testKiwipetePosition();
+
+    bool good1 = testInitialPosition();
+    bool good2 = testKiwipetePosition();
+
+    return !(good1 && good2);
+}
+
+#else
+
+int main()
+{
+    populateMagicTables();
+    populateRandomNums();
+    clearTT();
 
     uciLoop();
 
-//    Board b;
-//    resizeTT(4096);
-//    searchThread(b,100,10000);
-
     return 0;
 }
+
+#endif

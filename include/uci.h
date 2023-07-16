@@ -6,6 +6,7 @@
 #include <thread>
 #include <future>
 
+#include "perft.h"
 #include "format.h"
 #include "search.h"
 
@@ -158,6 +159,7 @@ void uciLoop()
         else if (commands[0] == "ucinewgame") {prepareForNewGame(b);}
         else if (commands[0] == "position") {positionCommand(b, commands);}
         else if (commands[0] == "go" && !isSearching) {goCommand(b, commands);}
+        else if (commands[0] == "perft") {testInitialPosition(); testKiwipetePosition();}
         else if (commands[0] == "display") {b.display();}
         else if (commands[0] == "stop") {isSearchAborted = true;}
         else if (commands[0] == "quit") {isSearchAborted = true; break;}
