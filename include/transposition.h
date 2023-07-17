@@ -4,6 +4,8 @@
 #include <random>
 #include <chrono>
 
+#include <constants.h>
+
 int rootCounter = 0;
 const int ageLimit = 4;
 
@@ -17,10 +19,10 @@ struct hashEntry
     bool isBeta;
 };
 
-U64 hashTableSize = 21845; //default 0.5 MB for each table.
-vector<hashEntry> hashTableAlways(hashTableSize);
-vector<hashEntry> hashTableDeep(hashTableSize);
-vector<int> hashTableAge(hashTableSize,0);
+U64 hashTableMask = 63; //start with a small hash.
+std::vector<hashEntry> hashTableAlways(hashTableMask + 1);
+std::vector<hashEntry> hashTableDeep(hashTableMask + 1);
+std::vector<int> hashTableAge(hashTableMask + 1,0);
 
 static hashEntry tableEntry;
 const hashEntry emptyEntry =
@@ -42,7 +44,7 @@ const int ZHASH_ENPASSANT[8] = {773,774,775,776,777,778,779,780};
 
 void clearTT()
 {
-    for (int i=0;i<(int)hashTableSize;i++)
+    for (int i=0;i<(int)(hashTableMask + 1);i++)
     {
         hashTableAlways[i] = emptyEntry;
         hashTableDeep[i] = emptyEntry;
@@ -55,10 +57,13 @@ void resizeTT(U64 memory)
     //memory in MB.
     U64 length = (memory * 1048576ull)/((U64)sizeof(hashEntry));
     length = length >> 1; //two tables to fill.
-    hashTableSize = length;
-    hashTableAlways.resize(length, emptyEntry);
-    hashTableDeep.resize(length, emptyEntry);
-    hashTableAge.resize(length, 0);
+    hashTableMask = 1;
+    while (hashTableMask <= length) {hashTableMask *= 2;}
+    hashTableMask /= 2;
+    hashTableMask -= 1;
+    hashTableAlways.resize(hashTableMask + 1, emptyEntry);
+    hashTableDeep.resize(hashTableMask + 1, emptyEntry);
+    hashTableAge.resize(hashTableMask + 1, 0);
 }
 
 inline void ttSave(U64 zHash, int depth, U32 bestMove, int evaluation, bool isExact, bool isBeta)
@@ -70,30 +75,30 @@ inline void ttSave(U64 zHash, int depth, U32 bestMove, int evaluation, bool isEx
     tableEntry.isExact = isExact;
     tableEntry.isBeta = isBeta;
 
-    if (depth >= hashTableDeep[zHash % hashTableSize].depth ||
-        rootCounter > hashTableAge[zHash % hashTableSize] + ageLimit)
+    if (depth >= hashTableDeep[zHash & hashTableMask].depth ||
+        rootCounter > hashTableAge[zHash & hashTableMask] + ageLimit)
     {
         //fits in deep table.
-        hashTableDeep[zHash % hashTableSize] = tableEntry;
-        hashTableAge[zHash % hashTableSize] = rootCounter;
+        hashTableDeep[zHash & hashTableMask] = tableEntry;
+        hashTableAge[zHash & hashTableMask] = rootCounter;
     }
     else
     {
         //fits in always table.
-        hashTableAlways[zHash % hashTableSize] = tableEntry;
+        hashTableAlways[zHash & hashTableMask] = tableEntry;
     }
 }
 
 inline bool ttProbe(U64 zHash, hashEntry &entry)
 {
-    if (hashTableDeep[zHash % hashTableSize].zHash == zHash)
+    if (hashTableDeep[zHash & hashTableMask].zHash == zHash)
     {
-        entry = hashTableDeep[zHash % hashTableSize];
+        entry = hashTableDeep[zHash & hashTableMask];
         return true;
     }
-    if (hashTableAlways[zHash % hashTableSize].zHash == zHash)
+    if (hashTableAlways[zHash & hashTableMask].zHash == zHash)
     {
-        entry = hashTableAlways[zHash % hashTableSize];
+        entry = hashTableAlways[zHash & hashTableMask];
         return true;
     }
 

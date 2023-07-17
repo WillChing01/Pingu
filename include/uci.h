@@ -80,7 +80,7 @@ void goCommand(Board &b, vector<string> words)
     double whiteInc = 0;
     double blackInc = 0;
     double moveTime = 0;
-    int movesToGo = 0;
+    // int movesToGo = 0;
     int depth = 0;
 
     for (int i=1;i<(int)words.size();i++)
@@ -89,7 +89,7 @@ void goCommand(Board &b, vector<string> words)
         else if (words[i] == "btime") {blackTime = stoi(words[i+1]);}
         else if (words[i] == "winc") {whiteInc = stoi(words[i+1]);}
         else if (words[i] == "binc") {blackInc = stoi(words[i+1]);}
-        else if (words[i] == "movestogo") {movesToGo = stoi(words[i+1]);}
+        else if (words[i] == "movestogo") {}
         else if (words[i] == "depth") {depth = stoi(words[i+1]);}
         else if (words[i] == "nodes") {}
         else if (words[i] == "mate") {}
