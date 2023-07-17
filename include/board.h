@@ -79,6 +79,9 @@ class Board {
         U64 zHashPieces = 0;
         U64 zHashState = 0;
 
+        //draw hash table.
+        U64 drawHash[128] = {};
+
         Board()
         {
             //default constructor for regular games.

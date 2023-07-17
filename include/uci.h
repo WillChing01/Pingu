@@ -63,12 +63,18 @@ void positionCommand(Board &b, vector<string> words)
         ind = 9;
     }
 
+    for (int i=0;i<128;i++) {b.drawHash[i] = 0;}
+
+    b.drawHash[(b.zHashPieces ^ b.zHashState) & 127] = (b.zHashPieces ^ b.zHashState);
+
     //play the specified moves.
     for (int i=ind;i<(int)words.size();i++)
     {
         U32 chessMove = stringToMove(b,words[i]);
         if (chessMove == 0) {break;}
         b.makeMove(chessMove);
+        U64 zHash = b.zHashPieces ^ b.zHashState;
+        b.drawHash[zHash & 127] = zHash;
     }
 }
 
@@ -140,6 +146,9 @@ void prepareForNewGame(Board &b)
     //reset hash table.
     clearTT();
     rootCounter = 0;
+
+    //reset draw hash table.
+    for (int i=0;i<128;i++) {b.drawHash[i] = 0;}
 }
 
 void uciLoop()
