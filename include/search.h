@@ -42,6 +42,10 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
     }
     if (isSearchAborted) {return 0;}
 
+    //check for draw.
+    U64 bHash = b.zHashPieces ^ b.zHashState;
+    if (b.drawHash[bHash & 127] == bHash) {return 0;}
+
     bool inCheck = b.generatePseudoQMoves(b.moveHistory.size() & 1);
 
     if (b.moveBuffer.size() > 0)
@@ -94,12 +98,15 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
 
     if (depth <= 0) {return alphaBetaQuiescence(b, alpha, beta);}
 
+    //check for draw.
+    U64 bHash = b.zHashPieces ^ b.zHashState;
+    if (b.drawHash[bHash & 127] == bHash) {return 0;}
+
     bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
     if (b.moveBuffer.size() > 0)
     {
         //check transposition table for a previously calculated line.
-        U64 bHash = b.zHashPieces ^ b.zHashState;
         vector<pair<U32,int> > moveCache;
         if (ttProbe(bHash,tableEntry) == true)
         {
