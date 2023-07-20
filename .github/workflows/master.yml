@@ -33,6 +33,7 @@ jobs:
         run: build/perft.exe
 
   release:
+    needs: build
     name: Create executable release on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:

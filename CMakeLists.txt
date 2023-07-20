@@ -9,7 +9,7 @@ set(CMAKE_CXX_COMPILER "g++")
 set(GCC_COMPILE_DEBUG_OPTIONS "-Wall;-std=gnu++17;-fexceptions;-pg")
 set(GCC_COMPILE_RELEASE_OPTIONS "-Wall;-std=gnu++17;-fexceptions;-O3")
 
-set(GCC_LINK_DEBUG_OPTIONS "-static-libstdc++;-static-libgcc;-static;-pg")
+set(GCC_LINK_DEBUG_OPTIONS "-static-libstdc++;-static-libgcc;-static;-lgmon;-no-pie;-pg")
 set(GCC_LINK_RELEASE_OPTIONS "-static-libstdc++;-static-libgcc;-static;-s")
 
 # include files
