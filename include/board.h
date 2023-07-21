@@ -83,6 +83,9 @@ class Board {
         //draw hash table.
         U64 drawHash[128] = {};
 
+        //SEE.
+        int gain[32]={};
+
         Board()
         {
             //default constructor for regular games.
@@ -1131,7 +1134,7 @@ class Board {
         {
             //perform static evaluation exchange (SEE).
             //use the currentMove struct.
-            int gain[32]={}; int d=0;
+            int d=0;
             gain[0] = PIECE_VALUES_START[capturedPieceType >> 1];
             U32 attackingPiece = pieceType;
             U64 attackingPieceBB = 1ull << startSquare;
