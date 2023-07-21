@@ -63,7 +63,7 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
 
         int score;
         b.updateOccupied();
-        vector<pair<U32,int> > moveCache = b.orderMoves();
+        vector<pair<U32,int> > moveCache = b.orderQMoves();
         for (int i=0;i<(int)(moveCache.size());i++)
         {
             b.makeMove(moveCache[i].first);
