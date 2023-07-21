@@ -1270,7 +1270,7 @@ class Board {
 
         vector<pair<U32,int> > orderMoves(int depth = -1, U32 bestMove = 0)
         {
-            //assumes that occupancy is up-to-date.
+            //assumes that getOccupied() has been called immediately before.
             scoredMoves.clear();
 
             for (int i=0;i<(int)(moveBuffer.size());i++)
@@ -1289,7 +1289,8 @@ class Board {
                         U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                         U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
                         U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i], seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
+                        //scale captures for move ordering.
+                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i], 15 * seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
                     }
                     else
                     {
@@ -1297,15 +1298,72 @@ class Board {
                         if (depth != -1 && (moveBuffer[i] == killerMoves[depth][0] || moveBuffer[i] == killerMoves[depth][1]))
                         {
                             //killer.
-                            //set killer score to arbitrary 10 centipawns.
-                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i],10));
+                            //set killer score to arbitrary 100 centipawns.
+                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i],100));
                         }
                         else
                         {
                             //non-killer.
-                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
+                            U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
+                            U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                            U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                            if (pieceType & 1)
+                            {
+                                if (pieceType >> 1 == _nKing)
+                                {
+                                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
+                                }
+                                else
+                                {
+                                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],
+                                    PIECE_TABLES_START[pieceType >> 1][finishSquare] -
+                                    PIECE_TABLES_START[pieceType >> 1][startSquare]));
+                                }
+                            }
+                            else
+                            {
+                                if (pieceType >> 1 == _nKing)
+                                {
+                                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
+                                }
+                                else
+                                {
+                                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],
+                                    PIECE_TABLES_START[pieceType >> 1][63 - finishSquare] -
+                                    PIECE_TABLES_START[pieceType >> 1][63 - startSquare]));
+                                }
+                            }
                         }
                     }
+                }
+            }
+
+            //sort the moves.
+            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+            return scoredMoves;
+        }
+
+        vector<pair<U32,int> > orderQMoves(const int threshhold = -50)
+        {
+            //assumes that updateOccupied() has been called immediately before.
+            scoredMoves.clear();
+            
+            for (int i=0;i<(int)moveBuffer.size();i++)
+            {
+                U32 capturedPieceType = (moveBuffer[i] & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                if (capturedPieceType != 15)
+                {
+                    //capture.
+                    U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
+                    U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                    U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                    int score = seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType);
+                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i], score));
+                }
+                else
+                {
+                    //non-capture moves.
+                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
                 }
             }
 
