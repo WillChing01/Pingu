@@ -64,12 +64,12 @@ class Board {
 
         moveInfo currentMove = {};
 
-        const U32 _nKing=0;
-        const U32 _nQueens=2;
-        const U32 _nRooks=4;
-        const U32 _nBishops=6;
-        const U32 _nKnights=8;
-        const U32 _nPawns=10;
+        static const U32 _nKing=0;
+        static const U32 _nQueens=2;
+        static const U32 _nRooks=4;
+        static const U32 _nBishops=6;
+        static const U32 _nKnights=8;
+        static const U32 _nPawns=10;
 
         const int piecePhases[6] = {0,4,2,1,1,0};
 
@@ -87,7 +87,8 @@ class Board {
         int gain[32]={};
 
         //pawn hash tables.
-        pair<U64,int> pawnHash[1024] = {};
+        static const U64 pawnHashMask = 1023;
+        pair<U64,int> pawnHash[pawnHashMask + 1] = {};
         U64 zHashPawns = 0;
 
         Board()
@@ -894,7 +895,7 @@ class Board {
             //remove piece from start square;
             pieces[currentMove.pieceType] -= 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
-            if (currentMove.pieceType >> 1 == _nPawns)
+            if (currentMove.pieceType >> 1 == _nPawns >> 1)
             {
                 zHashPawns ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
             }
@@ -902,7 +903,7 @@ class Board {
             //add piece to end square, accounting for promotion.
             pieces[currentMove.finishPieceType] += 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
-            if (currentMove.finishPieceType >> 1 == _nPawns)
+            if (currentMove.finishPieceType >> 1 == _nPawns >> 1)
             {
                 zHashPawns ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
             }
@@ -912,7 +913,7 @@ class Board {
             {
                 pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
                 zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
-                if (currentMove.capturedPieceType >> 1 == _nPawns)
+                if (currentMove.capturedPieceType >> 1 == _nPawns >> 1)
                 {
                     zHashPawns ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
                 }
@@ -951,7 +952,7 @@ class Board {
             //remove piece from destination square.
             pieces[currentMove.finishPieceType] -= 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
-            if (currentMove.finishPieceType >> 1 == _nPawns)
+            if (currentMove.finishPieceType >> 1 == _nPawns >> 1)
             {
                 zHashPawns ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
             }
@@ -959,7 +960,7 @@ class Board {
             //add piece to start square.
             pieces[currentMove.pieceType] += 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
-            if (currentMove.pieceType >> 1 == _nPawns)
+            if (currentMove.pieceType >> 1 == _nPawns >> 1)
             {
                 zHashPawns ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
             }
@@ -969,7 +970,7 @@ class Board {
             {
                 pieces[currentMove.capturedPieceType] += 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
                 zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
-                if (currentMove.capturedPieceType >> 1 == _nPawns)
+                if (currentMove.capturedPieceType >> 1 == _nPawns >> 1)
                 {
                     zHashPawns ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
                 }
@@ -1260,16 +1261,29 @@ class Board {
             }
 
             //pawns.
-            temp = pieces[_nPawns];
-            while (temp)
+            U64 index = zHashPawns & pawnHashMask;
+            if (pawnHash[index].first == zHashPawns)
             {
-                startTotal += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][63-popLSB(temp)];
+                startTotal += pawnHash[index].second;
             }
-
-            temp = pieces[_nPawns+1];
-            while (temp)
+            else
             {
-                startTotal -= PIECE_VALUES_START[5] + PIECE_TABLES_START[5][popLSB(temp)];
+                pawnHash[index].first = zHashPawns;
+                pawnHash[index].second = 0;
+
+                temp = pieces[_nPawns];
+                while (temp)
+                {
+                    pawnHash[index].second += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][63-popLSB(temp)];
+                }
+
+                temp = pieces[_nPawns+1];
+                while (temp)
+                {
+                    pawnHash[index].second -= PIECE_VALUES_START[5] + PIECE_TABLES_START[5][popLSB(temp)];
+                }
+
+                startTotal += pawnHash[index].second;
             }
 
             endTotal = startTotal;
