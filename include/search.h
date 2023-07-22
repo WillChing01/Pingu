@@ -237,7 +237,7 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
         if (b.moveBuffer.size() > 0)
         {
             b.updateOccupied();
-            vector<pair<U32,int> > moveCache = b.orderMoves();
+            vector<pair<U32,int> > moveCache = b.orderMoves(0);
             int pvIndex = 0;
             int score;
             for (int itDepth = 1; itDepth <= depth; itDepth++)
