@@ -18,21 +18,26 @@ Play me on Lichess! My username is [WilliamEngine](https://lichess.org/@/William
 - Hash move
 - Static exchange evaluation
 - Killer moves
-- Quiet moves ordered at random
+- Piece square tables for quiet moves
 
 ### Search
-- Negamax with fail-soft alpha-beta
+- Main search
+  - Principal variation search
+  - Fail-soft alpha-beta
+  - Null move pruning
 - Quiescence search
 - Iterative deepening at root
+- Basic time management
 - Transposition tables
   - Always replace
   - Depth-preferred
-- Null move pruning
+- Draw hash table
 
 ### Evaluation
 - Material
 - Piece square tables
   - Tapered eval for king
+- Pawn hash table
 
 ### Testing
 - Perft function (initial and Kiwipete positions)
