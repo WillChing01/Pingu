@@ -149,6 +149,9 @@ void prepareForNewGame(Board &b)
 
     //reset draw hash table.
     for (int i=0;i<128;i++) {b.drawHash[i] = 0;}
+
+    //clear pawn hash table.
+    for (int i=0;i<1024;i++) {b.pawnHash[i] = pair<U64,int>(0,0);}
 }
 
 void uciLoop()

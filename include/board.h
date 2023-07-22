@@ -86,6 +86,10 @@ class Board {
         //SEE.
         int gain[32]={};
 
+        //pawn hash tables.
+        pair<U64,int> pawnHash[1024] = {};
+        U64 zHashPawns = 0;
+
         Board()
         {
             //default constructor for regular games.
@@ -118,6 +122,14 @@ class Board {
         {
             zHashPieces = 0;
             zHashState = 0;
+
+            zHashPawns = 0;
+
+            U64 x = pieces[_nPawns];
+            while (x) {zHashPawns ^= randomNums[ZHASH_PIECES[_nPawns] + popLSB(x)];}
+
+            x = pieces[_nPawns+1];
+            while (x) {zHashPawns ^= randomNums[ZHASH_PIECES[_nPawns+1] + popLSB(x)];}
 
             for (int i=0;i<12;i++)
             {
@@ -882,16 +894,28 @@ class Board {
             //remove piece from start square;
             pieces[currentMove.pieceType] -= 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
+            if (currentMove.pieceType >> 1 == _nPawns)
+            {
+                zHashPawns ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
+            }
 
             //add piece to end square, accounting for promotion.
             pieces[currentMove.finishPieceType] += 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
+            if (currentMove.finishPieceType >> 1 == _nPawns)
+            {
+                zHashPawns ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
+            }
 
             //remove any captured pieces.
             if (currentMove.capturedPieceType != 15)
             {
                 pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
                 zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
+                if (currentMove.capturedPieceType >> 1 == _nPawns)
+                {
+                    zHashPawns ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
+                }
 
                 //update the game phase.
                 phase -= piecePhases[currentMove.capturedPieceType >> 1];
@@ -927,16 +951,28 @@ class Board {
             //remove piece from destination square.
             pieces[currentMove.finishPieceType] -= 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
-
+            if (currentMove.finishPieceType >> 1 == _nPawns)
+            {
+                zHashPawns ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
+            }
+            
             //add piece to start square.
             pieces[currentMove.pieceType] += 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
+            if (currentMove.pieceType >> 1 == _nPawns)
+            {
+                zHashPawns ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
+            }
 
             //add back captured pieces.
             if (currentMove.capturedPieceType != 15)
             {
                 pieces[currentMove.capturedPieceType] += 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
                 zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
+                if (currentMove.capturedPieceType >> 1 == _nPawns)
+                {
+                    zHashPawns ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
+                }
 
                 //update the game phase.
                 phase += piecePhases[currentMove.capturedPieceType >> 1];
