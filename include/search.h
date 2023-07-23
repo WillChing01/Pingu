@@ -2,6 +2,7 @@
 #define SEARCH_H_INCLUDED
 
 #include <atomic>
+#include <algorithm>
 
 #include "bitboard.h"
 #include "transposition.h"
@@ -128,6 +129,29 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
             //no hash table hit.
             b.updateOccupied();
             moveCache = b.orderMoves(depth);
+            
+            //internal iterative deepening at PV nodes.
+            if ((alpha != (beta - 1)) && depth >= 6)
+            {
+                int testScore = 0; int testBestScore = -MATE_SCORE;
+                int testBestIndex = 0;
+                for (int i=0;i<(int)(moveCache.size());i++)
+                {
+                    b.makeMove(moveCache[i].first);
+                    testScore = -alphaBeta(b, -beta, -alpha, depth-3, true);
+                    b.unmakeMove();
+                    if (testScore > testBestScore)
+                    {
+                        testBestIndex = i;
+                        if (testScore >= beta) {break;}
+                        testBestScore = testScore;
+                    }
+                }
+
+                //reorder moves.
+                moveCache[testBestIndex].second = INT_MAX;
+                sort(moveCache.begin(), moveCache.end(), [](auto &a, auto &b) {return a.second > b.second;});
+            }
         }
 
         //null move pruning.
@@ -168,7 +192,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
         if (bestScore > alpha) {alpha = bestScore; isExact = true;}
         bestMove = moveCache[0].first;
 
-//        search all other moves with initial null window.
+        //search all other moves with initial null window.
         for (int i=1;i<(int)(moveCache.size());i++)
         {
             b.makeMove(moveCache[i].first);
