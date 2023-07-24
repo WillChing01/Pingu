@@ -2,6 +2,7 @@
 #define SEARCH_H_INCLUDED
 
 #include <atomic>
+#include <algorithm>
 
 #include "bitboard.h"
 #include "transposition.h"
@@ -109,7 +110,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
     {
         //check transposition table for a previously calculated line.
         vector<pair<U32,int> > moveCache;
-        if (ttProbe(bHash,tableEntry) == true)
+        if (ttProbe(bHash) == true)
         {
             if (tableEntry.depth >= depth)
             {
@@ -168,7 +169,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
         if (bestScore > alpha) {alpha = bestScore; isExact = true;}
         bestMove = moveCache[0].first;
 
-//        search all other moves with initial null window.
+        //search all other moves with initial null window.
         for (int i=1;i<(int)(moveCache.size());i++)
         {
             b.makeMove(moveCache[i].first);
@@ -237,7 +238,7 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
         if (b.moveBuffer.size() > 0)
         {
             b.updateOccupied();
-            vector<pair<U32,int> > moveCache = b.orderMoves();
+            vector<pair<U32,int> > moveCache = b.orderMoves(0);
             int pvIndex = 0;
             int score;
             for (int itDepth = 1; itDepth <= depth; itDepth++)
