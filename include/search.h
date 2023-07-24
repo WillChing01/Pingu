@@ -110,7 +110,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
     {
         //check transposition table for a previously calculated line.
         vector<pair<U32,int> > moveCache;
-        if (ttProbe(bHash,tableEntry) == true)
+        if (ttProbe(bHash) == true)
         {
             if (tableEntry.depth >= depth)
             {
@@ -129,29 +129,6 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
             //no hash table hit.
             b.updateOccupied();
             moveCache = b.orderMoves(depth);
-            
-            //internal iterative deepening at PV nodes.
-            if ((alpha != (beta - 1)) && depth >= 6)
-            {
-                int testScore = 0; int testBestScore = -MATE_SCORE;
-                int testBestIndex = 0;
-                for (int i=0;i<(int)(moveCache.size());i++)
-                {
-                    b.makeMove(moveCache[i].first);
-                    testScore = -alphaBeta(b, -beta, -alpha, depth-3, true);
-                    b.unmakeMove();
-                    if (testScore > testBestScore)
-                    {
-                        testBestIndex = i;
-                        if (testScore >= beta) {break;}
-                        testBestScore = testScore;
-                    }
-                }
-
-                //reorder moves.
-                moveCache[testBestIndex].second = INT_MAX;
-                sort(moveCache.begin(), moveCache.end(), [](auto &a, auto &b) {return a.second > b.second;});
-            }
         }
 
         //null move pruning.

@@ -6,12 +6,26 @@
 
 #include "constants.h"
 
+//define hash info compression.
+const U64 BESTMOVEMASK = 4294967295ull;
+const U64 EXACTFLAGMASK = 4294967296ull;
+const U64 EXACTFLAGSHIFT = 32;
+const U64 BETAFLAGMASK = 8589934592ull;
+const U64 BETAFLAGSHIFT = 33;
+const U64 DEPTHMASK = 1082331758592ull;
+const U64 DEPTHSHIFT = 34;
+const U64 EVALMASK = 36027697507336192ull;
+const U64 EVALSHIFT = 40;
+const U64 EVALSIGNMASK = 36028797018963968ull;
+const U64 EVALSIGNSHIFT = 55;
+const U64 AGEMASK = 18374686479671623680ull;
+const U64 AGESHIFT = 56;
+
 int rootCounter = 0;
 const int ageLimit = 4;
 
 struct hashEntry
 {
-    U64 zHash;
     int depth;
     U32 bestMove;
     int evaluation;
@@ -19,21 +33,24 @@ struct hashEntry
     bool isBeta;
 };
 
-U64 hashTableMask = 63; //start with a small hash.
-std::vector<hashEntry> hashTableAlways(hashTableMask + 1);
-std::vector<hashEntry> hashTableDeep(hashTableMask + 1);
-std::vector<int> hashTableAge(hashTableMask + 1,0);
-
 static hashEntry tableEntry;
-const hashEntry emptyEntry =
+
+struct hashStore
+{
+    U64 zHash;
+    U64 info;
+};
+
+static hashStore tableStore;
+const hashStore emptyStore =
 {
     .zHash = 0,
-    .depth = 0,
-    .bestMove = 0,
-    .evaluation = 0,
-    .isExact = 0,
-    .isBeta = 0,
+    .info = 0,
 };
+
+U64 hashTableMask = 63; //start with a small hash.
+std::vector<hashStore> hashTableAlways(hashTableMask + 1);
+std::vector<hashStore> hashTableDeep(hashTableMask + 1);
 
 U64 randomNums[781] = {};
 
@@ -46,59 +63,68 @@ void clearTT()
 {
     for (int i=0;i<(int)(hashTableMask + 1);i++)
     {
-        hashTableAlways[i] = emptyEntry;
-        hashTableDeep[i] = emptyEntry;
-        hashTableAge[i] = 0;
+        hashTableAlways[i] = emptyStore;
+        hashTableDeep[i] = emptyStore;
     }
 }
 
 void resizeTT(U64 memory)
 {
     //memory in MB.
-    U64 length = (memory * 1048576ull)/((U64)sizeof(hashEntry));
+    U64 length = (memory * 1048576ull)/((U64)sizeof(hashStore));
     length = length >> 1; //two tables to fill.
     hashTableMask = 1;
     while (hashTableMask <= length) {hashTableMask *= 2;}
     hashTableMask /= 2;
     hashTableMask -= 1;
-    hashTableAlways.resize(hashTableMask + 1, emptyEntry);
-    hashTableDeep.resize(hashTableMask + 1, emptyEntry);
-    hashTableAge.resize(hashTableMask + 1, 0);
+    hashTableAlways.resize(hashTableMask + 1, emptyStore);
+    hashTableDeep.resize(hashTableMask + 1, emptyStore);
+}
+
+inline void unpackInfo(U64 info)
+{
+    tableEntry.bestMove = (info & BESTMOVEMASK);
+    tableEntry.isExact = (info & EXACTFLAGMASK);
+    tableEntry.isBeta = (info & BETAFLAGMASK);
+    tableEntry.depth = (info & DEPTHMASK) >> DEPTHSHIFT;
+    tableEntry.evaluation = (info & EVALMASK) >> EVALSHIFT;
+    if (!(info & EVALSIGNMASK)) {tableEntry.evaluation *= -1;}
 }
 
 inline void ttSave(U64 zHash, int depth, U32 bestMove, int evaluation, bool isExact, bool isBeta)
 {
-    tableEntry.zHash = zHash;
-    tableEntry.depth = depth;
-    tableEntry.bestMove = bestMove;
-    tableEntry.evaluation = evaluation;
-    tableEntry.isExact = isExact;
-    tableEntry.isBeta = isBeta;
+    tableStore.zHash = zHash;
+    tableStore.info = bestMove;
+    tableStore.info += ((U64)(depth) << DEPTHSHIFT) & DEPTHMASK;
+    tableStore.info += ((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK;
+    tableStore.info += ((U64)(evaluation > 0) << EVALSIGNSHIFT);
+    tableStore.info += ((U64)(isExact) << EXACTFLAGSHIFT);
+    tableStore.info += ((U64)(isBeta) << BETAFLAGSHIFT);
+    tableStore.info += ((U64)(rootCounter) << AGESHIFT) & AGEMASK;
 
-    if (depth >= hashTableDeep[zHash & hashTableMask].depth ||
-        rootCounter > hashTableAge[zHash & hashTableMask] + ageLimit)
+    if (depth >= (int)((hashTableDeep[zHash & hashTableMask].info & DEPTHMASK) >> DEPTHSHIFT) ||
+        rootCounter > (int)((hashTableDeep[zHash & hashTableMask].info & AGEMASK) >> AGESHIFT) + ageLimit)
     {
         //fits in deep table.
-        hashTableDeep[zHash & hashTableMask] = tableEntry;
-        hashTableAge[zHash & hashTableMask] = rootCounter;
+        hashTableDeep[zHash & hashTableMask] = tableStore;
     }
     else
     {
         //fits in always table.
-        hashTableAlways[zHash & hashTableMask] = tableEntry;
+        hashTableAlways[zHash & hashTableMask] = tableStore;
     }
 }
 
-inline bool ttProbe(U64 zHash, hashEntry &entry)
+inline bool ttProbe(U64 zHash)
 {
     if (hashTableDeep[zHash & hashTableMask].zHash == zHash)
     {
-        entry = hashTableDeep[zHash & hashTableMask];
+        unpackInfo(hashTableDeep[zHash & hashTableMask].info);
         return true;
     }
     if (hashTableAlways[zHash & hashTableMask].zHash == zHash)
     {
-        entry = hashTableAlways[zHash & hashTableMask];
+        unpackInfo(hashTableAlways[zHash & hashTableMask].info);
         return true;
     }
 
