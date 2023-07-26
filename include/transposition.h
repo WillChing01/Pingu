@@ -22,7 +22,7 @@ const U64 AGEMASK = 18374686479671623680ull;
 const U64 AGESHIFT = 56;
 
 int rootCounter = 0;
-const int ageLimit = 4;
+const int ageLimit = 2;
 
 struct hashEntry
 {
