@@ -12,12 +12,6 @@
 
 std::atomic_bool isSearching(false);
 
-//template<typename T>
-//bool isReady(const std::future<T> &f)
-//{
-//    return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
-//}
-
 void searchThread(Board &b, int depth, double moveTime)
 {
     isSearchAborted = false; totalNodes = 0; timeLeft = moveTime;

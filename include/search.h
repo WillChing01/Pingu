@@ -7,6 +7,7 @@
 #include "bitboard.h"
 #include "transposition.h"
 #include "evaluation.h"
+#include "format.h"
 #include "board.h"
 
 const int nullMoveR = 2;
@@ -23,6 +24,27 @@ auto currentTime = std::chrono::high_resolution_clock::now();
 
 std::atomic_bool isSearchAborted(false);
 U32 totalNodes = 0;
+
+void collectPVChild(Board &b)
+{
+    U64 bHash = b.zHashPieces ^ b.zHashState;
+    if (ttProbe(bHash) == true)
+    {
+        pvMoves.push_back(tableEntry.bestMove);
+        b.makeMove(tableEntry.bestMove);
+        collectPVChild(b);
+        b.unmakeMove();
+    }
+}
+
+void collectPVRoot(Board &b, U32 bestMove)
+{
+    pvMoves.clear();
+    pvMoves.push_back(bestMove);
+    b.makeMove(bestMove);
+    collectPVChild(b);
+    b.unmakeMove();
+}
 
 inline bool checkTime()
 {
@@ -267,7 +289,12 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                     storedBestMove = bestMoves[0];
                     storedBestScore = alpha;
                     b.unpackMove(storedBestMove);
-                    cout << itDepth << " " << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << " ";
+                    cout << "info depth " << itDepth << " pv";
+                    collectPVRoot(b,storedBestMove);
+                    for (int i=0;i<(int)pvMoves.size();i++)
+                    {
+                        cout << " " << moveToString(pvMoves[i]);
+                    } cout << endl;
                     //break if checkmate is reached.
                     if (storedBestScore == MATE_SCORE) {break;}
                 }
