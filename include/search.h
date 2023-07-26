@@ -197,10 +197,22 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
             b.makeMove(moveCache[i].first);
             if (depth >= 2)
             {
-                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, true);
-                if (score > alpha && score < beta)
+                //late move reductions.
+                if (depth >= 3 && (alpha == (beta - 1)) && i >= 3 && !inCheck &&
+                    b.currentMove.capturedPieceType == 15 &&
+                    b.currentMove.pieceType < b._nPawns)
                 {
-                    score = -alphaBeta(b, -beta, -alpha, depth-1, true);
+                    score = -alphaBeta(b, -beta, -alpha, depth-1-i/3, true);
+                }
+                else {score = alpha + 1;}
+
+                if (score > alpha)
+                {
+                    score = -alphaBeta(b, -alpha-1, -alpha, depth-1, true);
+                    if (score > alpha && score < beta)
+                    {
+                        score = -alphaBeta(b, -beta, -alpha, depth-1, true);
+                    }
                 }
             }
             else {score = -alphaBeta(b, -beta, -alpha, depth-1, true);}
