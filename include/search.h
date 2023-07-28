@@ -25,24 +25,24 @@ auto currentTime = std::chrono::high_resolution_clock::now();
 std::atomic_bool isSearchAborted(false);
 U32 totalNodes = 0;
 
-void collectPVChild(Board &b)
+void collectPVChild(Board &b, int depth)
 {
     U64 bHash = b.zHashPieces ^ b.zHashState;
-    if (ttProbe(bHash) == true)
+    if (ttProbe(bHash) == true && depth > 0)
     {
         pvMoves.push_back(tableEntry.bestMove);
         b.makeMove(tableEntry.bestMove);
-        collectPVChild(b);
+        collectPVChild(b, depth-1);
         b.unmakeMove();
     }
 }
 
-void collectPVRoot(Board &b, U32 bestMove)
+void collectPVRoot(Board &b, U32 bestMove, int depth)
 {
     pvMoves.clear();
     pvMoves.push_back(bestMove);
     b.makeMove(bestMove);
-    collectPVChild(b);
+    collectPVChild(b, depth-1);
     b.unmakeMove();
 }
 
@@ -197,10 +197,22 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
             b.makeMove(moveCache[i].first);
             if (depth >= 2)
             {
-                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, true);
-                if (score > alpha && score < beta)
+                //late move reductions.
+                if (depth >= 3 && (alpha == (beta - 1)) && i >= 3 && !inCheck &&
+                    b.currentMove.capturedPieceType == 15 &&
+                    b.currentMove.pieceType == b.currentMove.finishPieceType)
                 {
-                    score = -alphaBeta(b, -beta, -alpha, depth-1, true);
+                    score = -alphaBeta(b, -beta, -alpha, depth-2, true);
+                }
+                else {score = alpha + 1;}
+
+                if (score > alpha)
+                {
+                    score = -alphaBeta(b, -alpha-1, -alpha, depth-1, true);
+                    if (score > alpha && score < beta)
+                    {
+                        score = -alphaBeta(b, -beta, -alpha, depth-1, true);
+                    }
                 }
             }
             else {score = -alphaBeta(b, -beta, -alpha, depth-1, true);}
@@ -289,8 +301,8 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                     storedBestMove = bestMoves[0];
                     storedBestScore = alpha;
                     b.unpackMove(storedBestMove);
-                    cout << "info depth " << itDepth << " pv";
-                    collectPVRoot(b,storedBestMove);
+                    cout << "info depth " << itDepth << " score cp " << storedBestScore << " pv";
+                    collectPVRoot(b, storedBestMove, itDepth);
                     for (int i=0;i<(int)pvMoves.size();i++)
                     {
                         cout << " " << moveToString(pvMoves[i]);
