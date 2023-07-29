@@ -1,6 +1,7 @@
 #ifndef SEARCH_H_INCLUDED
 #define SEARCH_H_INCLUDED
 
+#include <iostream>
 #include <atomic>
 #include <algorithm>
 
@@ -15,7 +16,6 @@ const int nullMoveDepthLimit = 3;
 
 U32 storedBestMove = 0;
 int storedBestScore = 0;
-vector<U32> bestMoves;
 vector<U32> pvMoves;
 
 double timeLeft = 0; //milliseconds.
@@ -278,12 +278,12 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
             for (int itDepth = 1; itDepth <= depth; itDepth++)
             {
                 auto iterationStartTime = std::chrono::high_resolution_clock::now();
-                alpha = -MATE_SCORE; beta = MATE_SCORE; bestMoves.clear();
+                alpha = -MATE_SCORE-1; beta = MATE_SCORE; U32 bestMove = 0;
                 //try pv first.
                 b.makeMove(moveCache[pvIndex].first);
                 score = -alphaBeta(b, -beta, -alpha, itDepth-1, true);
                 b.unmakeMove();
-                if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[pvIndex].first);}
+                if (score > alpha) {alpha = score; bestMove = moveCache[pvIndex].first;}
 
                 for (int i=0;i<(int)(moveCache.size());i++)
                 {
@@ -291,14 +291,14 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                     b.makeMove(moveCache[i].first);
                     score = -alphaBeta(b, -beta, -alpha, itDepth-1, true);
                     b.unmakeMove();
-                    if (score > alpha) {alpha = score; bestMoves.clear(); bestMoves.push_back(moveCache[i].first); pvIndex = i;}
+                    if (score > alpha) {alpha = score; bestMove = moveCache[i].first; pvIndex = i;}
                 }
 
                 //check if time is up.
                 if (isSearchAborted) {break;}
                 else
                 {
-                    storedBestMove = bestMoves[0];
+                    storedBestMove = bestMove;
                     storedBestScore = alpha;
                     b.unpackMove(storedBestMove);
                     cout << "info depth " << itDepth << " score cp " << storedBestScore << " pv";
@@ -334,26 +334,6 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
             return 0;
         }
     }
-}
-
-void searchSpeedTest(int depth)
-{
-    //plays initial position for 10 ply.
-    Board b; b.display();
-
-    auto t1 = std::chrono::high_resolution_clock::now();
-    timeLeft = INT_MAX;
-    for (int i=0;i<10;i++)
-    {
-        isSearchAborted = false;
-        alphaBetaRoot(b,-MATE_SCORE,MATE_SCORE,depth);
-        if (bestMoves.size()==0) {break;}
-        b.makeMove(bestMoves[0]);
-        cout << i+1 << " " << toCoord(b.currentMove.startSquare) << toCoord(b.currentMove.finishSquare) << endl;
-    }
-    auto t2 = std::chrono::high_resolution_clock::now();
-    b.display();
-    cout << "Time (ms) - " << std::chrono::duration<double, std::milli>(t2-t1).count() << endl;
 }
 
 #endif // SEARCH_H_INCLUDED

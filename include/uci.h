@@ -9,6 +9,7 @@
 #include "perft.h"
 #include "format.h"
 #include "search.h"
+#include "board.h"
 
 std::atomic_bool isSearching(false);
 
