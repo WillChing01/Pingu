@@ -45,7 +45,6 @@ void playCPU(double timePerMove)
 
         b.moveBuffer.clear();
         b.display();
-        bestMoves.clear();
 
         int res;
         isSearchAborted = false; storedBestMove = 0;
