@@ -39,9 +39,9 @@ set(HEADER_FILES
 
 # create the project
 
-project(Chess_3)
+project(Pingu)
 
-add_executable(Chess_3 ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(Pingu ${SOURCE_FILES} ${HEADER_FILES})
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_COMPILE_DEBUG_OPTIONS}>")
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_COMPILE_RELEASE_OPTIONS}>")
 target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_LINK_DEBUG_OPTIONS}>")
