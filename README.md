@@ -1,10 +1,10 @@
-# Chess_3
+# Pingu
+
+<img src="pingu.jpeg" alt="pingu" width="300"/>
 
 UCI compatible chess engine built from scratch.
 
 Many thanks to the advice on [Chess Programming Wiki](www.chessprogramming.org).
-
-Play me on Lichess! My username is [WilliamEngine](https://lichess.org/@/WilliamEngine).
 
 # Features
 
@@ -22,16 +22,19 @@ Play me on Lichess! My username is [WilliamEngine](https://lichess.org/@/William
 
 ### Search
 - Main search
-  - Principal variation search
   - Fail-soft alpha-beta
+  - Principal variation search
   - Null move pruning
+  - Late move reductions
 - Quiescence search
-- Iterative deepening at root
-- Basic time management
+  - Stand-pat
+  - Forward prune SEE < 0
 - Transposition tables
   - Always replace
   - Depth-preferred
 - Draw hash table
+- Iterative deepening at root
+- Basic time management
 
 ### Evaluation
 - Material
@@ -45,18 +48,18 @@ Play me on Lichess! My username is [WilliamEngine](https://lichess.org/@/William
 # Executable
 
 ### Github releases
-Check out [releases](https://github.com/WillChing01/Chess_3/releases/) to download the .exe for master branch.
+Check out [releases](https://github.com/WillChing01/Pingu/releases/) to download the .exe for master branch.
 
 ### Compile with cmake
 
 __Requires cmake, g++ and mingw__
 
-Clone the repository, go to ```/Chess_3``` directory and run these terminal commands:
+Clone the repository, go to ```/Pingu``` directory and run these terminal commands:
 
 ```
 mkdir build
 cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target Chess_3 --config Release --
+cmake --build build --target Pingu --config Release --
 ```
 
 Alternatively, you can skip downloading mingw and replace "MinGW Makefiles" with another generator that you already have.
@@ -66,11 +69,11 @@ The executable will appear in ```/build``` directory.
 ### Compile manually
 __Requires g++__
 
-Clone the repository, go to ```/Chess_3``` directory and run these terminal commands:
+Clone the repository, go to ```/Pingu``` directory and run these terminal commands:
 
 ```
 g++ -Wall -std=gnu++17 -fexceptions -O3 -Iinclude -c main.cpp -o main.o
-g++ -o Chess_3.exe main.o -static -static-libstdc++ -static-libgcc -static -s
+g++ -o Pingu.exe main.o -static -static-libstdc++ -static-libgcc -static -s
 ```
 
 You can delete the ```main.o``` file after compilation.

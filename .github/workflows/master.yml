@@ -50,7 +50,7 @@ jobs:
         run: |
           mkdir build
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --target Chess_3 --config Release --
+          cmake --build build --target Pingu --config Release --
 
       - name: Create release
         uses: "marvinpinto/action-automatic-releases@latest"
@@ -58,5 +58,5 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: false
-          title: "Latest master"
-          files: "build/Chess_3.exe"
+          title: "Latest"
+          files: "build/Pingu.exe"
