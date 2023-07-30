@@ -1396,7 +1396,7 @@ class Board {
             return scoredMoves;
         }
 
-        vector<pair<U32,int> > orderQMoves(const int threshhold = -50)
+        vector<pair<U32,int> > orderQMoves(const int threshhold = 0)
         {
             //assumes that updateOccupied() has been called immediately before.
             scoredMoves.clear();
@@ -1411,7 +1411,7 @@ class Board {
                     U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
                     U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                     int score = seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType);
-                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i], score));
+                    if (score >= threshhold) {scoredMoves.push_back(pair<U32,int>(moveBuffer[i], score));}
                 }
                 else
                 {
