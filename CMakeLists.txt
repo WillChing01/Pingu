@@ -34,6 +34,7 @@ set(HEADER_FILES
     ${INCLUDE_DIR}/search.h
     ${INCLUDE_DIR}/slider.h
     ${INCLUDE_DIR}/transposition.h
+    ${INCLUDE_DIR}/tuning.h
     ${INCLUDE_DIR}/uci.h
 )
 

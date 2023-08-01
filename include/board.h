@@ -1212,7 +1212,7 @@ class Board {
             U64 temp = pieces[_nQueens];
             while (temp)
             {
-                startTotal += PIECE_VALUES_START[1] + PIECE_TABLES_START[1][63-popLSB(temp)];
+                startTotal += PIECE_VALUES_START[1] + PIECE_TABLES_START[1][popLSB(temp) ^ 56];
             }
 
             temp = pieces[_nQueens+1];
@@ -1225,7 +1225,7 @@ class Board {
             temp = pieces[_nRooks];
             while (temp)
             {
-                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][63-popLSB(temp)];
+                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][popLSB(temp) ^ 56];
             }
 
             temp = pieces[_nRooks+1];
@@ -1238,7 +1238,7 @@ class Board {
             temp = pieces[_nBishops];
             while (temp)
             {
-                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][63-popLSB(temp)];
+                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][popLSB(temp) ^ 56];
             }
 
             temp = pieces[_nBishops+1];
@@ -1251,7 +1251,7 @@ class Board {
             temp = pieces[_nKnights];
             while (temp)
             {
-                startTotal += PIECE_VALUES_START[4] + PIECE_TABLES_START[4][63-popLSB(temp)];
+                startTotal += PIECE_VALUES_START[4] + PIECE_TABLES_START[4][popLSB(temp) ^ 56];
             }
 
             temp = pieces[_nKnights+1];
@@ -1274,7 +1274,7 @@ class Board {
                 temp = pieces[_nPawns];
                 while (temp)
                 {
-                    pawnHash[index].second += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][63-popLSB(temp)];
+                    pawnHash[index].second += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][popLSB(temp) ^ 56];
                 }
 
                 temp = pieces[_nPawns+1];
@@ -1292,8 +1292,8 @@ class Board {
             int kingPos = __builtin_ctzll(pieces[_nKing]);
             int kingPos2 = __builtin_ctzll(pieces[_nKing+1]);
 
-            startTotal += PIECE_TABLES_START[0][63-kingPos] - PIECE_TABLES_START[0][kingPos2];
-            endTotal += PIECE_TABLES_END[0][63-kingPos] - PIECE_TABLES_END[0][kingPos2];
+            startTotal += PIECE_TABLES_START[0][kingPos ^ 56] - PIECE_TABLES_START[0][kingPos2];
+            endTotal += PIECE_TABLES_END[0][kingPos ^ 56] - PIECE_TABLES_END[0][kingPos2];
 
             return (((startTotal * shiftedPhase) + (endTotal * (256 - shiftedPhase))) / 256) * (1-2*(int)(moveHistory.size() & 1));
         }
@@ -1382,8 +1382,8 @@ class Board {
                                 else
                                 {
                                     scoredMoves.push_back(pair<U32,int>(moveBuffer[i],
-                                    PIECE_TABLES_START[pieceType >> 1][63 - finishSquare] -
-                                    PIECE_TABLES_START[pieceType >> 1][63 - startSquare]));
+                                    PIECE_TABLES_START[pieceType >> 1][finishSquare ^ 56] -
+                                    PIECE_TABLES_START[pieceType >> 1][startSquare ^ 56]));
                                 }
                             }
                         }
