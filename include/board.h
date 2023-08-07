@@ -40,6 +40,16 @@ struct moveInfo
     U32 finishPieceType;
 };
 
+static const std::array<int,6> seeValues = 
+{{
+    20000,
+    1000,
+    525,
+    350,
+    350,
+    100,
+}};
+
 class Board {
     public:
         U64 pieces[12]={};
@@ -88,7 +98,7 @@ class Board {
 
         //pawn hash tables.
         static const U64 pawnHashMask = 1023;
-        pair<U64,int> pawnHash[pawnHashMask + 1] = {};
+        pair<U64,pair<int,int> > pawnHash[pawnHashMask + 1] = {};
         U64 zHashPawns = 0;
 
         Board()
@@ -1172,7 +1182,7 @@ class Board {
             //perform static evaluation exchange (SEE).
             //use the currentMove struct.
             int d=0;
-            gain[0] = PIECE_VALUES_START[capturedPieceType >> 1];
+            gain[0] = seeValues[capturedPieceType >> 1];
             U32 attackingPiece = pieceType;
             U64 attackingPieceBB = 1ull << startSquare;
             U64 isAttacked[2] = {getAttacksToSquare(1,finishSquare),
@@ -1184,7 +1194,7 @@ class Board {
             do
             {
                 d++;
-                gain[d] = -gain[d-1] + PIECE_VALUES_START[attackingPiece >> 1];
+                gain[d] = -gain[d-1] + seeValues[attackingPiece >> 1];
                 if (max(-gain[d-1],gain[d]) < 0) {break;}
                 occ ^= attackingPieceBB;
                 isAttacked[side] ^= attackingPieceBB;
@@ -1208,85 +1218,108 @@ class Board {
             int startTotal = 0;
             int endTotal = 0;
 
+            U64 x;
+
             //queens.
             U64 temp = pieces[_nQueens];
             while (temp)
             {
-                startTotal += PIECE_VALUES_START[1] + PIECE_TABLES_START[1][popLSB(temp) ^ 56];
+                x = popLSB(temp);
+                startTotal += PIECE_VALUES_START[1] + PIECE_TABLES_START[1][x ^ 56];
+                endTotal += PIECE_VALUES_END[1] + PIECE_TABLES_END[1][x ^ 56];
             }
 
             temp = pieces[_nQueens+1];
             while (temp)
             {
-                startTotal -= PIECE_VALUES_START[1] + PIECE_TABLES_START[1][popLSB(temp)];
+                x = popLSB(temp);
+                startTotal -= PIECE_VALUES_START[1] + PIECE_TABLES_START[1][x];
+                endTotal -= PIECE_VALUES_END[1] + PIECE_TABLES_END[1][x];
             }
 
             //rooks.
             temp = pieces[_nRooks];
             while (temp)
             {
-                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][popLSB(temp) ^ 56];
+                x = popLSB(temp);
+                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x ^ 56];
+                endTotal += PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x ^ 56];
             }
 
             temp = pieces[_nRooks+1];
             while (temp)
             {
-                startTotal -= PIECE_VALUES_START[2] + PIECE_TABLES_START[2][popLSB(temp)];
+                x = popLSB(temp);
+                startTotal -= PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x];
+                endTotal -= PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x];
             }
 
             //bishops.
             temp = pieces[_nBishops];
             while (temp)
             {
-                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][popLSB(temp) ^ 56];
+                x = popLSB(temp);
+                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x ^ 56];
+                endTotal += PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x ^ 56];
             }
 
             temp = pieces[_nBishops+1];
             while (temp)
             {
-                startTotal -= PIECE_VALUES_START[3] + PIECE_TABLES_START[3][popLSB(temp)];
+                x = popLSB(temp);
+                startTotal -= PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x];
+                endTotal -= PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x];
             }
 
             //knights.
             temp = pieces[_nKnights];
             while (temp)
             {
-                startTotal += PIECE_VALUES_START[4] + PIECE_TABLES_START[4][popLSB(temp) ^ 56];
+                x = popLSB(temp);
+                startTotal += PIECE_VALUES_START[4] + PIECE_TABLES_START[4][x ^ 56];
+                endTotal += PIECE_VALUES_END[4] + PIECE_TABLES_END[4][x ^ 56];
             }
 
             temp = pieces[_nKnights+1];
             while (temp)
             {
-                startTotal -= PIECE_VALUES_START[4] + PIECE_TABLES_START[4][popLSB(temp)];
+                x = popLSB(temp);
+                startTotal -= PIECE_VALUES_START[4] + PIECE_TABLES_START[4][x];
+                endTotal -= PIECE_VALUES_END[4] + PIECE_TABLES_END[4][x];
             }
 
             //pawns.
             U64 index = zHashPawns & pawnHashMask;
             if (pawnHash[index].first == zHashPawns)
             {
-                startTotal += pawnHash[index].second;
+                startTotal += pawnHash[index].second.first;
+                endTotal += pawnHash[index].second.second;
             }
             else
             {
                 pawnHash[index].first = zHashPawns;
-                pawnHash[index].second = 0;
+                pawnHash[index].second.first = 0;
+                pawnHash[index].second.second = 0;
 
                 temp = pieces[_nPawns];
                 while (temp)
                 {
-                    pawnHash[index].second += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][popLSB(temp) ^ 56];
+                    x = popLSB(temp);
+                    pawnHash[index].second.first += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][x ^ 56];
+                    pawnHash[index].second.second += PIECE_VALUES_END[5] + PIECE_TABLES_END[5][x ^ 56];
                 }
 
                 temp = pieces[_nPawns+1];
                 while (temp)
                 {
-                    pawnHash[index].second -= PIECE_VALUES_START[5] + PIECE_TABLES_START[5][popLSB(temp)];
+                    x = popLSB(temp);
+                    pawnHash[index].second.first -= PIECE_VALUES_START[5] + PIECE_TABLES_START[5][x];
+                    pawnHash[index].second.second -= PIECE_VALUES_END[5] + PIECE_TABLES_END[5][x];
                 }
 
-                startTotal += pawnHash[index].second;
+                startTotal += pawnHash[index].second.first;
+                endTotal += pawnHash[index].second.second;
             }
-
-            endTotal = startTotal;
 
             //kings.
             int kingPos = __builtin_ctzll(pieces[_nKing]);
