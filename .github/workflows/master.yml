@@ -23,36 +23,21 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Compile project with cmake
-        env:
-          CC: gcc-13
-          GCC: g++-13
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
+      - name: Compile perft test with cmake
         run: |
           mkdir build
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target perft --config Release --
-      
-      - name: Run executable and test
+
+      - name: Run perft test
         run: build/perft.exe
 
-  release:
-    needs: build
-    name: Create executable release on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ windows-latest ]
-        include:
-          - os: windows-latest
-            target: Windows
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-        
-      - name: Compile project with cmake
-        env:
-          CC: gcc-13
-          GCC: g++-13
+      - name: Compile program with cmake
         run: |
           mkdir build
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
