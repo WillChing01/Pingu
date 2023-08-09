@@ -59,6 +59,7 @@ class Board {
 
         vector<gameState> stateHistory;
         vector<U32> moveHistory;
+        vector<U32> hashHistory;
 
         vector<U32> captureBuffer;
         vector<U32> nonCaptureBuffer;
@@ -89,9 +90,6 @@ class Board {
         //overall zHash is XOR of these two.
         U64 zHashPieces = 0;
         U64 zHashState = 0;
-
-        //draw hash table.
-        U64 drawHash[128] = {};
 
         //SEE.
         int gain[32]={};
@@ -178,6 +176,11 @@ class Board {
 
         void setPositionFen(string fen)
         {
+            //reset history.
+            stateHistory.clear();
+            moveHistory.clear();
+            hashHistory.clear();
+
             vector<string> temp; temp.push_back("");
 
             for (int i=0;i<(int)fen.length();i++)
@@ -1028,6 +1031,9 @@ class Board {
         {
             unpackMove(chessMove);
 
+            //save zHash.
+            hashHistory.push_back(zHashPieces ^ zHashState);
+
             //move pieces.
             movePieces();
 
@@ -1111,12 +1117,14 @@ class Board {
 
             stateHistory.pop_back();
             moveHistory.pop_back();
+            hashHistory.pop_back();
         }
 
         void makeNullMove()
         {
             stateHistory.push_back(current);
             moveHistory.push_back(0);
+            hashHistory.push_back(zHashPieces ^ zHashState);
 
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
@@ -1148,6 +1156,7 @@ class Board {
 
             stateHistory.pop_back();
             moveHistory.pop_back();
+            hashHistory.pop_back();
         }
 
         U64 getAttacksToSquare(bool side, U32 square)

@@ -46,6 +46,23 @@ void collectPVRoot(Board &b, U32 bestMove, int depth)
     b.unmakeMove();
 }
 
+inline bool isDraw(Board &b)
+{
+    //check if current position has appeared in moveHistory.
+    bool draw = false;
+    U32 zHash = b.zHashPieces ^ b.zHashState;
+    for (int i=(int)(b.moveHistory.size())-1;i>=0;i--)
+    {
+        if ((((b.moveHistory[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET) >> 1) == (b._nPawns >> 1) ||
+            ((b.moveHistory[i] & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) != 15)
+        {
+            break;
+        }
+        else if (b.hashHistory[i] == zHash) {draw = true; break;}
+    }
+    return draw;
+}
+
 inline bool checkTime()
 {
     if (std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count() > timeLeft)
@@ -65,10 +82,6 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
         if (checkTime() == false) {return 0;}
     }
     if (isSearchAborted) {return 0;}
-
-    //check for draw.
-    U64 bHash = b.zHashPieces ^ b.zHashState;
-    if (b.drawHash[bHash & 127] == bHash) {return 0;}
 
     bool inCheck = b.generatePseudoQMoves(b.moveHistory.size() & 1);
 
@@ -120,17 +133,17 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
     }
     if (isSearchAborted) {return 0;}
 
-    if (depth <= 0) {return alphaBetaQuiescence(b, alpha, beta);}
-
     //check for draw.
-    U64 bHash = b.zHashPieces ^ b.zHashState;
-    if (b.drawHash[bHash & 127] == bHash) {return 0;}
+    if (isDraw(b)) {return 0;}
+
+    if (depth <= 0) {return alphaBetaQuiescence(b, alpha, beta);}
 
     bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
     if (b.moveBuffer.size() > 0)
     {
         //check transposition table for a previously calculated line.
+        U64 bHash = b.zHashPieces ^ b.zHashState;
         vector<pair<U32,int> > moveCache;
         if (ttProbe(bHash) == true)
         {
