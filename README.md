@@ -32,18 +32,17 @@ Many thanks to the advice on [Chess Programming Wiki](www.chessprogramming.org).
 - Transposition tables
   - Always replace
   - Depth-preferred
-- Draw hash table
+- Repetition detection
 - Iterative deepening at root
 - Basic time management
 
 ### Evaluation
 - Material
 - Piece square tables
-  - Tapered eval for king
 - Pawn hash table
 
 ### Testing
-- Perft function (initial and Kiwipete positions)
+- Perft function
 
 # Executable
 
