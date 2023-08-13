@@ -61,6 +61,7 @@ const int ZHASH_ENPASSANT[8] = {773,774,775,776,777,778,779,780};
 
 void clearTT()
 {
+    rootCounter = 0;
     for (int i=0;i<(int)(hashTableMask + 1);i++)
     {
         hashTableAlways[i] = emptyStore;
