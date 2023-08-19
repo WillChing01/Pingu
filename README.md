@@ -2,7 +2,11 @@
 
 <img src="pingu.jpeg" alt="pingu" width="300"/>
 
-UCI compatible chess engine built from scratch.
+UCI chess engine built from scratch.
+
+Pingu is a command-line program - in order to interact with other engines or people it is recommended to use a suitable GUI e.g. [cutechess](https://github.com/cutechess/cutechess)
+
+Play against Pingu on [Lichess](https://lichess.org/@/WilliamEngine)!
 
 Many thanks to the advice on [Chess Programming Wiki](www.chessprogramming.org).
 
@@ -37,6 +41,7 @@ Many thanks to the advice on [Chess Programming Wiki](www.chessprogramming.org).
 - Basic time management
 
 ### Evaluation
+- Tapered evaluation
 - Material
 - Piece square tables
 - Pawn hash table
@@ -44,7 +49,7 @@ Many thanks to the advice on [Chess Programming Wiki](www.chessprogramming.org).
 ### Testing
 - Perft function
 
-# Executable
+# Installation
 
 ### Github releases
 Check out [releases](https://github.com/WillChing01/Pingu/releases/) to download the .exe for master branch.
