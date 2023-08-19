@@ -29,11 +29,16 @@ int main()
     clearTT();
 
     readPositions();
+    populateEval();
 
-    optimiseMaterial(8);
-    optimiseMaterial(4);
-    optimiseMaterial(2);
-    optimiseMaterial(1);
+    // optimiseMaterial(8);
+    // optimiseMaterial(4);
+    // optimiseMaterial(2);
+    // optimiseMaterial(1);
+
+    populateDataset();
+
+    optimiseFeatures();
 
     return 0;
 }
