@@ -1,4 +1,4 @@
-name: "Build Executable"
+name: "Deploy"
 
 on:
   push:
@@ -11,7 +11,7 @@ defaults:
 
 jobs:
   build:
-    name: Build and test executable on ${{ matrix.os }}
+    name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -28,17 +28,9 @@ jobs:
         with:
           platform: x64
 
-      - name: Compile perft test with cmake
-        run: |
-          mkdir build
-          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --target perft --config Release --
-
-      - name: Run perft test
-        run: build/perft.exe
-
       - name: Compile program with cmake
         run: |
+          mkdir build
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
 

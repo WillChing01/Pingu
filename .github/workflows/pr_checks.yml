@@ -1,0 +1,30 @@
+name: "Checks"
+
+on:
+  pull_request
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Perft
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
+      - name: Compile program with cmake
+        run: |
+          mkdir build
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target Pingu --config Release --
+
+      - name: Run perft
+        run: python testing/perft.py

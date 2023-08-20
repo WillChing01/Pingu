@@ -1,3 +1,4 @@
 /build
-/testing
+/tuning
+/testing/__pycache__
 weights.txt
