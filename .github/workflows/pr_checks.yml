@@ -10,13 +10,7 @@ defaults:
 jobs:
   build:
     name: Perft
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ windows-latest ]
-        include:
-          - os: windows-latest
-            target: Windows
+    runs-on: windows-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
