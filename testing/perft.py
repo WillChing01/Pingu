@@ -1,4 +1,5 @@
 import os
+import sys
 import engine
 
 def main():
@@ -34,7 +35,8 @@ def main():
 
     e.quitCommand()
 
-    return 1
+    # sys.exit(errors != 0)
+    sys.exit(1)
 
 if __name__ == "__main__":
     main()
