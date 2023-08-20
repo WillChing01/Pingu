@@ -3,32 +3,33 @@
 
 #include <chrono>
 
+#include "constants.h"
 #include "board.h"
 
 const unsigned long long INITIAL_POSITION_NODES[7] = {1,20,400,8902,197281,4865609,119060324};
 const unsigned long long KIWIPETE_POSITION_NODES[6] = {1,48,2039,97862,4085603,193690690};
 
-long long childPerft(Board &b, int depth)
+U64 childPerft(Board &b, int depth)
 {
-    if (depth==0)
+    if (depth == 0)
     {
         return 1;
     }
+    else if (depth == 1)
+    {
+        b.generatePseudoMoves(b.moveHistory.size() & 1);
+        return b.moveBuffer.size();
+    }
     else
     {
-        long long total=0;
-
+        U64 total = 0;
         b.generatePseudoMoves(b.moveHistory.size() & 1);
-
         vector<U32> moveCache = b.moveBuffer;
 
         for (int i=0;i<(int)moveCache.size();i++)
         {
-            //execute the move.
             b.makeMove(moveCache[i]);
-            //go one deeper.
-            total+=childPerft(b,depth-1);
-            //unmake the move.
+            total += childPerft(b,depth-1);
             b.unmakeMove();
         }
 
@@ -36,30 +37,36 @@ long long childPerft(Board &b, int depth)
     }
 }
 
-long long perft(Board &b, int depth)
+U64 perft(Board &b, int depth, bool verbose = true)
 {
-    if (depth==0)
+    if (depth == 0)
     {
         return 1;
     }
+    else if (depth == 1)
+    {
+        b.generatePseudoMoves(b.moveHistory.size() & 1);
+        return b.moveBuffer.size();
+    }
     else
     {
-        long long total=0;
-
+        U64 total = 0;
         b.generatePseudoMoves(b.moveHistory.size() & 1);
-
         vector<U32> moveCache = b.moveBuffer;
 
         for (int i=0;i<(int)moveCache.size();i++)
         {
-            //execute the move.
             b.makeMove(moveCache[i]);
-            //go one deeper.
-            long long res=childPerft(b,depth-1);
-            total+=res;
-            cout << toCoord((moveCache[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET) << toCoord((moveCache[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET) << " : " << res << endl;
-            //unmake the move.
+            U64 nodes = childPerft(b,depth-1);
+            total += nodes;
             b.unmakeMove();
+            if (verbose)
+            {
+                std::cout << toCoord((moveCache[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET)
+                          << toCoord((moveCache[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET)
+                          << " : " << nodes
+                          << std::endl;
+            }
         }
 
         return total;

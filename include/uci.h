@@ -2,10 +2,12 @@
 #define UCI_H_INCLUDED
 
 #include <iostream>
+#include <cassert>
 #include <limits>
 #include <thread>
 #include <future>
 
+#include "constants.h"
 #include "perft.h"
 #include "format.h"
 #include "search.h"
@@ -52,10 +54,10 @@ void positionCommand(Board &b, vector<string> words)
         //start position.
         b.setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     }
-    else if (words[1] == "fen")
+    else
     {
-        b.setPositionFen(words[2]+" "+words[3]+" "+words[4]+" "+words[5]+" "+words[6]+" "+words[7]);
-        ind = 9;
+        b.setPositionFen(words[1]+" "+words[2]+" "+words[3]+" "+words[4]+" "+words[5]+" "+words[6]);
+        ind = 8;
     }
 
     //play the specified moves.
@@ -65,6 +67,18 @@ void positionCommand(Board &b, vector<string> words)
         if (chessMove == 0) {break;}
         b.makeMove(chessMove);
     }
+}
+
+void perftCommand(Board &b, vector<string> words)
+{
+    try
+    {
+        int depth = stoi(words[1]);
+        assert(depth >= 0);
+        U64 nodes = perft(b, depth);
+        std::cout << "info nodes " << nodes << std::endl;
+    }
+    catch (...) {}
 }
 
 void goCommand(Board &b, vector<string> words)
@@ -158,7 +172,7 @@ void uciLoop()
         else if (commands[0] == "ucinewgame") {prepareForNewGame(b);}
         else if (commands[0] == "position") {positionCommand(b, commands);}
         else if (commands[0] == "go" && !isSearching) {goCommand(b, commands);}
-        else if (commands[0] == "perft") {testInitialPosition(); testKiwipetePosition();}
+        else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display();}
         else if (commands[0] == "stop") {isSearchAborted = true;}
         else if (commands[0] == "quit") {isSearchAborted = true; break;}
