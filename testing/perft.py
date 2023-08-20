@@ -35,8 +35,7 @@ def main():
 
     e.quitCommand()
 
-    # sys.exit(errors != 0)
-    sys.exit(1)
+    sys.exit(errors != 0)
 
 if __name__ == "__main__":
     main()
