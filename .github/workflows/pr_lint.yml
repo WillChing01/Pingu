@@ -16,6 +16,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          scopes: JIRA-\d+
+          scopes: PIN-\d+
           requireScope: true
           subjectPattern: ^(?![A-Z]).+$
