@@ -1609,7 +1609,7 @@ class Board {
             }
         }
 
-        vector<pair<U32,int> > orderMoves(int depth, U32 bestMove = 0)
+        vector<pair<U32,int> > orderMoves(int ply, U32 bestMove = 0)
         {
             //assumes that getOccupied() has been called immediately before.
             scoredMoves.clear();
@@ -1636,7 +1636,7 @@ class Board {
                     else
                     {
                         //non-capture moves.
-                        if (moveBuffer[i] == killerMoves[depth][0] || moveBuffer[i] == killerMoves[depth][1])
+                        if (moveBuffer[i] == killerMoves[ply][0] || moveBuffer[i] == killerMoves[ply][1])
                         {
                             //killer.
                             //set killer score to arbitrary 100 centipawns.

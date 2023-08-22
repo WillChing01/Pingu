@@ -123,7 +123,7 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
     }
 }
 
-int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
+int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
 {
     //check time.
     totalNodes++;
@@ -157,20 +157,20 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
                 else {if (tableEntry.evaluation <= alpha) {return tableEntry.evaluation;}}
             }
             b.updateOccupied();
-            moveCache = b.orderMoves(depth, tableEntry.bestMove);
+            moveCache = b.orderMoves(ply, tableEntry.bestMove);
         }
         else
         {
             //no hash table hit.
             b.updateOccupied();
-            moveCache = b.orderMoves(depth);
+            moveCache = b.orderMoves(ply);
         }
 
         //null move pruning.
         if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit && b.phase > 0)
         {
             b.makeNullMove();
-            int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR, false);
+            int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR, ply+1, false);
             b.unmakeNullMove();
 
             //fail hard only for null move pruning.
@@ -183,17 +183,17 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
         //pv search.
         //search first legal move with full window.
         b.makeMove(moveCache[0].first);
-        bestScore = -alphaBeta(b, -beta, -alpha, depth-1, true);
+        bestScore = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
         b.unmakeMove();
         if (bestScore >= beta)
         {
             //beta cut-off. add killer move.
             if (b.currentMove.capturedPieceType == 15 &&
-                b.killerMoves[depth][0] != moveCache[0].first &&
-                b.killerMoves[depth][1] != moveCache[0].first)
+                b.killerMoves[ply][0] != moveCache[0].first &&
+                b.killerMoves[ply][1] != moveCache[0].first)
             {
-                b.killerMoves[depth][1] = b.killerMoves[depth][0];
-                b.killerMoves[depth][0] = moveCache[0].first;
+                b.killerMoves[ply][1] = b.killerMoves[ply][0];
+                b.killerMoves[ply][0] = moveCache[0].first;
             }
 
             //update transposition table.
@@ -215,20 +215,20 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
                     b.currentMove.capturedPieceType == 15 &&
                     b.currentMove.pieceType == b.currentMove.finishPieceType)
                 {
-                    score = -alphaBeta(b, -beta, -alpha, depth-2, true);
+                    score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);
                 }
                 else {score = alpha + 1;}
 
                 if (score > alpha)
                 {
-                    score = -alphaBeta(b, -alpha-1, -alpha, depth-1, true);
+                    score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
                     if (score > alpha && score < beta)
                     {
-                        score = -alphaBeta(b, -beta, -alpha, depth-1, true);
+                        score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
                     }
                 }
             }
-            else {score = -alphaBeta(b, -beta, -alpha, depth-1, true);}
+            else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
             b.unmakeMove();
 
             if (score > bestScore)
@@ -237,11 +237,11 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, bool nullMoveAllowed)
                 {
                     //beta cut-off. add killer move.
                     if (b.currentMove.capturedPieceType == 15 &&
-                        b.killerMoves[depth][0] != moveCache[i].first &&
-                        b.killerMoves[depth][1] != moveCache[i].first)
+                        b.killerMoves[ply][0] != moveCache[i].first &&
+                        b.killerMoves[ply][1] != moveCache[i].first)
                     {
-                        b.killerMoves[depth][1] = b.killerMoves[depth][0];
-                        b.killerMoves[depth][0] = moveCache[i].first;
+                        b.killerMoves[ply][1] = b.killerMoves[ply][0];
+                        b.killerMoves[ply][0] = moveCache[i].first;
                     }
 
                     //update transposition table.
@@ -294,7 +294,7 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                 alpha = -MATE_SCORE-1; beta = MATE_SCORE; U32 bestMove = 0;
                 //try pv first.
                 b.makeMove(moveCache[pvIndex].first);
-                score = -alphaBeta(b, -beta, -alpha, itDepth-1, true);
+                score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
                 b.unmakeMove();
                 if (score > alpha) {alpha = score; bestMove = moveCache[pvIndex].first;}
 
@@ -302,7 +302,7 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                 {
                     if (i==pvIndex) {continue;}
                     b.makeMove(moveCache[i].first);
-                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, true);
+                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
                     b.unmakeMove();
                     if (score > alpha) {alpha = score; bestMove = moveCache[i].first; pvIndex = i;}
                 }
@@ -333,7 +333,6 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                 if (iterationTime * 2. > realTimeLeft) {break;}
 
             }
-            cout << endl;
             return storedBestScore;
         }
         else if (inCheck)
