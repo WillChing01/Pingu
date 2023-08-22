@@ -8,7 +8,7 @@ defaults:
     shell: bash
 
 jobs:
-  build:
+  perft:
     name: Perft
     runs-on: windows-latest
     steps:
