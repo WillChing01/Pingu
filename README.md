@@ -22,7 +22,7 @@ Many thanks to the advice on [Chess Programming Wiki](www.chessprogramming.org).
 - Hash move
 - Static exchange evaluation
 - Killer moves
-- Piece square tables for quiet moves
+- History heuristic
 
 ### Search
 - Main search
