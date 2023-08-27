@@ -187,13 +187,23 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         b.unmakeMove();
         if (bestScore >= beta)
         {
-            //beta cut-off. add killer move.
-            if (b.currentMove.capturedPieceType == 15 &&
-                b.killerMoves[ply][0] != moveCache[0].first &&
-                b.killerMoves[ply][1] != moveCache[0].first)
+            //quiet beta cutoff.
+            if (b.currentMove.capturedPieceType == 15)
             {
-                b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                b.killerMoves[ply][0] = moveCache[0].first;
+                //update killers.
+                if (b.killerMoves[ply][0] != moveCache[0].first &&
+                    b.killerMoves[ply][1] != moveCache[0].first)
+                {
+                    b.killerMoves[ply][1] = b.killerMoves[ply][0];
+                    b.killerMoves[ply][0] = moveCache[0].first;
+                }
+
+                //increase history score.
+                if (depth >= 5)
+                {
+                    b.history[b.currentMove.pieceType][b.currentMove.finishSquare] += depth*depth;
+                    if (b.history[b.currentMove.pieceType][b.currentMove.finishSquare] > HISTORY_MAX) {b.ageHistory();}
+                }
             }
 
             //update transposition table.
@@ -235,13 +245,37 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             {
                 if (score >= beta)
                 {
-                    //beta cut-off. add killer move.
-                    if (b.currentMove.capturedPieceType == 15 &&
-                        b.killerMoves[ply][0] != moveCache[i].first &&
-                        b.killerMoves[ply][1] != moveCache[i].first)
+                    //quiet beta cutoff.
+                    if (b.currentMove.capturedPieceType == 15)
                     {
-                        b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                        b.killerMoves[ply][0] = moveCache[i].first;
+                        //update killers.
+                        if (b.killerMoves[ply][0] != moveCache[i].first &&
+                            b.killerMoves[ply][1] != moveCache[i].first)
+                        {
+                            b.killerMoves[ply][1] = b.killerMoves[ply][0];
+                            b.killerMoves[ply][0] = moveCache[i].first;
+                        }
+
+                        if (depth >= 5)
+                        {
+                            bool shouldAge = false;
+
+                            //increase history score.
+                            b.history[b.currentMove.pieceType][b.currentMove.finishSquare] += depth * depth;
+                            if (b.history[b.currentMove.pieceType][b.currentMove.finishSquare] > HISTORY_MAX) {shouldAge = true;}
+
+                            //decrease history score of previous quiets.
+                            for (int j=0;j<i;j++)
+                            {
+                                if ((moveCache[j].first & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET != 15) {continue;}
+                                U32 pieceType = (moveCache[j].first & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                                U32 finishSquare = (moveCache[j].first & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                                b.history[pieceType][finishSquare] -= depth * depth;
+                                if (b.history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
+                            }
+
+                            if (shouldAge) {b.ageHistory();}
+                        }
                     }
 
                     //update transposition table.
@@ -279,6 +313,9 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
     {
         rootCounter++;
         startTime = std::chrono::high_resolution_clock::now();
+
+        //reset history at root.
+        b.clearHistory();
 
         bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
 
