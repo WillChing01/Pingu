@@ -317,31 +317,27 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
         //reset history at root.
         b.clearHistory();
 
-        bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
+        bool inCheck = b.generateEvalMoves(b.moveHistory.size() & 1);
 
         if (b.moveBuffer.size() > 0)
         {
-            b.updateOccupied();
-            vector<pair<U32,int> > moveCache = b.orderMoves(0);
-            int pvIndex = 0;
-            int score;
+            int score; storedBestMove = 0;
             for (int itDepth = 1; itDepth <= depth; itDepth++)
             {
                 auto iterationStartTime = std::chrono::high_resolution_clock::now();
                 alpha = -MATE_SCORE-1; beta = MATE_SCORE; U32 bestMove = 0;
-                //try pv first.
-                b.makeMove(moveCache[pvIndex].first);
-                score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
-                b.unmakeMove();
-                if (score > alpha) {alpha = score; bestMove = moveCache[pvIndex].first;}
+
+                //order moves to take into account updated history.
+                b.generatePseudoMoves(b.moveHistory.size() & 1);
+                b.updateOccupied();
+                vector<pair<U32,int> > moveCache = b.orderMoves(0, storedBestMove);
 
                 for (int i=0;i<(int)(moveCache.size());i++)
                 {
-                    if (i==pvIndex) {continue;}
                     b.makeMove(moveCache[i].first);
                     score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
                     b.unmakeMove();
-                    if (score > alpha) {alpha = score; bestMove = moveCache[i].first; pvIndex = i;}
+                    if (score > alpha) {alpha = score; bestMove = moveCache[i].first;}
                 }
 
                 //check if time is up.
