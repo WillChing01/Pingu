@@ -1,9 +1,9 @@
-name: "Deploy"
+name: "Release"
 
 on:
   push:
-    branches:
-      - "master"
+    tags:
+      - "v*"
 
 defaults:
   run:
@@ -34,11 +34,12 @@ jobs:
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
 
+      - name: Run perft
+        run: python testing/perft.py
+
       - name: Create release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "latest"
           prerelease: false
-          title: "Latest"
           files: "build/Pingu.exe"
