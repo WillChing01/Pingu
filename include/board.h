@@ -94,6 +94,9 @@ class Board {
         //SEE.
         int gain[32]={};
 
+        //history table, history[pieceType][to_square]
+        int history[12][64] = {};
+
         //pawn hash tables.
         static const U64 pawnHashMask = 1023;
         pair<U64,pair<int,int> > pawnHash[pawnHashMask + 1] = {};
@@ -1630,8 +1633,9 @@ class Board {
                         U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                         U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
                         U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        //scale captures for move ordering.
-                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i], 15 * seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
+                        //scale captures for move ordering, captures before quiets
+                        //killers and v.good history will precede losing captures
+                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i], HISTORY_MAX + 3 + seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
                     }
                     else
                     {
@@ -1639,41 +1643,14 @@ class Board {
                         if (moveBuffer[i] == killerMoves[ply][0] || moveBuffer[i] == killerMoves[ply][1])
                         {
                             //killer.
-                            //set killer score to arbitrary 100 centipawns.
-                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i],100));
+                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i], HISTORY_MAX + 1));
                         }
                         else
                         {
                             //non-killer.
-                            U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                             U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
                             U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                            if (pieceType & 1)
-                            {
-                                if (pieceType >> 1 == _nKing)
-                                {
-                                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
-                                }
-                                else
-                                {
-                                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],
-                                    PIECE_TABLES_START[pieceType >> 1][finishSquare] -
-                                    PIECE_TABLES_START[pieceType >> 1][startSquare]));
-                                }
-                            }
-                            else
-                            {
-                                if (pieceType >> 1 == _nKing)
-                                {
-                                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
-                                }
-                                else
-                                {
-                                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],
-                                    PIECE_TABLES_START[pieceType >> 1][finishSquare ^ 56] -
-                                    PIECE_TABLES_START[pieceType >> 1][startSquare ^ 56]));
-                                }
-                            }
+                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i], history[pieceType][finishSquare]));
                         }
                     }
                 }
@@ -1711,6 +1688,22 @@ class Board {
             //sort the moves.
             sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
             return scoredMoves;
+        }
+
+        void ageHistory(const int factor = 16)
+        {
+            for (int i=0;i<12;i++)
+            {
+                for (int j=0;j<64;j++) {history[i][j] /= factor;}
+            }
+        }
+
+        void clearHistory()
+        {
+            for (int i=0;i<12;i++)
+            {
+                for (int j=0;j<64;j++) {history[i][j] = 0;}
+            }
         }
 };
 

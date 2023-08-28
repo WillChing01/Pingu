@@ -187,13 +187,23 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         b.unmakeMove();
         if (bestScore >= beta)
         {
-            //beta cut-off. add killer move.
-            if (b.currentMove.capturedPieceType == 15 &&
-                b.killerMoves[ply][0] != moveCache[0].first &&
-                b.killerMoves[ply][1] != moveCache[0].first)
+            //quiet beta cutoff.
+            if (b.currentMove.capturedPieceType == 15)
             {
-                b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                b.killerMoves[ply][0] = moveCache[0].first;
+                //update killers.
+                if (b.killerMoves[ply][0] != moveCache[0].first &&
+                    b.killerMoves[ply][1] != moveCache[0].first)
+                {
+                    b.killerMoves[ply][1] = b.killerMoves[ply][0];
+                    b.killerMoves[ply][0] = moveCache[0].first;
+                }
+
+                //increase history score.
+                if (depth >= 5)
+                {
+                    b.history[b.currentMove.pieceType][b.currentMove.finishSquare] += depth*depth;
+                    if (b.history[b.currentMove.pieceType][b.currentMove.finishSquare] > HISTORY_MAX) {b.ageHistory();}
+                }
             }
 
             //update transposition table.
@@ -235,13 +245,37 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             {
                 if (score >= beta)
                 {
-                    //beta cut-off. add killer move.
-                    if (b.currentMove.capturedPieceType == 15 &&
-                        b.killerMoves[ply][0] != moveCache[i].first &&
-                        b.killerMoves[ply][1] != moveCache[i].first)
+                    //quiet beta cutoff.
+                    if (b.currentMove.capturedPieceType == 15)
                     {
-                        b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                        b.killerMoves[ply][0] = moveCache[i].first;
+                        //update killers.
+                        if (b.killerMoves[ply][0] != moveCache[i].first &&
+                            b.killerMoves[ply][1] != moveCache[i].first)
+                        {
+                            b.killerMoves[ply][1] = b.killerMoves[ply][0];
+                            b.killerMoves[ply][0] = moveCache[i].first;
+                        }
+
+                        if (depth >= 5)
+                        {
+                            bool shouldAge = false;
+
+                            //increase history score.
+                            b.history[b.currentMove.pieceType][b.currentMove.finishSquare] += depth * depth;
+                            if (b.history[b.currentMove.pieceType][b.currentMove.finishSquare] > HISTORY_MAX) {shouldAge = true;}
+
+                            //decrease history score of previous quiets.
+                            for (int j=0;j<i;j++)
+                            {
+                                if ((moveCache[j].first & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET != 15) {continue;}
+                                U32 pieceType = (moveCache[j].first & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                                U32 finishSquare = (moveCache[j].first & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                                b.history[pieceType][finishSquare] -= depth * depth;
+                                if (b.history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
+                            }
+
+                            if (shouldAge) {b.ageHistory();}
+                        }
                     }
 
                     //update transposition table.
@@ -280,31 +314,30 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
         rootCounter++;
         startTime = std::chrono::high_resolution_clock::now();
 
-        bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
+        //reset history at root.
+        b.clearHistory();
+
+        bool inCheck = b.generateEvalMoves(b.moveHistory.size() & 1);
 
         if (b.moveBuffer.size() > 0)
         {
-            b.updateOccupied();
-            vector<pair<U32,int> > moveCache = b.orderMoves(0);
-            int pvIndex = 0;
-            int score;
+            int score; storedBestMove = 0;
             for (int itDepth = 1; itDepth <= depth; itDepth++)
             {
                 auto iterationStartTime = std::chrono::high_resolution_clock::now();
                 alpha = -MATE_SCORE-1; beta = MATE_SCORE; U32 bestMove = 0;
-                //try pv first.
-                b.makeMove(moveCache[pvIndex].first);
-                score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
-                b.unmakeMove();
-                if (score > alpha) {alpha = score; bestMove = moveCache[pvIndex].first;}
+
+                //order moves to take into account updated history.
+                b.generatePseudoMoves(b.moveHistory.size() & 1);
+                b.updateOccupied();
+                vector<pair<U32,int> > moveCache = b.orderMoves(0, storedBestMove);
 
                 for (int i=0;i<(int)(moveCache.size());i++)
                 {
-                    if (i==pvIndex) {continue;}
                     b.makeMove(moveCache[i].first);
                     score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
                     b.unmakeMove();
-                    if (score > alpha) {alpha = score; bestMove = moveCache[i].first; pvIndex = i;}
+                    if (score > alpha) {alpha = score; bestMove = moveCache[i].first;}
                 }
 
                 //check if time is up.
