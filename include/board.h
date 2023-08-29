@@ -1639,10 +1639,15 @@ class Board {
                     }
                     else
                     {
-                        //non-capture moves.
-                        if (moveBuffer[i] == killerMoves[ply][0] || moveBuffer[i] == killerMoves[ply][1])
+                        //quiet moves.
+                        if (moveBuffer[i] == killerMoves[ply][0])
                         {
-                            //killer.
+                            //first killer.
+                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i], HISTORY_MAX + 2));
+                        }
+                        else if (moveBuffer[i] == killerMoves[ply][1])
+                        {
+                            //second killer.
                             scoredMoves.push_back(pair<U32,int>(moveBuffer[i], HISTORY_MAX + 1));
                         }
                         else

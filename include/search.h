@@ -191,8 +191,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             if (b.currentMove.capturedPieceType == 15)
             {
                 //update killers.
-                if (b.killerMoves[ply][0] != moveCache[0].first &&
-                    b.killerMoves[ply][1] != moveCache[0].first)
+                if (b.killerMoves[ply][0] != moveCache[0].first)
                 {
                     b.killerMoves[ply][1] = b.killerMoves[ply][0];
                     b.killerMoves[ply][0] = moveCache[0].first;
@@ -249,8 +248,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
                     if (b.currentMove.capturedPieceType == 15)
                     {
                         //update killers.
-                        if (b.killerMoves[ply][0] != moveCache[i].first &&
-                            b.killerMoves[ply][1] != moveCache[i].first)
+                        if (b.killerMoves[ply][0] != moveCache[i].first)
                         {
                             b.killerMoves[ply][1] = b.killerMoves[ply][0];
                             b.killerMoves[ply][0] = moveCache[i].first;
