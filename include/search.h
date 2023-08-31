@@ -164,6 +164,9 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             //no hash table hit.
             b.updateOccupied();
             moveCache = b.orderMoves(ply);
+
+            //internal iterative reduction.
+            if (depth > 3) {depth--;}
         }
 
         //null move pruning.
