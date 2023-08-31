@@ -25,7 +25,6 @@ set(HEADER_FILES
     ${INCLUDE_DIR}/constants.h
     ${INCLUDE_DIR}/evaluation.h
     ${INCLUDE_DIR}/format.h
-    ${INCLUDE_DIR}/game.h
     ${INCLUDE_DIR}/king.h
     ${INCLUDE_DIR}/knight.h
     ${INCLUDE_DIR}/magic.h

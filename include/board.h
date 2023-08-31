@@ -14,7 +14,6 @@
 #include "king.h"
 #include "knight.h"
 #include "pawn.h"
-#include "slider.h"
 #include "magic.h"
 
 #include "evaluation.h"
