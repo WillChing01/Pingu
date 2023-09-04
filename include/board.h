@@ -688,12 +688,10 @@ class Board {
             cout << " A  B  C  D  E  F  G  H" << endl;
         }
 
-        bool generateCaptures(bool side)
+        void generateCaptures(bool side, int numChecks = 0)
         {
             updateOccupied();
-            updateAttacked(!side);
-
-            if (!(bool)(pieces[_nKing+(int)(side)] & attacked[(int)(!side)]))
+            if (numChecks == 0)
             {
                 //regular captures.
                 U32 pos; U64 x; U64 temp;
@@ -765,12 +763,10 @@ class Board {
 
                 //king.
                 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & occupied[(int)(!side)];
-                while (x) {appendCapture(_nKing+(int)(side), pos, popLSB(x), false);}
-
-                return false;
+                x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & occupied[(int)(!side)];
+                while (x) {appendCapture(_nKing+(int)(side), pos, popLSB(x), true);}
             }
-            else if (isInCheckDetailed(side) == 1)
+            else if (numChecks == 1)
             {
                 //single check.
                 U32 pos; U64 x; U64 temp;
@@ -780,7 +776,7 @@ class Board {
                 U64 target = getCheckPiece(side, pos);
 
                 //king.
-                x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & occupied[(int)(!side)];
+                x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & occupied[(int)(!side)];
                 while (x) {appendCapture(_nKing+(int)(side), pos, popLSB(x), true);}
 
                 //pawns.
@@ -845,48 +841,46 @@ class Board {
                     x = magicQueenAttacks(p,pos) & target;
                     while (x) {appendCapture(_nQueens+(int)(side), pos, popLSB(x), true);}
                 }
-                
-                return true;
             }
             else
             {
                 //multiple check. only king moves allowed.
                 U32 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & occupied[(int)(!side)];
+                U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & occupied[(int)(!side)];
                 while (x) {appendCapture(_nKing+(int)(side), pos, popLSB(x), true);}
-
-                return true;
             }
         }
 
-        bool generateQuiets(bool side)
+        void generateQuiets(bool side, int numChecks = 0)
         {
             updateOccupied();
-            updateAttacked(!side);
-
             U64 p = (occupied[0] | occupied[1]);
-
-            if (!(bool)(pieces[_nKing+(int)(side)] & attacked[(int)(!side)]))
+            if (numChecks == 0)
             {
                 //regular moves.
                 U32 pos; U64 x; U64 temp;
 
                 //castling.
-                if (current.canKingCastle[(int)(side)] &&
-                    !(bool)(KING_CASTLE_OCCUPIED[(int)(side)] & p) &&
-                    !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+
+                if (current.canKingCastle[(int)(side)] || current.canQueenCastle[(int)(side)])
                 {
-                    //kingside castle.
-                    pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                    appendQuiet(_nKing+(int)(side), pos, pos+2, false);
-                }
-                if (current.canQueenCastle[(int)(side)] &&
-                    !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & p) &&
-                    !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
-                {
-                    //queenside castle.
-                    pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                    appendQuiet(_nKing+(int)(side), pos, pos-2, false);
+                    updateAttacked(!side);
+                    if (current.canKingCastle[(int)(side)] &&
+                        !(bool)(KING_CASTLE_OCCUPIED[(int)(side)] & p) &&
+                        !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                    {
+                        //kingside castle.
+                        pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+                        appendQuiet(_nKing+(int)(side), pos, pos+2, false);
+                    }
+                    if (current.canQueenCastle[(int)(side)] &&
+                        !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & p) &&
+                        !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                    {
+                        //queenside castle.
+                        pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+                        appendQuiet(_nKing+(int)(side), pos, pos-2, false);
+                    }
                 }
 
                 U64 pinned = getPinnedPieces(side);
@@ -953,16 +947,14 @@ class Board {
 
                 //king.
                 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & ~p;
-                while (x) {appendQuiet(_nKing+(int)(side), pos, popLSB(x), false);}
-
-                return false;
+                x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & ~p;
+                while (x) {appendQuiet(_nKing+(int)(side), pos, popLSB(x), true);}
             }
-            else if (isInCheckDetailed(side) == 1)
+            else if (numChecks == 1)
             {
                 //single check.
                 U32 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & ~p;
+                U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & ~p;
                 while (x) {appendQuiet(_nKing+(int)(side), pos, popLSB(x), true);}
 
                 U64 temp;
@@ -1026,17 +1018,13 @@ class Board {
                     x = magicQueenAttacks(p,pos) & ~p;
                     while (x) {appendQuiet(_nQueens+(int)(side), pos, popLSB(x), true);}
                 }
-
-                return true;
             }
             else
             {
                 //multiple check. only king moves allowed.
                 U32 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & ~p;
+                U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & ~p;
                 while (x) {appendQuiet(_nKing+(int)(side), pos, popLSB(x), true);}
-
-                return true;
             }
         }
 
@@ -1208,8 +1196,12 @@ class Board {
         bool generatePseudoMoves(bool side)
         {
             moveBuffer.clear();
-            bool inCheck = generateCaptures(side);
-            generateQuiets(side);
+            updateOccupied();
+            bool inCheck = isInCheck(side);
+            U32 numChecks = 0;
+            if (inCheck) {numChecks = isInCheckDetailed(side);}
+            generateCaptures(side, numChecks);
+            generateQuiets(side, numChecks);
             return inCheck;
         }
 
