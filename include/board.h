@@ -101,6 +101,9 @@ class Board {
         pair<U64,pair<int,int> > pawnHash[pawnHashMask + 1] = {};
         U64 zHashPawns = 0;
 
+        //temp variable for move appending.
+        U32 newMove;
+
         Board()
         {
             //default constructor for regular games.
@@ -341,22 +344,28 @@ class Board {
             {
                 //check if move is legal (does not leave king in check).
                 //move pieces.
-                pieces[pieceType] -= 1ull << (startSquare);
-                pieces[pieceType] += 1ull << (finishSquare);
-                pieces[capturedPieceType] -= 1ull << (finishSquare);
-                updateOccupied();
+                U64 start = 1ull << startSquare;
+                U64 finish = 1ull << finishSquare;
+                pieces[pieceType] -= start;
+                pieces[pieceType] += finish;
+                pieces[capturedPieceType] -= finish;
+                occupied[(int)(side)] -= start;
+                occupied[(int)(side)] += finish;
+                occupied[(int)(!side)] -= finish;
                 bool isBad = isInCheck(side);
 
                 //unmove pieces.
-                pieces[pieceType] += 1ull << (startSquare);
-                pieces[pieceType] -= 1ull << (finishSquare);
-                pieces[capturedPieceType] += 1ull << (finishSquare);
-                updateOccupied();
+                pieces[pieceType] += start;
+                pieces[pieceType] -= finish;
+                pieces[capturedPieceType] += finish;
+                occupied[(int)(side)] += start;
+                occupied[(int)(side)] -= finish;
+                occupied[(int)(!side)] += finish;
 
                 if (isBad) {return;}
             }
 
-            U32 newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
+            newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
             (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
             (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
             (false << MOVEINFO_ENPASSANT_OFFSET) |
@@ -373,20 +382,25 @@ class Board {
             {
                 //check if move is legal (does not leave king in check).
                 //move pieces.
-                pieces[pieceType] -= 1ull << (startSquare);
-                pieces[pieceType] += 1ull << (finishSquare);
-                updateOccupied();
+                bool side = pieceType & 1;
+                U64 start = 1ull << startSquare;
+                U64 finish = 1ull << finishSquare;
+                pieces[pieceType] -= start;
+                pieces[pieceType] += finish;
+                occupied[(int)(side)] -= start;
+                occupied[(int)(side)] += finish;
                 bool isBad = isInCheck(pieceType & 1);
 
                 //unmove pieces.
-                pieces[pieceType] += 1ull << (startSquare);
-                pieces[pieceType] -= 1ull << (finishSquare);
-                updateOccupied();
+                pieces[pieceType] += start;
+                pieces[pieceType] -= finish;
+                occupied[(int)(side)] += start;
+                occupied[(int)(side)] -= finish;
 
                 if (isBad) {return;}
             }
 
-            U32 newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
+            newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
             (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
             (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
             (false << MOVEINFO_ENPASSANT_OFFSET) |
@@ -451,7 +465,7 @@ class Board {
                 if (isBad) {return;}
             }
 
-            U32 newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
+            newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
             (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
             (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
             (enPassant << MOVEINFO_ENPASSANT_OFFSET) |
