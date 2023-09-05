@@ -244,6 +244,103 @@ class Board {
             phaseHardUpdate();
         }
 
+        bool isValidPawnMove()
+        {
+            //called by isValidMove, so currentMove is up-to-date.
+            return true;
+        }
+
+        bool isValidCastles()
+        {
+            //called by isValidMove, so currentMove is up-to-date.
+            return true;
+        }
+
+        bool isValidMove(U32 chessMove, bool inCheck)
+        {
+            updateOccupied();
+            unpackMove(chessMove);
+
+            //check for pawn move.
+            if ((currentMove.pieceType >> 1) == (_nPawns >> 1)) {return isValidPawnMove();}
+            //check for castles.
+            if (((currentMove.pieceType >> 1) == (_nKing >> 1)) &&
+                (abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 2))
+            {
+                return isValidCastles();
+            }
+
+            //ordinary non-pawn capture/quiet.
+
+            //check that startSquare contains piece.
+            if (!(bool)(pieces[currentMove.pieceType] & (1ull << currentMove.startSquare))) {return false;}
+
+            //check that finishSquare is empty or contains capturedPiece.
+            if ((currentMove.capturedPieceType == 15 &&
+                (bool)((occupied[0] | occupied[1]) & (1ull << currentMove.finishSquare))) ||
+                (currentMove.capturedPieceType != 15 &&
+                !(bool)(pieces[currentMove.capturedPieceType] & (1ull << currentMove.finishSquare))))
+            {
+                return false;
+            }
+
+            //startSquare -> finishSquare is valid path for that piece.
+            switch(currentMove.pieceType >> 1)
+            {
+                case _nKing >> 1:
+                    if (!(kingAttacks(pieces[currentMove.pieceType]) & !kingAttacks(pieces[_nKing + !(bool)(currentMove.pieceType & 1)]) & (1ull << currentMove.finishSquare))) {return false;}
+                    break;
+                case _nQueens >> 1:
+                    if (!(magicQueenAttacks(occupied[0] | occupied[1], currentMove.startSquare) & (1ull << currentMove.finishSquare))) {return false;}
+                    break;
+                case _nRooks >> 1:
+                    if (!(magicRookAttacks(occupied[0] | occupied[1], currentMove.startSquare) & (1ull << currentMove.finishSquare))) {return false;}
+                    break;
+                case _nBishops >> 1:
+                    if (!(magicBishopAttacks(occupied[0] | occupied[1], currentMove.startSquare) & (1ull << currentMove.finishSquare))) {return false;}
+                    break;
+                case _nKnights >> 1:
+                    if (!(knightAttacks(1ull << currentMove.startSquare) & (1ull << currentMove.finishSquare))) {return false;}
+                    break;
+            }
+
+            //check if the piece to move is pinned and verify the move if necessary.
+            U64 pinned = getPinnedPieces(currentMove.pieceType & 1);
+            if ((pinned & (1ull << currentMove.startSquare)) ||
+                ((currentMove.pieceType >> 1) == (_nKing >> 1)) ||
+                inCheck)
+            {
+                U64 start = 1ull << currentMove.startSquare;
+                U64 finish = 1ull << currentMove.finishSquare;
+                bool side = currentMove.pieceType & 1;
+                pieces[currentMove.pieceType] -= start;
+                pieces[currentMove.pieceType] += finish;
+                occupied[(int)(side)] -= start;
+                occupied[(int)(side)] += finish;
+                if (currentMove.capturedPieceType != 15)
+                {
+                    pieces[currentMove.capturedPieceType] -= finish;
+                    occupied[(int)(!side)] -= finish;
+                }
+                bool isBad = isInCheck(side);
+
+                //unmove pieces.
+                pieces[currentMove.pieceType] += start;
+                pieces[currentMove.pieceType] -= finish;
+                occupied[(int)(side)] += start;
+                occupied[(int)(side)] -= finish;
+                if (currentMove.capturedPieceType != 15)
+                {
+                    pieces[currentMove.capturedPieceType] += finish;
+                    occupied[(int)(!side)] += finish;
+                }
+                if (isBad) {return false;}
+            }
+
+            //all checks passed!
+            return true;
+        }
+
         void appendPawnCapture(U32 pieceType, U32 startSquare, U32 finishSquare, bool enPassant, bool shouldCheck)
         {
             //pawn captures, promotion and enPassant.
