@@ -244,15 +244,88 @@ class Board {
             phaseHardUpdate();
         }
 
-        bool isValidPawnMove()
+        bool isValidPawnMove(bool inCheck)
         {
             //called by isValidMove, so currentMove is up-to-date.
+            
+            if (currentMove.enPassant)
+            {
+                //enPassant capture.
+
+                //check enPassant square.
+                if (current.enPassantSquare != (int)(currentMove.finishSquare)) {return false;}
+
+                //no need to check if captured piece present, guaranteed with ep square.
+            }
+            else
+            {
+                //regular move, capture or push.
+
+                //check if finishSquare is empty or capturedPiece.
+                if ((currentMove.capturedPieceType == 15 &&
+                    (bool)((occupied[0] | occupied[1]) & (1ull << currentMove.finishSquare))) ||
+                    (currentMove.capturedPieceType != 15 &&
+                    !(bool)(pieces[currentMove.capturedPieceType] & (1ull << currentMove.finishSquare))))
+                {
+                    return false;
+                }
+
+                //if double push, check that middle square is clear.
+                if (abs((int)(currentMove.finishSquare) - (int)(currentMove.startSquare)) == 16)
+                {
+                    if (currentMove.finishSquare > currentMove.startSquare)
+                    {
+                        //white double push.
+                        if ((occupied[0] | occupied[1]) & (1ull << (currentMove.startSquare + 8))) {return false;}
+                    }
+                    else
+                    {
+                        //black double push.
+                        if ((occupied[0] | occupied[1]) & (1ull << (currentMove.startSquare - 8))) {return false;}
+                    }
+                }
+            }
+
+            //check if piece is pinned or if enPassant.
+            U64 pinned = getPinnedPieces(currentMove.pieceType & 1);
+            if ((pinned & (1ull << currentMove.startSquare)) ||
+                currentMove.enPassant ||
+                inCheck)
+            {
+                U64 start = 1ull << currentMove.startSquare;
+                U64 finish = 1ull << currentMove.finishSquare;
+                bool side = currentMove.pieceType & 1;
+                pieces[currentMove.pieceType] -= start;
+                pieces[currentMove.pieceType] += finish;
+                occupied[(int)(side)] -= start;
+                occupied[(int)(side)] += finish;
+                if (currentMove.capturedPieceType != 15)
+                {
+                    pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(side)));
+                    occupied[(int)(!side)] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(side)));
+                }
+                bool isBad = isInCheck(side);
+
+                //unmove pieces.
+                pieces[currentMove.pieceType] += start;
+                pieces[currentMove.pieceType] -= finish;
+                occupied[(int)(side)] += start;
+                occupied[(int)(side)] -= finish;
+                if (currentMove.capturedPieceType != 15)
+                {
+                    pieces[currentMove.capturedPieceType] += 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(side)));
+                    occupied[(int)(!side)] += 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(side)));
+                }
+                if (isBad) {return false;}
+            }
+            
             return true;
         }
 
-        bool isValidCastles()
+        bool isValidCastles(bool inCheck)
         {
             //called by isValidMove, so currentMove is up-to-date.
+            if (inCheck) {return false;}
             bool side = currentMove.pieceType & 1;
 
             //check that castling is allowed.
@@ -260,9 +333,6 @@ class Board {
             {
                 //kingside.
                 if (!current.canKingCastle[(int)(side)]) {return false;}
-
-                //king must not be in check.
-                if (isInCheck(side)) {return false;}
                 
                 //castling squares not occupied or attacked.
                 updateAttacked(!side);
@@ -274,9 +344,6 @@ class Board {
             {
                 //queenside.
                 if (!current.canQueenCastle[(int)(side)]) {return false;}
-
-                //king must not be in check.
-                if (isInCheck(side)) {return false;}
 
                 //castling squares not occupied or attacked.
                 updateAttacked(!side);
@@ -302,12 +369,12 @@ class Board {
             if (!(bool)(pieces[currentMove.pieceType] & (1ull << currentMove.startSquare))) {return false;}
 
             //check for pawn move.
-            if ((currentMove.pieceType >> 1) == (_nPawns >> 1)) {return isValidPawnMove();}
+            if ((currentMove.pieceType >> 1) == (_nPawns >> 1)) {return isValidPawnMove(inCheck);}
             //check for castles.
             if (((currentMove.pieceType >> 1) == (_nKing >> 1)) &&
                 (abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 2))
             {
-                return isValidCastles();
+                return isValidCastles(inCheck);
             }
 
             //ordinary non-pawn capture/quiet.
@@ -416,28 +483,33 @@ class Board {
             {
                 //check if move is legal (does not leave king in check).
                 //move pieces.
-                pieces[pieceType] -= 1ull << (startSquare);
-                pieces[pieceType] += 1ull << (finishSquare);
+                U64 start = 1ull << startSquare;
+                U64 finish = 1ull << finishSquare;
+                pieces[pieceType] -= start;
+                pieces[pieceType] += finish;
+                occupied[(int)(side)] -= start;
+                occupied[(int)(side)] += finish;
                 if (capturedPieceType != 15)
                 {
                     pieces[capturedPieceType] -= 1ull << (finishSquare+(int)(enPassant)*(-8+16*(side)));
+                    occupied[(int)(!side)] -= 1ull << (finishSquare+(int)(enPassant)*(-8+16*(side)));
                 }
-                updateOccupied();
                 bool isBad = isInCheck(side);
 
                 //unmove pieces.
-                pieces[pieceType] += 1ull << (startSquare);
-                pieces[pieceType] -= 1ull << (finishSquare);
+                pieces[pieceType] += start;
+                pieces[pieceType] -= finish;
+                occupied[(int)(side)] += start;
+                occupied[(int)(side)] -= finish;
                 if (capturedPieceType != 15)
                 {
                     pieces[capturedPieceType] += 1ull << (finishSquare+(int)(enPassant)*(-8+16*(side)));
+                    occupied[(int)(!side)] += 1ull << (finishSquare+(int)(enPassant)*(-8+16*(side)));
                 }
-                updateOccupied();
-
                 if (isBad) {return;}
             }
 
-            U32 newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
+            newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
             (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
             (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
             (enPassant << MOVEINFO_ENPASSANT_OFFSET) |
