@@ -14,7 +14,9 @@ Many thanks to the advice on [Chess Programming Wiki](https://www.chessprogrammi
 
 | Version | CCRL Blitz |
 | ------: | ---------: |
-| `1.0.0` | 2249       |
+| 1.0.0   | 2249       |
+
+More information on [CCRL Blitz](http://ccrl.chessdom.com/ccrl/404/)
 
 # Features
 
