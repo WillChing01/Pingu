@@ -260,7 +260,11 @@ class Board {
             {
                 //kingside.
                 if (!current.canKingCastle[(int)(side)]) {return false;}
+
+                //king must not be in check.
+                if (isInCheck(side)) {return false;}
                 
+                //castling squares not occupied or attacked.
                 updateAttacked(!side);
                 U64 p = occupied[0] | occupied[1];
                 if ((KING_CASTLE_OCCUPIED[(int)(side)] & p) ||
@@ -271,6 +275,10 @@ class Board {
                 //queenside.
                 if (!current.canQueenCastle[(int)(side)]) {return false;}
 
+                //king must not be in check.
+                if (isInCheck(side)) {return false;}
+
+                //castling squares not occupied or attacked.
                 updateAttacked(!side);
                 U64 p = occupied[0] | occupied[1];
                 if ((QUEEN_CASTLE_OCCUPIED[(int)(side)] & p) ||
@@ -282,6 +290,8 @@ class Board {
 
         bool isValidMove(U32 chessMove, bool inCheck)
         {
+            //verifies if a move is valid in this position.
+            //move is assumed to be legal from some other arbitrary position in the search tree.
             updateOccupied();
             unpackMove(chessMove);
 
@@ -312,6 +322,7 @@ class Board {
             }
 
             //startSquare -> finishSquare is valid path for that piece.
+            //knight moves are path legal.
             switch(currentMove.pieceType >> 1)
             {
                 case _nKing >> 1:
@@ -325,9 +336,6 @@ class Board {
                     break;
                 case _nBishops >> 1:
                     if (!(magicBishopAttacks(occupied[0] | occupied[1], currentMove.startSquare) & (1ull << currentMove.finishSquare))) {return false;}
-                    break;
-                case _nKnights >> 1:
-                    if (!(knightAttacks(1ull << currentMove.startSquare) & (1ull << currentMove.finishSquare))) {return false;}
                     break;
             }
 
