@@ -8,7 +8,13 @@ Pingu is a command-line program - in order to interact with other engines or peo
 
 Play against Pingu on [Lichess](https://lichess.org/@/WilliamEngine)!
 
-Many thanks to the advice on [Chess Programming Wiki](www.chessprogramming.org).
+Many thanks to the advice on [Chess Programming Wiki](https://www.chessprogramming.org).
+
+# Rating
+
+| Version | CCRL Blitz |
+| ------: | ---------: |
+| `1.0.0` | 2249       |
 
 # Features
 
