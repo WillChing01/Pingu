@@ -253,6 +253,30 @@ class Board {
         bool isValidCastles()
         {
             //called by isValidMove, so currentMove is up-to-date.
+            bool side = currentMove.pieceType & 1;
+
+            //check that castling is allowed.
+            if (currentMove.finishSquare - currentMove.startSquare == 2)
+            {
+                //kingside.
+                if (!current.canKingCastle[(int)(side)]) {return false;}
+                
+                updateAttacked(!side);
+                U64 p = occupied[0] | occupied[1];
+                if ((KING_CASTLE_OCCUPIED[(int)(side)] & p) ||
+                    (KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)])) {return false;}
+            }
+            else
+            {
+                //queenside.
+                if (!current.canQueenCastle[(int)(side)]) {return false;}
+
+                updateAttacked(!side);
+                U64 p = occupied[0] | occupied[1];
+                if ((QUEEN_CASTLE_OCCUPIED[(int)(side)] & p) ||
+                    (QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)])) {return false;}
+            }
+
             return true;
         }
 
@@ -260,6 +284,12 @@ class Board {
         {
             updateOccupied();
             unpackMove(chessMove);
+
+            //check for correct side-to-move.
+            if ((currentMove.pieceType & 1) != (moveHistory.size() & 1)) {return false;}
+
+            //check that startSquare contains piece.
+            if (!(bool)(pieces[currentMove.pieceType] & (1ull << currentMove.startSquare))) {return false;}
 
             //check for pawn move.
             if ((currentMove.pieceType >> 1) == (_nPawns >> 1)) {return isValidPawnMove();}
@@ -271,9 +301,6 @@ class Board {
             }
 
             //ordinary non-pawn capture/quiet.
-
-            //check that startSquare contains piece.
-            if (!(bool)(pieces[currentMove.pieceType] & (1ull << currentMove.startSquare))) {return false;}
 
             //check that finishSquare is empty or contains capturedPiece.
             if ((currentMove.capturedPieceType == 15 &&
