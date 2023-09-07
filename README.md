@@ -4,7 +4,7 @@
 
 UCI chess engine built from scratch.
 
-Pingu is a command-line program - in order to interact with other engines or people it is recommended to use a suitable GUI e.g. [cutechess](https://github.com/cutechess/cutechess)
+Pingu is a command-line program - in order to interact with other engines or people it is recommended to use a suitable GUI e.g. [cutechess](https://github.com/cutechess/cutechess).
 
 Play against Pingu on [Lichess](https://lichess.org/@/WilliamEngine)!
 
@@ -16,7 +16,7 @@ Many thanks to the advice on [Chess Programming Wiki](https://www.chessprogrammi
 | ------: | ---------: |
 | 1.0.0   | 2249       |
 
-More information on [CCRL Blitz](http://ccrl.chessdom.com/ccrl/404/)
+More information on [CCRL Blitz](http://ccrl.chessdom.com/ccrl/404/).
 
 # Features
 
