@@ -75,9 +75,15 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
                 //error!
                 res = false;
                 b.display();
-                std::cout << toCoord((move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET)
-                          << toCoord((move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET)
+                b.unpackMove(move);
+                std::cout << move << std::endl;
+                std::cout << toCoord(b.currentMove.startSquare)
+                          << toCoord(b.currentMove.finishSquare)
                           << " should be " << (isInList ? "valid" : "invalid") << std::endl;
+                std::cout << "pieceType: " << b.currentMove.pieceType << std::endl;
+                std::cout << "finishPieceType: " << b.currentMove.finishPieceType << std::endl;
+                std::cout << "capturedPieceType: " << b.currentMove.capturedPieceType << std::endl;
+                std::cout << "enPassant: " << b.currentMove.enPassant << std::endl;
             }
         }
 

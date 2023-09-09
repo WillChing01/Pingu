@@ -88,7 +88,7 @@ void testCommand(Board &b, vector<string> words)
         int depth = stoi(words[1]);
         assert(depth >= 0);
         assert(depth < 10);
-        U32 cache[10][128];
+        U32 cache[10][128] = {};
         bool res = testMoveValidation(b, depth, cache);
         std::cout << "info success " << res << std::endl;
     }
