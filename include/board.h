@@ -393,7 +393,7 @@ class Board {
             switch(currentMove.pieceType >> 1)
             {
                 case _nKing >> 1:
-                    if (!(kingAttacks(pieces[currentMove.pieceType]) & !kingAttacks(pieces[_nKing + !(bool)(currentMove.pieceType & 1)]) & (1ull << currentMove.finishSquare))) {return false;}
+                    if (!(kingAttacks(pieces[currentMove.pieceType]) & ~kingAttacks(pieces[_nKing + !(bool)(currentMove.pieceType & 1)]) & (1ull << currentMove.finishSquare))) {return false;}
                     break;
                 case _nQueens >> 1:
                     if (!(magicQueenAttacks(occupied[0] | occupied[1], currentMove.startSquare) & (1ull << currentMove.finishSquare))) {return false;}
