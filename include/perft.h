@@ -2,37 +2,10 @@
 #define PERFT_H_INCLUDED
 
 #include <chrono>
+#include <algorithm>
 
 #include "constants.h"
 #include "board.h"
-
-U64 childPerft(Board &b, int depth)
-{
-    if (depth == 0)
-    {
-        return 1;
-    }
-    else if (depth == 1)
-    {
-        b.generatePseudoMoves(b.moveHistory.size() & 1);
-        return b.moveBuffer.size();
-    }
-    else
-    {
-        U64 total = 0;
-        b.generatePseudoMoves(b.moveHistory.size() & 1);
-        vector<U32> moveCache = b.moveBuffer;
-
-        for (int i=0;i<(int)moveCache.size();i++)
-        {
-            b.makeMove(moveCache[i]);
-            total += childPerft(b,depth-1);
-            b.unmakeMove();
-        }
-
-        return total;
-    }
-}
 
 U64 perft(Board &b, int depth, bool verbose = true)
 {
@@ -43,6 +16,16 @@ U64 perft(Board &b, int depth, bool verbose = true)
     else if (depth == 1)
     {
         b.generatePseudoMoves(b.moveHistory.size() & 1);
+        if (verbose)
+        {
+            for (const auto &move: b.moveBuffer)
+            {
+                std::cout << toCoord((move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET)
+                          << toCoord((move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET)
+                          << " : " << 1
+                          << std::endl;
+            }
+        }
         return b.moveBuffer.size();
     }
     else
@@ -51,22 +34,77 @@ U64 perft(Board &b, int depth, bool verbose = true)
         b.generatePseudoMoves(b.moveHistory.size() & 1);
         vector<U32> moveCache = b.moveBuffer;
 
-        for (int i=0;i<(int)moveCache.size();i++)
+        for (const auto &move: moveCache)
         {
-            b.makeMove(moveCache[i]);
-            U64 nodes = childPerft(b,depth-1);
+            b.makeMove(move);
+            U64 nodes = perft(b,depth-1, false);
             total += nodes;
             b.unmakeMove();
             if (verbose)
             {
-                std::cout << toCoord((moveCache[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET)
-                          << toCoord((moveCache[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET)
+                std::cout << toCoord((move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET)
+                          << toCoord((move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET)
                           << " : " << nodes
                           << std::endl;
             }
         }
 
         return total;
+    }
+}
+
+bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
+{
+    if (depth == 0) {return true;}
+    else
+    {
+        bool res = true;
+        bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
+        vector<U32> moveCache = b.moveBuffer;
+
+        //validate moves at the same ply.
+        //no reductions, so depth = max_depth - ply
+        for (const auto &move: cache[depth])
+        {
+            if (move == 0) {continue;}
+            bool isValid = b.isValidMove(move, inCheck);
+            //check if move in the list.
+            bool isInList = std::find(moveCache.begin(), moveCache.end(), move) != moveCache.end();
+            if (isValid != isInList)
+            {
+                //error!
+                res = false;
+                b.display();
+                std::cout << toCoord((move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET)
+                          << toCoord((move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET)
+                          << " should be " << (isInList ? "valid" : "invalid") << std::endl;
+            }
+        }
+
+        for (const auto &move: moveCache)
+        {
+            //check if move is valid.
+            bool isValid = b.isValidMove(move, inCheck);
+            if (!isValid)
+            {
+                //error!
+                res = false;
+                b.display();
+                std::cout << toCoord((move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET)
+                          << toCoord((move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET)
+                          << " should be valid" << std::endl;
+            }
+
+            //add move to cache.
+            U64 zHash = b.zHashPieces & b.zHashState;
+            cache[depth][zHash & 127] = move;
+
+            //play the move.
+            b.makeMove(move);
+            res = res && testMoveValidation(b, depth-1, cache);
+            b.unmakeMove();
+        }
+        return res;
     }
 }
 
