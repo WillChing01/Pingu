@@ -2169,6 +2169,67 @@ class Board {
             return scoredMoves;
         }
 
+        vector<pair<U32,int> > orderCaptures()
+        {
+            //order captures/promotions.
+            updateOccupied();
+            scoredMoves.clear();
+
+            for (const auto &move: moveBuffer)
+            {
+                U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                if (capturedPieceType != 15)
+                {
+                    //capture - SEE.
+                    scoredMoves.push_back(
+                        pair<U32,int>(
+                            move,
+                            seeCaptures(
+                                (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET,
+                                (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET,
+                                (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET,
+                                capturedPieceType
+                            )
+                        )
+                    );
+                }
+                else
+                {
+                    //promotion - priority order is queen, rook, bishop, knight
+                    scoredMoves.push_back(
+                        pair<U32,int>(
+                            move,
+                            (int)(_nPawns) - (int)((move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET)
+                        )
+                    );
+                }
+            }
+
+            //sort the moves.
+            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+            return scoredMoves;
+        }
+
+        vector<pair<U32,int> > orderQuiets()
+        {
+            //order quiet moves by history.
+            scoredMoves.clear();
+
+            for (const auto &move: moveBuffer)
+            {
+                scoredMoves.push_back(
+                    pair<U32,int>(
+                        move,
+                        history[(move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET][(move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET]
+                    )
+                );
+            }
+
+            //sort the moves.
+            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+            return scoredMoves;
+        }
+
         vector<pair<U32,int> > orderQMoves(const int threshhold = 0)
         {
             //assumes that updateOccupied() has been called immediately before.
