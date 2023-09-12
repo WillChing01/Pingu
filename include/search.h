@@ -77,10 +77,7 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
 {
     //check time.
     totalNodes++;
-    if ((totalNodes & 2047) == 0)
-    {
-        if (checkTime() == false) {return 0;}
-    }
+    if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
     if (isSearchAborted) {return 0;}
 
     bool inCheck = b.generatePseudoQMoves(b.moveHistory.size() & 1);
@@ -134,7 +131,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     if (isDraw(b)) {return 0;}
 
     //qSearch at horizon.
-    if (depth <= 0) {return alphaBetaQuiescence(b, alpha, beta);}
+    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, alpha, beta);}
 
     //main search.
     bool side = b.moveHistory.size() & 1;
@@ -514,6 +511,7 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
             int score; storedBestMove = 0;
             for (int itDepth = 1; itDepth <= depth; itDepth++)
             {
+                totalNodes++;
                 auto iterationStartTime = std::chrono::high_resolution_clock::now();
                 alpha = -MATE_SCORE-1; beta = MATE_SCORE; U32 bestMove = 0;
 
