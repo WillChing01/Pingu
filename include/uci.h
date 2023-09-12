@@ -81,6 +81,20 @@ void perftCommand(Board &b, vector<string> words)
     catch (...) {}
 }
 
+void testCommand(Board &b, vector<string> words)
+{
+    try
+    {
+        int depth = stoi(words[1]);
+        assert(depth >= 0);
+        assert(depth < 10);
+        U32 cache[10][128] = {};
+        bool res = testMoveValidation(b, depth, cache);
+        std::cout << "info success " << res << std::endl;
+    }
+    catch (...) {}
+}
+
 void goCommand(Board &b, vector<string> words)
 {
     bool isInfinite = false;
@@ -174,6 +188,7 @@ void uciLoop()
         else if (commands[0] == "go" && !isSearching) {goCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display();}
+        else if (commands[0] == "test") {testCommand(b, commands);}
         else if (commands[0] == "stop") {isSearchAborted = true;}
         else if (commands[0] == "quit") {isSearchAborted = true; break;}
     }
