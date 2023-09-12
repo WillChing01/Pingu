@@ -77,10 +77,7 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
 {
     //check time.
     totalNodes++;
-    if ((totalNodes & 2047) == 0)
-    {
-        if (checkTime() == false) {return 0;}
-    }
+    if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
     if (isSearchAborted) {return 0;}
 
     bool inCheck = b.generatePseudoQMoves(b.moveHistory.size() & 1);
@@ -134,7 +131,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     if (isDraw(b)) {return 0;}
 
     //qSearch at horizon.
-    if (depth <= 0) {return alphaBetaQuiescence(b, alpha, beta);}
+    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, alpha, beta);}
 
     //main search.
     bool side = b.moveHistory.size() & 1;
@@ -514,6 +511,8 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
             int score; storedBestMove = 0;
             for (int itDepth = 1; itDepth <= depth; itDepth++)
             {
+                U32 oldNodes = totalNodes;
+                totalNodes++;
                 auto iterationStartTime = std::chrono::high_resolution_clock::now();
                 alpha = -MATE_SCORE-1; beta = MATE_SCORE; U32 bestMove = 0;
 
@@ -532,29 +531,32 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
 
                 //check if time is up.
                 if (isSearchAborted) {break;}
-                else
-                {
-                    storedBestMove = bestMove;
-                    storedBestScore = alpha;
-                    b.unpackMove(storedBestMove);
-                    cout << "info depth " << itDepth << " score cp " << storedBestScore << " pv";
-                    collectPVRoot(b, storedBestMove, itDepth);
-                    for (int i=0;i<(int)pvMoves.size();i++)
-                    {
-                        cout << " " << moveToString(pvMoves[i]);
-                    } cout << endl;
-                    //break if checkmate is reached.
-                    if (storedBestScore == MATE_SCORE) {break;}
-                }
 
                 auto iterationFinishTime = std::chrono::high_resolution_clock::now();
 
                 double iterationTime = std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
                 double realTimeLeft = max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
 
-                //assume each extra iteration is at least twice as long.
-                if (iterationTime * 2. > realTimeLeft) {break;}
+                storedBestMove = bestMove;
+                storedBestScore = alpha;
+                std::cout << "info" <<
+                    " depth " << itDepth <<
+                    " score cp " << storedBestScore <<
+                    " time " << (U32)(iterationTime) <<
+                    " nodes " << totalNodes - oldNodes <<
+                    " nps " << (U32)((double)(totalNodes - oldNodes) / (iterationTime / 1000.)) <<
+                    " pv";
+                collectPVRoot(b, storedBestMove, itDepth);
+                for (int i=0;i<(int)pvMoves.size();i++)
+                {
+                    cout << " " << moveToString(pvMoves[i]);
+                } cout << endl;
 
+                //break if checkmate is reached.
+                if (storedBestScore == MATE_SCORE) {break;}
+                //early exit if insufficient time for next iteration.
+                //assume a branching factor of 2.
+                if (iterationTime * 2. > realTimeLeft) {break;}
             }
             return storedBestScore;
         }

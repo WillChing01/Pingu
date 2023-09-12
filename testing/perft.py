@@ -8,7 +8,7 @@ def main():
     errors = 0
     i = 0
 
-    with open(os.getcwd() + "\\testing\\" + "perftSuite.txt", "r") as file:
+    with open(os.getcwd() + "\\testing\\" + "perft_positions.txt", "r") as file:
         for line in file.readlines():
             fen, data = line.rstrip().split("; ")
             depth, nodes = data.split(" ")
