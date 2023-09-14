@@ -11,8 +11,7 @@ def main():
     with open(os.getcwd() + "\\testing\\" + "perft_positions.txt", "r") as file:
         for line in file.readlines():
             fen, data = line.rstrip().split("; ")
-            depth, nodes = data.split(" ")
-            depth = depth[1:]
+            depth = data.split(" ")[0][1:]
 
             e.stdin("position " + fen)
             e.stdin("test validation " + depth)
