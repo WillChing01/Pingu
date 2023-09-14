@@ -8,8 +8,8 @@ defaults:
     shell: bash
 
 jobs:
-  perft:
-    name: Perft
+  perft_check:
+    name: Perft check
     runs-on: windows-latest
     steps:
       - name: Checkout Repository
@@ -24,7 +24,7 @@ jobs:
           cmake --build build --target Pingu --config Release --
 
       - name: Run tests
-        run: python testing/perft.py
+        run: python testing/perft_check.py
 
   move_validation_check:
     name: Move validation check
