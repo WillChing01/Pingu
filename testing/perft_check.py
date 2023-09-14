@@ -14,7 +14,7 @@ def main():
             depth, nodes = data.split(" ")
             depth = depth[1:]
 
-            e.stdin("position " + fen)
+            e.stdin("position fen " + fen)
             e.stdin("perft " + depth)
 
             i += 1
