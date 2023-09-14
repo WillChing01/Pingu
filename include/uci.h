@@ -8,7 +8,7 @@
 #include <future>
 
 #include "constants.h"
-#include "perft.h"
+#include "testing.h"
 #include "format.h"
 #include "search.h"
 #include "board.h"

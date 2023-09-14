@@ -29,9 +29,9 @@ set(HEADER_FILES
     ${INCLUDE_DIR}/knight.h
     ${INCLUDE_DIR}/magic.h
     ${INCLUDE_DIR}/pawn.h
-    ${INCLUDE_DIR}/perft.h
     ${INCLUDE_DIR}/search.h
     ${INCLUDE_DIR}/slider.h
+    ${INCLUDE_DIR}/testing.h
     ${INCLUDE_DIR}/transposition.h
     ${INCLUDE_DIR}/tuning.h
     ${INCLUDE_DIR}/uci.h
