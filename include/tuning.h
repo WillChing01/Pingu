@@ -263,7 +263,7 @@ void populateEval()
     }
 }
 
-void fenToFeatures(std::string fen, long double res)
+void fenToFeatures(const std::string &fen, long double res)
 {
     //append to features vector.
     dataset.push_back(dataSample());

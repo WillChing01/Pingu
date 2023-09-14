@@ -177,7 +177,7 @@ class Board {
             shiftedPhase = (64 * phase + 3)/6;
         }
 
-        void setPositionFen(std::string fen)
+        void setPositionFen(const std::string &fen)
         {
             //reset history.
             stateHistory.clear();

@@ -9,7 +9,7 @@ const std::string promotionLetters = "_qrbn";
 const std::string fileSymbols = "abcdefgh";
 const std::string rankSymbols = "12345678";
 
-std::vector<std::string> separateByWhiteSpace(const std::string &input)
+inline std::vector<std::string> separateByWhiteSpace(const std::string &input)
 {
     //assume only a single whitespace separates each word.
     std::vector<std::string> words; words.push_back("");
@@ -22,7 +22,7 @@ std::vector<std::string> separateByWhiteSpace(const std::string &input)
     return words;
 }
 
-std::string moveToString(U32 chessMove)
+inline std::string moveToString(U32 chessMove)
 {
     std::string startSquare = toCoord((chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET);
     std::string finishSquare = toCoord((chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET);
@@ -41,7 +41,7 @@ std::string moveToString(U32 chessMove)
     return res;
 }
 
-U32 stringToMove(Board &b, const std::string &input)
+inline U32 stringToMove(Board &b, const std::string &input)
 {
     //return 0 (null move) if input is not correct.
     if (input.length() != 4 && input.length() != 5) {return 0;}
