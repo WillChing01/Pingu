@@ -6,7 +6,7 @@
 
 #include "constants.h"
 
-void displayBitboard(U64 bitboard)
+inline void displayBitboard(U64 bitboard)
 {
     std::string temp=std::bitset<64>(bitboard).to_string();
 
@@ -29,14 +29,14 @@ inline int popLSB(U64 &b)
     return _i;
 }
 
-std::string toCoord(int square)
+inline std::string toCoord(int square)
 {
     std::string cols = "abcdefgh";
 
     return cols[square%8]+std::to_string(square/8+1);
 }
 
-int toSquare(std::string coord)
+inline int toSquare(std::string coord)
 {
     std::string cols = "abcdefgh";
     int square = 0;

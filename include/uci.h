@@ -40,13 +40,13 @@ void uciCommand()
     std::cout << "uciok" << std::endl;
 }
 
-void setOptionCommand(std::vector<std::string> words)
+void setOptionCommand(const std::vector<std::string> &words)
 {
     if (words[2] == "Hash") {resizeTT(std::stoi(words[4]));}
     else if (words[2] == "Clear" && words[3] == "Hash") {clearTT();}
 }
 
-void positionCommand(Board &b, std::vector<std::string> words)
+void positionCommand(Board &b, const std::vector<std::string> &words)
 {
     int ind = 3;
     if (words[1] == "startpos")
@@ -69,7 +69,7 @@ void positionCommand(Board &b, std::vector<std::string> words)
     }
 }
 
-void perftCommand(Board &b, std::vector<std::string> words)
+void perftCommand(Board &b, const std::vector<std::string> &words)
 {
     try
     {
@@ -81,7 +81,7 @@ void perftCommand(Board &b, std::vector<std::string> words)
     catch (...) {}
 }
 
-void testCommand(Board &b, std::vector<std::string> words)
+void testCommand(Board &b, const std::vector<std::string> &words)
 {
     try
     {
@@ -104,7 +104,7 @@ void testCommand(Board &b, std::vector<std::string> words)
     catch (...) {}
 }
 
-void goCommand(Board &b, std::vector<std::string> words)
+void goCommand(Board &b, const std::vector<std::string> &words)
 {
     bool isInfinite = false;
     double whiteTime = 0;
