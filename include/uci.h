@@ -85,12 +85,19 @@ void testCommand(Board &b, vector<string> words)
 {
     try
     {
-        int depth = stoi(words[1]);
+        assert(words.size() == 3);
+        int depth = stoi(words[2]);
         assert(depth >= 0);
         assert(depth < 10);
-        U32 cache[10][128] = {};
-        bool res = testMoveValidation(b, depth, cache);
-        std::cout << "info success " << res << std::endl;
+        if (words[1] == "validation")
+        {
+            U32 cache[10][128] = {};
+            bool res = testMoveValidation(b, depth, cache);
+            std::cout << "info success " << res << std::endl;
+        }
+        else if (words[1] == "zobrist")
+        {
+        }
     }
     catch (...) {}
 }

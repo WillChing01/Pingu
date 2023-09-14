@@ -15,7 +15,7 @@ def main():
             depth = depth[1:]
 
             e.stdin("position " + fen)
-            e.stdin("test " + depth)
+            e.stdin("test validation " + depth)
 
             i += 1
 
