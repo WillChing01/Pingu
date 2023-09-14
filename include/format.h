@@ -5,14 +5,14 @@
 #include "bitboard.h"
 #include "board.h"
 
-const string promotionLetters = "_qrbn";
-const string fileSymbols = "abcdefgh";
-const string rankSymbols = "12345678";
+const std::string promotionLetters = "_qrbn";
+const std::string fileSymbols = "abcdefgh";
+const std::string rankSymbols = "12345678";
 
-vector<string> separateByWhiteSpace(string input)
+std::vector<std::string> separateByWhiteSpace(std::string input)
 {
     //assume only a single whitespace separates each word.
-    vector<string> words; words.push_back("");
+    std::vector<std::string> words; words.push_back("");
     for (int i=0;i<(int)input.length();i++)
     {
         if (input[i] == ' ') {words.push_back("");}
@@ -22,12 +22,12 @@ vector<string> separateByWhiteSpace(string input)
     return words;
 }
 
-string moveToString(U32 chessMove)
+std::string moveToString(U32 chessMove)
 {
-    string startSquare = toCoord((chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET);
-    string finishSquare = toCoord((chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET);
+    std::string startSquare = toCoord((chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET);
+    std::string finishSquare = toCoord((chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET);
 
-    string res = startSquare + finishSquare;
+    std::string res = startSquare + finishSquare;
 
     int pieceType = (chessMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
     int finishPieceType = (chessMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
@@ -41,7 +41,7 @@ string moveToString(U32 chessMove)
     return res;
 }
 
-U32 stringToMove(Board &b, string input)
+U32 stringToMove(Board &b, std::string input)
 {
     //return 0 (null move) if input is not correct.
     if (input.length() != 4 && input.length() != 5) {return 0;}
@@ -52,8 +52,8 @@ U32 stringToMove(Board &b, string input)
     size_t finishFile = fileSymbols.find(input[2]);
     size_t finishRank = rankSymbols.find(input[3]);
 
-    if (startFile == string::npos || startRank == string::npos ||
-        finishFile == string::npos || finishRank == string::npos)
+    if (startFile == std::string::npos || startRank == std::string::npos ||
+        finishFile == std::string::npos || finishRank == std::string::npos)
     {
         return 0;
     }
@@ -66,7 +66,7 @@ U32 stringToMove(Board &b, string input)
     if (input.length() == 5)
     {
         finishPiece = promotionLetters.find(input[4]) * 2 + (b.moveHistory.size() & 1);
-        if (finishPiece == string::npos) {return 0;}
+        if (finishPiece == std::string::npos) {return 0;}
     }
 
     //check if move is legal.

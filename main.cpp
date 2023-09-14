@@ -1,7 +1,5 @@
 #include "uci.h"
 
-using namespace std;
-
 #ifdef TUNING
 
 #include <chrono>

@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "constants.h"
+#include "format.h"
 #include "board.h"
 
 U64 perft(Board &b, int depth, bool verbose = true)
@@ -32,7 +33,7 @@ U64 perft(Board &b, int depth, bool verbose = true)
     {
         U64 total = 0;
         b.generatePseudoMoves(b.moveHistory.size() & 1);
-        vector<U32> moveCache = b.moveBuffer;
+        std::vector<U32> moveCache = b.moveBuffer;
 
         for (const auto &move: moveCache)
         {
@@ -60,7 +61,7 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
     {
         bool res = true;
         bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
-        vector<U32> moveCache = b.moveBuffer;
+        std::vector<U32> moveCache = b.moveBuffer;
 
         //validate moves at the same ply.
         //no reductions, so depth = max_depth - ply
@@ -112,6 +113,47 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
         }
         return res;
     }
+}
+
+bool testZobristHashing(Board &b, int depth)
+{
+    //verify the zobrist hashing for position.
+    if (depth == 0)
+    {
+        //check if current position is equal to zHash.
+        U64 incrementalHash = b.zHashState ^ b.zHashPieces;
+        b.zHashHardUpdate();
+        return (b.zHashState ^ b.zHashPieces) == incrementalHash;
+    }
+
+    //make moves recursively.
+    bool res = true;
+    b.generatePseudoMoves(b.moveHistory.size() & 1);
+    std::vector<U32> moveCache = b.moveBuffer;
+
+    //verify hash at current position.
+    U64 incrementalHash = b.zHashState ^ b.zHashPieces;
+    b.zHashHardUpdate();
+    if ((b.zHashState ^ b.zHashPieces) != incrementalHash)
+    {
+        //error!
+        b.display();
+        for (const auto &history: b.moveHistory)
+        {
+            std::cout << moveToString(history) << " ";
+        }
+        std::cout << "\nIncorrect zobrist hash" << std::endl;
+
+        return false;
+    }
+
+    for (const auto &move: moveCache)
+    {
+        b.makeMove(move);
+        res = res && testZobristHashing(b, depth-1);
+        b.unmakeMove();
+    }
+    return res;
 }
 
 #endif // PERFT_H_INCLUDED

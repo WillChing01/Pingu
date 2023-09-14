@@ -2,23 +2,22 @@
 #define BITBOARD_H_INCLUDED
 
 #include <string>
+#include <bitset>
 
 #include "constants.h"
 
-using namespace std;
-
 void displayBitboard(U64 bitboard)
 {
-    string temp=bitset<64>(bitboard).to_string();
+    std::string temp=std::bitset<64>(bitboard).to_string();
 
-    cout << endl;
+    std::cout << std::endl;
     for (int i=7;i>=0;i--)
     {
         for (int j=0;j<8;j++)
         {
-            cout << " " << temp[63-(8*i+j)];
-        } cout << endl;
-    } cout << endl;
+            std::cout << " " << temp[63-(8*i+j)];
+        } std::cout << std::endl;
+    } std::cout << std::endl;
 }
 
 static int _i=0;
@@ -30,16 +29,16 @@ inline int popLSB(U64 &b)
     return _i;
 }
 
-string toCoord(int square)
+std::string toCoord(int square)
 {
-    string cols = "abcdefgh";
+    std::string cols = "abcdefgh";
 
-    return cols[square%8]+to_string(square/8+1);
+    return cols[square%8]+std::to_string(square/8+1);
 }
 
-int toSquare(string coord)
+int toSquare(std::string coord)
 {
-    string cols = "abcdefgh";
+    std::string cols = "abcdefgh";
     int square = 0;
     for (int i=0;i<(int)cols.length();i++)
     {
