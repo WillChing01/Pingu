@@ -54,10 +54,10 @@ void positionCommand(Board &b, const std::vector<std::string> &words)
         //start position.
         b.setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     }
-    else
+    else if (words[1] == "fen")
     {
-        b.setPositionFen(words[1]+" "+words[2]+" "+words[3]+" "+words[4]+" "+words[5]+" "+words[6]);
-        ind = 8;
+        b.setPositionFen(words[2]+" "+words[3]+" "+words[4]+" "+words[5]+" "+words[6]+" "+words[7]);
+        ind = 9;
     }
 
     //play the specified moves.
