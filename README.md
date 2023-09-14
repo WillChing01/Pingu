@@ -14,31 +14,35 @@ Many thanks to the advice on [Chess Programming Wiki](https://www.chessprogrammi
 
 | Version | CCRL Blitz |
 | ------: | ---------: |
-| 1.0.0   | 2249       |
+| 1.0.0   | 2250       |
 
 More information on [CCRL Blitz](http://ccrl.chessdom.com/ccrl/404/).
 
 # Features
 
 ### Move generation
-- Pseudo-legal move generation
+- Staged move generation
 - Bitboard representation
-- Plain magic bitboards for sliding pieces
+- Plain magic bitboards
 
 ### Move ordering
-- PV move at root
-- Hash move
-- Static exchange evaluation
-- Killer moves
-- History heuristic
+1. Hash move (PV move at root)
+2. Good captures / promotions
+3. Killers
+4. Bad captures
+5. Quiet moves
+- Captures ordered by static exchange evaluation
+- Quiets ordered by history heuristic
 
 ### Search
 - Main search
   - Fail-soft alpha-beta
   - Principal variation search
   - Null move pruning
+  - Internal iterative reduction
   - Late move reductions
 - Quiescence search
+  - Search captures/promotions/check-evasions
   - Stand-pat
   - Forward prune SEE < 0
 - Transposition tables
@@ -54,8 +58,7 @@ More information on [CCRL Blitz](http://ccrl.chessdom.com/ccrl/404/).
 - Piece square tables
 - Pawn hash table
 
-### Testing
-- Perft function
+Evaluation features are tuned via Texel's method - logistic regression via gradient descent.
 
 # Installation
 
