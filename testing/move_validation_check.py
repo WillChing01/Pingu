@@ -13,7 +13,7 @@ def main():
             fen, data = line.rstrip().split("; ")
             depth = data.split(" ")[0][1:]
 
-            e.stdin("position " + fen)
+            e.stdin("position fen " + fen)
             e.stdin("test validation " + depth)
 
             i += 1

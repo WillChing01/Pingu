@@ -18,7 +18,7 @@ def main():
 
             fen = line.rstrip()
 
-            e.stdin("position " + fen)
+            e.stdin("position fen " + fen)
             e.stdin("setoption name Clear Hash")
 
             nps = 0
