@@ -319,7 +319,7 @@ void testRookMagics()
             U64 a = rookMagicMoves[square][b];
             if (a != check) {good=false; break;}
         }
-        cout << square << " - " << good << endl;
+        std::cout << square << " - " << good << std::endl;
     }
 }
 
@@ -336,7 +336,7 @@ void testBishopMagics()
             U64 a = bishopMagicMoves[square][b];
             if (a != check) {good=false; break;}
         }
-        cout << square << " - " << good << endl;
+        std::cout << square << " - " << good << std::endl;
     }
 }
 

@@ -16,7 +16,7 @@ const int nullMoveDepthLimit = 3;
 
 U32 storedBestMove = 0;
 int storedBestScore = 0;
-vector<U32> pvMoves;
+std::vector<U32> pvMoves;
 
 double timeLeft = 0; //milliseconds.
 auto startTime = std::chrono::high_resolution_clock::now();
@@ -91,12 +91,12 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
             //do stand-pat check.
             bestScore=b.regularEval();
             if (bestScore >= beta) {return bestScore;}
-            alpha = max(alpha,bestScore);
+            alpha = std::max(alpha,bestScore);
         }
 
         int score;
         b.updateOccupied();
-        vector<pair<U32,int> > moveCache = b.orderQMoves();
+        std::vector<std::pair<U32,int> > moveCache = b.orderQMoves();
         for (int i=0;i<(int)(moveCache.size());i++)
         {
             b.makeMove(moveCache[i].first);
@@ -107,7 +107,7 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
             {
                 if (score >= beta) {return score;}
                 bestScore = score;
-                alpha = max(alpha,score);
+                alpha = std::max(alpha,score);
             }
         }
 
@@ -519,7 +519,7 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                 //order moves to take into account updated history.
                 b.generatePseudoMoves(b.moveHistory.size() & 1);
                 b.updateOccupied();
-                vector<pair<U32,int> > moveCache = b.orderMoves(0, storedBestMove);
+                std::vector<std::pair<U32,int> > moveCache = b.orderMoves(0, storedBestMove);
 
                 for (int i=0;i<(int)(moveCache.size());i++)
                 {
@@ -535,7 +535,7 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                 auto iterationFinishTime = std::chrono::high_resolution_clock::now();
 
                 double iterationTime = std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
-                double realTimeLeft = max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
+                double realTimeLeft = std::max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
 
                 storedBestMove = bestMove;
                 storedBestScore = alpha;
@@ -549,8 +549,8 @@ int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
                 collectPVRoot(b, storedBestMove, itDepth);
                 for (int i=0;i<(int)pvMoves.size();i++)
                 {
-                    cout << " " << moveToString(pvMoves[i]);
-                } cout << endl;
+                    std::cout << " " << moveToString(pvMoves[i]);
+                } std::cout << std::endl;
 
                 //break if checkmate is reached.
                 if (storedBestScore == MATE_SCORE) {break;}

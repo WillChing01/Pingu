@@ -192,7 +192,7 @@ std::string formatWeight(int weight)
 void saveWeights()
 {
     std::ofstream file;
-    file.open("../weights.txt", ios::trunc);
+    file.open("../weights.txt", std::ios::trunc);
 
     //piece values start.
     file << "Piece values start" << std::endl;
@@ -454,7 +454,7 @@ inline long double errorChild(int startInd, int finishInd)
 inline long double error()
 {
     int numThreads = std::thread::hardware_concurrency() / 2;
-    vector<std::future<long double> > threads;
+    std::vector<std::future<long double> > threads;
 
     int x = N/numThreads;
     for (int i=0;i<numThreads;i++)
@@ -673,7 +673,7 @@ void optimisePST(int pieceType)
                 else
                 {
                     piece_tables_start[pieceType][i] += deltaStart[i];
-                    deltaStart[i] = max(deltaStart[i] / 2, 1);
+                    deltaStart[i] = std::max(deltaStart[i] / 2, 1);
                 }
             }
         }
@@ -696,7 +696,7 @@ void optimisePST(int pieceType)
                 else
                 {
                     piece_tables_end[pieceType][i] += deltaEnd[i];
-                    deltaEnd[i] = max(deltaEnd[i] / 2, 1);
+                    deltaEnd[i] = std::max(deltaEnd[i] / 2, 1);
                 }
             }
         }

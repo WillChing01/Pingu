@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "constants.h"
+#include "format.h"
 #include "board.h"
 
 U64 perft(Board &b, int depth, bool verbose = true)
@@ -32,7 +33,7 @@ U64 perft(Board &b, int depth, bool verbose = true)
     {
         U64 total = 0;
         b.generatePseudoMoves(b.moveHistory.size() & 1);
-        vector<U32> moveCache = b.moveBuffer;
+        std::vector<U32> moveCache = b.moveBuffer;
 
         for (const auto &move: moveCache)
         {
@@ -60,7 +61,7 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
     {
         bool res = true;
         bool inCheck = b.generatePseudoMoves(b.moveHistory.size() & 1);
-        vector<U32> moveCache = b.moveBuffer;
+        std::vector<U32> moveCache = b.moveBuffer;
 
         //validate moves at the same ply.
         //no reductions, so depth = max_depth - ply
@@ -112,6 +113,11 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
         }
         return res;
     }
+}
+
+bool testZobristHashing(Board &b, int depth)
+{
+    return true;
 }
 
 #endif // PERFT_H_INCLUDED

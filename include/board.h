@@ -20,8 +20,6 @@
 
 #include "transposition.h"
 
-using namespace std;
-
 struct gameState
 {
     bool canKingCastle[2];
@@ -56,14 +54,14 @@ class Board {
         U64 occupied[2]={0,0};
         U64 attacked[2]={0,0};
 
-        vector<gameState> stateHistory;
-        vector<U32> moveHistory;
-        vector<U32> hashHistory;
+        std::vector<gameState> stateHistory;
+        std::vector<U32> moveHistory;
+        std::vector<U32> hashHistory;
 
-        vector<U32> captureBuffer;
-        vector<U32> quietBuffer;
-        vector<U32> moveBuffer;
-        vector<pair<U32,int> > scoredMoves;
+        std::vector<U32> captureBuffer;
+        std::vector<U32> quietBuffer;
+        std::vector<U32> moveBuffer;
+        std::vector<std::pair<U32,int> > scoredMoves;
         U32 killerMoves[128][2] = {};
 
         gameState current = {
@@ -98,7 +96,7 @@ class Board {
 
         //pawn hash tables.
         static const U64 pawnHashMask = 1023;
-        pair<U64,pair<int,int> > pawnHash[pawnHashMask + 1] = {};
+        std::pair<U64,std::pair<int,int> > pawnHash[pawnHashMask + 1] = {};
         U64 zHashPawns = 0;
 
         //temp variable for move appending.
@@ -179,14 +177,14 @@ class Board {
             shiftedPhase = (64 * phase + 3)/6;
         }
 
-        void setPositionFen(string fen)
+        void setPositionFen(std::string fen)
         {
             //reset history.
             stateHistory.clear();
             moveHistory.clear();
             hashHistory.clear();
 
-            vector<string> temp; temp.push_back("");
+            std::vector<std::string> temp; temp.push_back("");
 
             for (int i=0;i<(int)fen.length();i++)
             {
@@ -838,20 +836,20 @@ class Board {
             const int colours[2]={7,8};
             const int standardColour=15;
 
-            vector<vector<string> > grid;
+            std::vector<std::vector<std::string> > grid;
             for (int i=0;i<8;i++)
             {
-                grid.push_back(vector<string>());
+                grid.push_back(std::vector<std::string>());
                 for (int j=0;j<8;j++)
                 {
                     grid.back().push_back("[ ]");
                 }
             }
 
-            string temp=bitset<64>(0).to_string();
+            std::string temp=std::bitset<64>(0).to_string();
             for (int i=0;i<12;i++)
             {
-                temp=bitset<64>(pieces[i]).to_string();
+                temp=std::bitset<64>(pieces[i]).to_string();
                 for (int j=0;j<64;j++)
                 {
                     if (temp[j]=='0') {continue;}
@@ -865,7 +863,7 @@ class Board {
                 for (int j=0;j<8;j++)
                 {
                     SetConsoleTextAttribute(hConsole,colours[(i+j)%2]);
-                    cout << grid[i][j][0];
+                    std::cout << grid[i][j][0];
                     SetConsoleTextAttribute(hConsole,standardColour);
 
                     if (grid[i][j][1]!=' ')
@@ -878,18 +876,18 @@ class Board {
                         {
                             SetConsoleTextAttribute(hConsole,colours[1]);
                         }
-                        cout << char(toupper(grid[i][j][1]));
+                        std::cout << char(toupper(grid[i][j][1]));
 
                         SetConsoleTextAttribute(hConsole,standardColour);
                     }
-                    else {cout << ' ';}
+                    else {std::cout << ' ';}
 
                     SetConsoleTextAttribute(hConsole,colours[(i+j)%2]);
-                    cout << grid[i][j][2];
+                    std::cout << grid[i][j][2];
                     SetConsoleTextAttribute(hConsole,standardColour);
-                } cout << " " << i+1 << endl;
+                } std::cout << " " << i+1 << std::endl;
             }
-            cout << " A  B  C  D  E  F  G  H" << endl;
+            std::cout << " A  B  C  D  E  F  G  H" << std::endl;
         }
 
         void generateCaptures(bool side, int numChecks = 0)
@@ -1956,7 +1954,7 @@ class Board {
             {
                 d++;
                 gain[d] = -gain[d-1] + seeValues[attackingPiece >> 1];
-                if (max(-gain[d-1],gain[d]) < 0) {break;}
+                if (std::max(-gain[d-1],gain[d]) < 0) {break;}
                 occ ^= attackingPieceBB;
                 isAttacked[side] ^= attackingPieceBB;
 
@@ -1969,7 +1967,7 @@ class Board {
                 attackingPieceBB = getLeastValuableAttacker(side, isAttacked[side], attackingPiece);
             } while (attackingPieceBB);
 
-            while (--d) {gain[d-1] = -max(-gain[d-1], gain[d]);}
+            while (--d) {gain[d-1] = -std::max(-gain[d-1], gain[d]);}
 
             return gain[0];
         }
@@ -2115,7 +2113,7 @@ class Board {
             }
         }
 
-        vector<pair<U32,int> > orderMoves(int ply, U32 bestMove = 0)
+        std::vector<std::pair<U32,int> > orderMoves(int ply, U32 bestMove = 0)
         {
             //assumes that getOccupied() has been called immediately before.
             scoredMoves.clear();
@@ -2125,7 +2123,7 @@ class Board {
                 if (moveBuffer[i] == bestMove)
                 {
                     //best move from hash table should be checked first.
-                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i], INT_MAX));
+                    scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], INT_MAX));
                 }
                 else
                 {
@@ -2138,7 +2136,7 @@ class Board {
                         U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                         //scale captures for move ordering, captures before quiets
                         //killers and v.good history will precede losing captures
-                        scoredMoves.push_back(pair<U32,int>(moveBuffer[i], HISTORY_MAX + 3 + seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
+                        scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], HISTORY_MAX + 3 + seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
                     }
                     else
                     {
@@ -2146,19 +2144,19 @@ class Board {
                         if (moveBuffer[i] == killerMoves[ply][0])
                         {
                             //first killer.
-                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i], HISTORY_MAX + 2));
+                            scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], HISTORY_MAX + 2));
                         }
                         else if (moveBuffer[i] == killerMoves[ply][1])
                         {
                             //second killer.
-                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i], HISTORY_MAX + 1));
+                            scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], HISTORY_MAX + 1));
                         }
                         else
                         {
                             //non-killer.
                             U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
                             U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                            scoredMoves.push_back(pair<U32,int>(moveBuffer[i], history[pieceType][finishSquare]));
+                            scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], history[pieceType][finishSquare]));
                         }
                     }
                 }
@@ -2169,7 +2167,7 @@ class Board {
             return scoredMoves;
         }
 
-        vector<pair<U32,int> > orderCaptures()
+        std::vector<std::pair<U32,int> > orderCaptures()
         {
             //order captures/promotions.
             updateOccupied();
@@ -2182,7 +2180,7 @@ class Board {
                 {
                     //capture - SEE.
                     scoredMoves.push_back(
-                        pair<U32,int>(
+                        std::pair<U32,int>(
                             move,
                             seeCaptures(
                                 (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET,
@@ -2197,7 +2195,7 @@ class Board {
                 {
                     //promotion - priority order is queen, rook, bishop, knight
                     scoredMoves.push_back(
-                        pair<U32,int>(
+                        std::pair<U32,int>(
                             move,
                             (int)(_nPawns) - (int)((move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET)
                         )
@@ -2210,7 +2208,7 @@ class Board {
             return scoredMoves;
         }
 
-        vector<pair<U32,int> > orderQuiets()
+        std::vector<std::pair<U32,int> > orderQuiets()
         {
             //order quiet moves by history.
             scoredMoves.clear();
@@ -2218,7 +2216,7 @@ class Board {
             for (const auto &move: moveBuffer)
             {
                 scoredMoves.push_back(
-                    pair<U32,int>(
+                    std::pair<U32,int>(
                         move,
                         history[(move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET][(move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET]
                     )
@@ -2230,7 +2228,7 @@ class Board {
             return scoredMoves;
         }
 
-        vector<pair<U32,int> > orderQMoves(const int threshhold = 0)
+        std::vector<std::pair<U32,int> > orderQMoves(const int threshhold = 0)
         {
             //assumes that updateOccupied() has been called immediately before.
             scoredMoves.clear();
@@ -2245,12 +2243,12 @@ class Board {
                     U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
                     U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                     int score = seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType);
-                    if (score >= threshhold) {scoredMoves.push_back(pair<U32,int>(moveBuffer[i], score));}
+                    if (score >= threshhold) {scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], score));}
                 }
                 else
                 {
                     //non-capture moves.
-                    scoredMoves.push_back(pair<U32,int>(moveBuffer[i],0));
+                    scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i],0));
                 }
             }
 
