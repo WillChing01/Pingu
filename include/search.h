@@ -80,44 +80,46 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
     if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
     if (isSearchAborted) {return 0;}
 
-    bool inCheck = b.generatePseudoQMoves(b.moveHistory.size() & 1);
+    b.updateOccupied();
+    bool side = b.moveHistory.size() & 1;
+    bool inCheck = b.isInCheck(side);
 
-    if (b.moveBuffer.size() > 0)
+    int bestScore = -MATE_SCORE;
+
+    if (!inCheck)
     {
-        int bestScore = -INT_MAX;
-
-        if (!inCheck)
+        //do stand-pat check.
+        bestScore = b.evaluateBoard();
+        if (bestScore > alpha)
         {
-            //do stand-pat check.
-            bestScore=b.regularEval();
             if (bestScore >= beta) {return bestScore;}
-            alpha = std::max(alpha,bestScore);
+            alpha = bestScore;
         }
+    }
 
-        int score;
-        b.updateOccupied();
-        std::vector<std::pair<U32,int> > moveCache = b.orderQMoves();
-        for (int i=0;i<(int)(moveCache.size());i++)
+    int score;
+    b.generatePseudoQMoves(side);
+    if (b.moveBuffer.size() == 0) {return inCheck ? b.evaluateBoard() : bestScore;}
+    std::vector<std::pair<U32,int> > moveCache = b.orderQMoves();
+
+    for (const auto &[move,moveScore]: moveCache)
+    {
+        b.makeMove(move);
+        score = -alphaBetaQuiescence(b, -beta, -alpha);
+        b.unmakeMove();
+
+        if (score > bestScore)
         {
-            b.makeMove(moveCache[i].first);
-            score = -alphaBetaQuiescence(b, -beta, -alpha);
-            b.unmakeMove();
-
-            if (score > bestScore)
+            if (score > alpha)
             {
                 if (score >= beta) {return score;}
-                bestScore = score;
-                alpha = std::max(alpha,score);
+                alpha = score;
             }
+            bestScore = score;
         }
+    }
 
-        return bestScore;
-    }
-    else
-    {
-        //no captures left. evaluate normally.
-        return b.evaluateBoard();
-    }
+    return bestScore;
 }
 
 int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
