@@ -111,6 +111,7 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
 
     int score;
     if (b.moveBuffer.size() == 0) {return inCheck ? b.evaluateBoard() : bestScore;}
+    //no need to update occupied, just did move-gen.
     std::vector<std::pair<U32,int> > moveCache = b.orderQMoves();
 
     for (const auto &[move,moveScore]: moveCache)
