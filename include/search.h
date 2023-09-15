@@ -95,10 +95,21 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
             if (bestScore >= beta) {return bestScore;}
             alpha = bestScore;
         }
+
+        //generate regular tactical moves.
+        b.moveBuffer.clear();
+        b.generateCaptures(side, 0);
+    }
+    else
+    {
+        //generate check evasion.
+        U32 numChecks = b.isInCheckDetailed(side);
+        b.moveBuffer.clear();
+        b.generateCaptures(side, numChecks);
+        b.generateQuiets(side, numChecks);
     }
 
     int score;
-    b.generatePseudoQMoves(side);
     if (b.moveBuffer.size() == 0) {return inCheck ? b.evaluateBoard() : bestScore;}
     std::vector<std::pair<U32,int> > moveCache = b.orderQMoves();
 
