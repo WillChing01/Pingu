@@ -80,44 +80,58 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
     if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
     if (isSearchAborted) {return 0;}
 
-    bool inCheck = b.generatePseudoQMoves(b.moveHistory.size() & 1);
+    b.updateOccupied();
+    bool side = b.moveHistory.size() & 1;
+    bool inCheck = b.isInCheck(side);
 
-    if (b.moveBuffer.size() > 0)
+    int bestScore = -MATE_SCORE;
+
+    if (!inCheck)
     {
-        int bestScore = -INT_MAX;
-
-        if (!inCheck)
+        //do stand-pat check.
+        bestScore = b.evaluateBoard();
+        if (bestScore > alpha)
         {
-            //do stand-pat check.
-            bestScore=b.regularEval();
             if (bestScore >= beta) {return bestScore;}
-            alpha = std::max(alpha,bestScore);
+            alpha = bestScore;
         }
 
-        int score;
-        b.updateOccupied();
-        std::vector<std::pair<U32,int> > moveCache = b.orderQMoves();
-        for (int i=0;i<(int)(moveCache.size());i++)
-        {
-            b.makeMove(moveCache[i].first);
-            score = -alphaBetaQuiescence(b, -beta, -alpha);
-            b.unmakeMove();
-
-            if (score > bestScore)
-            {
-                if (score >= beta) {return score;}
-                bestScore = score;
-                alpha = std::max(alpha,score);
-            }
-        }
-
-        return bestScore;
+        //generate regular tactical moves.
+        b.moveBuffer.clear();
+        b.generateCaptures(side, 0);
     }
     else
     {
-        //no captures left. evaluate normally.
-        return b.evaluateBoard();
+        //generate check evasion.
+        U32 numChecks = b.isInCheckDetailed(side);
+        b.moveBuffer.clear();
+        b.generateCaptures(side, numChecks);
+        b.generateQuiets(side, numChecks);
     }
+
+    int score;
+    if (b.moveBuffer.size() == 0) {return inCheck ? -MATE_SCORE : bestScore;}
+    //no need to update occupied, just did move-gen.
+    std::vector<std::pair<U32,int> > moveCache = b.orderQMoves();
+
+    for (const auto &[move,moveScore]: moveCache)
+    {
+        b.makeMove(move);
+        score = -alphaBetaQuiescence(b, -beta, -alpha);
+        b.unmakeMove();
+
+        if (score > bestScore)
+        {
+            if (score > alpha)
+            {
+                if (score >= beta) {return score;}
+                alpha = score;
+            }
+            bestScore = score;
+        }
+    }
+
+    return bestScore;
 }
 
 int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
