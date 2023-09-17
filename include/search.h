@@ -548,12 +548,10 @@ int alphaBetaRoot(Board &b, int depth)
         if (itDepth > 1)
         {
             //put best move of previous iter to front.
-            std::pair<U32,int> temp = moveCache[0];
-            moveCache[0] = moveCache[pvIndex];
-            moveCache[pvIndex] = temp;
+            moveCache[pvIndex].second = INT_MAX;
 
             //sort rest of moves.
-            sort(moveCache.begin() + 1, moveCache.end(), [](const auto &a, const auto &b) {return a.second > b.second;});
+            sort(moveCache.begin(), moveCache.end(), [](const auto &a, const auto &b) {return a.second > b.second;});
         }
 
         //play moves.
