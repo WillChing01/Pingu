@@ -507,84 +507,100 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     return bestScore;
 }
 
-int alphaBetaRoot(Board &b, int alpha, int beta, int depth)
+int alphaBetaRoot(Board &b, int depth)
 {
-    if (depth == 0) {return alphaBetaQuiescence(b, alpha, beta);}
-    else
+    //track start-time of search.
+    startTime = std::chrono::high_resolution_clock::now();
+
+    //update TT 'age' and reset nodes.
+    rootCounter++;
+    totalNodes = 0;
+
+    //generate moves.
+    bool side = b.moveHistory.size() & 1;
+    bool inCheck = b.generatePseudoMoves(side);
+
+    //checkmate or stalemate.
+    if (b.moveBuffer.size() == 0) {return inCheck ? -MATE_SCORE : 0;}
+
+    //order moves using old history.
+    std::vector<std::pair<U32,int> > moveCache = b.orderMoves(0);
+
+    //reset history at root.
+    b.clearHistory();
+
+    //reset best score and best move.
+    storedBestScore = -MATE_SCORE; storedBestMove = 0;
+    int pvIndex = 0;
+
+    //iterative deepening.
+    for (int itDepth = 1; itDepth <= depth; itDepth++)
     {
-        rootCounter++;
-        startTime = std::chrono::high_resolution_clock::now();
+        auto iterationStartTime = std::chrono::high_resolution_clock::now();
 
-        //reset history at root.
-        b.clearHistory();
+        U32 startNodes = totalNodes;
+        totalNodes++;
 
-        bool inCheck = b.generateEvalMoves(b.moveHistory.size() & 1);
+        int score;
+        int alpha = -MATE_SCORE-1; int beta = MATE_SCORE;
 
-        if (b.moveBuffer.size() > 0)
+        //order moves for later depths by nodes searched.
+        if (itDepth > 1)
         {
-            int score; storedBestMove = 0;
-            for (int itDepth = 1; itDepth <= depth; itDepth++)
-            {
-                U32 oldNodes = totalNodes;
-                totalNodes++;
-                auto iterationStartTime = std::chrono::high_resolution_clock::now();
-                alpha = -MATE_SCORE-1; beta = MATE_SCORE; U32 bestMove = 0;
+            //put best move of previous iter to front.
+            std::pair<U32,int> temp = moveCache[0];
+            moveCache[0] = moveCache[pvIndex];
+            moveCache[pvIndex] = temp;
 
-                //order moves to take into account updated history.
-                b.generatePseudoMoves(b.moveHistory.size() & 1);
-                b.updateOccupied();
-                std::vector<std::pair<U32,int> > moveCache = b.orderMoves(0, storedBestMove);
-
-                for (int i=0;i<(int)(moveCache.size());i++)
-                {
-                    b.makeMove(moveCache[i].first);
-                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
-                    b.unmakeMove();
-                    if (score > alpha) {alpha = score; bestMove = moveCache[i].first;}
-                }
-
-                //check if time is up.
-                if (isSearchAborted) {break;}
-
-                auto iterationFinishTime = std::chrono::high_resolution_clock::now();
-
-                double iterationTime = std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
-                double realTimeLeft = std::max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
-
-                storedBestMove = bestMove;
-                storedBestScore = alpha;
-                std::cout << "info" <<
-                    " depth " << itDepth <<
-                    " score cp " << storedBestScore <<
-                    " time " << (U32)(iterationTime) <<
-                    " nodes " << totalNodes - oldNodes <<
-                    " nps " << (U32)((double)(totalNodes - oldNodes) / (iterationTime / 1000.)) <<
-                    " pv";
-                collectPVRoot(b, storedBestMove, itDepth);
-                for (int i=0;i<(int)pvMoves.size();i++)
-                {
-                    std::cout << " " << moveToString(pvMoves[i]);
-                } std::cout << std::endl;
-
-                //break if checkmate is reached.
-                if (storedBestScore == MATE_SCORE) {break;}
-                //early exit if insufficient time for next iteration.
-                //assume a branching factor of 2.
-                if (iterationTime * 2. > realTimeLeft) {break;}
-            }
-            return storedBestScore;
+            //sort rest of moves.
+            sort(moveCache.begin() + 1, moveCache.end(), [](const auto &a, const auto &b) {return a.second > b.second;});
         }
-        else if (inCheck)
+
+        //play moves.
+        for (int i=0;i<(int)(moveCache.size());i++)
         {
-            //checkmate.
-            return -MATE_SCORE;
+            U32 startMoveNodes = totalNodes;
+            b.makeMove(moveCache[i].first);
+            score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
+            b.unmakeMove();
+            if (score > alpha) {alpha = score; pvIndex = i;}
+            moveCache[i].second = totalNodes - startMoveNodes;
         }
-        else
+
+        //check if time is up.
+        if (isSearchAborted) {break;}
+
+        auto iterationFinishTime = std::chrono::high_resolution_clock::now();
+        
+        double iterationTime = std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
+        double realTimeLeft = std::max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
+
+        //store best move and score.
+        storedBestMove = moveCache[pvIndex].first;
+        storedBestScore = alpha;
+
+        //display info.
+        std::cout << "info" <<
+            " depth " << itDepth <<
+            " score cp " << storedBestScore <<
+            " time " << (U32)(iterationTime) <<
+            " nodes " << totalNodes - startNodes <<
+            " nps " << (U32)((double)(totalNodes - startNodes) / (iterationTime / 1000.)) <<
+            " pv";
+        collectPVRoot(b, storedBestMove, itDepth);
+        for (const auto pvMove: pvMoves)
         {
-            //stalemate.
-            return 0;
-        }
+            std::cout << " " << moveToString(pvMove);
+        } std::cout << std::endl;
+
+        //break if checkmate is reached.
+        if (storedBestScore == MATE_SCORE) {break;}
+
+        //early exit if insufficient time for next iteration.
+        //assume a branching factor of 2.
+        if (iterationTime * 2. > realTimeLeft) {break;}
     }
+    return storedBestScore;
 }
 
 #endif // SEARCH_H_INCLUDED
