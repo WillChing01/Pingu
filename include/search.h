@@ -559,7 +559,17 @@ int alphaBetaRoot(Board &b, int depth)
         {
             U32 startMoveNodes = totalNodes;
             b.makeMove(moveCache[i].first);
-            score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
+            if (itDepth >= 2 && i > 0)
+            {
+                //PV search.
+                score = -alphaBeta(b, -alpha-1, -alpha, itDepth-1, 1, true);
+                if (score > alpha)
+                {
+                    //full window re-search.
+                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
+                }
+            }
+            else {score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);}
             b.unmakeMove();
             if (score > alpha) {alpha = score; pvIndex = i;}
             moveCache[i].second = totalNodes - startMoveNodes;
