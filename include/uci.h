@@ -17,8 +17,8 @@ std::atomic_bool isSearching(false);
 
 void searchThread(Board &b, int depth, double moveTime)
 {
-    isSearchAborted = false; totalNodes = 0; timeLeft = moveTime;
-    int res = alphaBetaRoot(b, -MATE_SCORE, MATE_SCORE, depth);
+    isSearchAborted = false; timeLeft = moveTime;
+    int res = alphaBetaRoot(b, depth);
 
     //output best move after search is complete.
     std::cout << "info nodes " << totalNodes << " score cp " << res << std::endl;
