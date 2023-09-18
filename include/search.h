@@ -571,13 +571,7 @@ int alphaBetaRoot(Board &b, int depth)
             }
             else {score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);}
             b.unmakeMove();
-            if (score > alpha)
-            {
-                alpha = score;
-                pvIndex = i;
-                storedBestMove = moveCache[i].first;
-                storedBestScore = score;
-            }
+            if (score > alpha) {alpha = score; pvIndex = i;}
             moveCache[i].second = totalNodes - startMoveNodes;
         }
 
@@ -588,6 +582,10 @@ int alphaBetaRoot(Board &b, int depth)
         
         double iterationTime = std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
         double realTimeLeft = std::max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
+
+        //store best move and score.
+        storedBestMove = moveCache[pvIndex].first;
+        storedBestScore = alpha;
 
         //display info.
         std::cout << "info" <<
