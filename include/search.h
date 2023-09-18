@@ -571,7 +571,7 @@ int alphaBetaRoot(Board &b, int depth)
             }
             else {score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);}
             b.unmakeMove();
-            if (score > alpha)
+            if (score > alpha && !isSearchAborted)
             {
                 alpha = score;
                 pvIndex = i;
