@@ -169,10 +169,11 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     }
 
     //null move pruning.
-    if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit && b.phase > 0)
+    if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
+        (b.occupied[side] ^ b.pieces[b._nKing+side] ^ b.pieces[b._nPawns+side]))
     {
         b.makeNullMove();
-        int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR, ply+1, false);
+        int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR-depth/6, ply+1, false);
         b.unmakeNullMove();
 
         //fail hard only for null move pruning.
