@@ -522,7 +522,10 @@ int alphaBetaRoot(Board &b, int depth)
     bool inCheck = b.generatePseudoMoves(side);
 
     //checkmate or stalemate.
-    if (b.moveBuffer.size() == 0) {return inCheck ? -MATE_SCORE : 0;}
+    if (b.moveBuffer.size() == 0) {storedBestMove = 0; return inCheck ? -MATE_SCORE : 0;}
+
+    //if only one move, return immediately.
+    if (b.moveBuffer.size() == 1) {storedBestMove = b.moveBuffer[0]; return 0;}
 
     //order moves using old history.
     std::vector<std::pair<U32,int> > moveCache = b.orderMoves(0);
