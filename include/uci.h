@@ -102,6 +102,34 @@ void testCommand(Board &b, const std::vector<std::string> &words)
     catch (...) {}
 }
 
+void helpCommand(Board &b, const std::vector<std::string> &words)
+{
+    //display help.
+
+    const std::string t = "    ";
+
+    //short-form.
+    std::cout
+        << "\n"
+        << "UCI Commands:\n"
+        << t << "uci\n"
+        << t << "isready\n"
+        << t << "setoption name <id> [value <x>]\n"
+        << t << "ucinewgame\n"
+        << t << "position [fen <fenstring> | startpos] moves <move1> ... <movei>\n"
+        << t << "go\n"
+        << t << "stop\n"
+        << t << "quit\n"
+        << "\n"
+        << "Custom Commands:\n"
+        << t << "perft <depth>\n"
+        << t << "test (validation | zobrist) <depth>\n"
+        << t << "display\n"
+        << "\n"
+        << "Type 'help <command>' for more information\n"
+    << std::endl;
+}
+
 void goCommand(Board &b, const std::vector<std::string> &words)
 {
     bool isInfinite = false;
@@ -203,6 +231,7 @@ void uciLoop()
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display();}
         else if (commands[0] == "test") {testCommand(b, commands);}
+        else if (commands[0] == "help") {helpCommand(b, commands);}
     }
 }
 
