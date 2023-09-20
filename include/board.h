@@ -2,9 +2,6 @@
 #define BOARD_H_INCLUDED
 
 #include <vector>
-#include <bitset>
-#include <windows.h>
-#include <cctype>
 #include <algorithm>
 #include <iostream>
 
@@ -831,61 +828,26 @@ class Board {
 
             const char symbols[12]={'K','k','Q','q','R','r','B','b','N','n','P','p'};
 
-            HANDLE hConsole=GetStdHandle(STD_OUTPUT_HANDLE);
+            std::vector<std::vector<std::string> > grid(
+                8,
+                std::vector<std::string>(8,"[ ]")
+            );
 
-            const int colours[2]={7,8};
-            const int standardColour=15;
-
-            std::vector<std::vector<std::string> > grid;
-            for (int i=0;i<8;i++)
-            {
-                grid.push_back(std::vector<std::string>());
-                for (int j=0;j<8;j++)
-                {
-                    grid.back().push_back("[ ]");
-                }
-            }
-
-            std::string temp=std::bitset<64>(0).to_string();
+            U64 x;
             for (int i=0;i<12;i++)
             {
-                temp=std::bitset<64>(pieces[i]).to_string();
+                x = pieces[i];
                 for (int j=0;j<64;j++)
                 {
-                    if (temp[j]=='0') {continue;}
-
-                    grid[(63-j)/8][(63-j)%8][1]=symbols[i];
+                    if (x & 1) {grid[j/8][j%8][1]=symbols[i];}
+                    x = x >> 1;
                 }
             }
 
             for (int i=7;i>=0;i--)
             {
-                for (int j=0;j<8;j++)
-                {
-                    SetConsoleTextAttribute(hConsole,colours[(i+j)%2]);
-                    std::cout << grid[i][j][0];
-                    SetConsoleTextAttribute(hConsole,standardColour);
-
-                    if (grid[i][j][1]!=' ')
-                    {
-                        if (isupper(grid[i][j][1])==true)
-                        {
-                            SetConsoleTextAttribute(hConsole,colours[0]);
-                        }
-                        else
-                        {
-                            SetConsoleTextAttribute(hConsole,colours[1]);
-                        }
-                        std::cout << char(toupper(grid[i][j][1]));
-
-                        SetConsoleTextAttribute(hConsole,standardColour);
-                    }
-                    else {std::cout << ' ';}
-
-                    SetConsoleTextAttribute(hConsole,colours[(i+j)%2]);
-                    std::cout << grid[i][j][2];
-                    SetConsoleTextAttribute(hConsole,standardColour);
-                } std::cout << " " << i+1 << std::endl;
+                for (int j=0;j<8;j++) {std::cout << grid[i][j];}
+                std::cout << " " << i+1 << std::endl;
             }
             std::cout << " A  B  C  D  E  F  G  H" << std::endl;
         }
