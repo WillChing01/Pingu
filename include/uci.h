@@ -189,17 +189,20 @@ void uciLoop()
         std::getline(std::cin,input);
         commands = separateByWhiteSpace(input);
 
+        if (commands[0] == "stop") {isSearchAborted = true;}
+        else if (commands[0] == "quit") {isSearchAborted = true; while (isSearching); break;}
+        
+        if (isSearching) {continue;}
+
         if (commands[0] == "uci") {uciCommand();}
         else if (commands[0] == "isready") {std::cout << "readyok" << std::endl;}
         else if (commands[0] == "setoption") {setOptionCommand(commands);}
         else if (commands[0] == "ucinewgame") {prepareForNewGame(b);}
         else if (commands[0] == "position") {positionCommand(b, commands);}
-        else if (commands[0] == "go" && !isSearching) {goCommand(b, commands);}
+        else if (commands[0] == "go") {goCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display();}
         else if (commands[0] == "test") {testCommand(b, commands);}
-        else if (commands[0] == "stop") {isSearchAborted = true;}
-        else if (commands[0] == "quit") {isSearchAborted = true; break;}
     }
 }
 
