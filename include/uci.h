@@ -5,7 +5,6 @@
 #include <cassert>
 #include <limits>
 #include <thread>
-#include <future>
 
 #include "constants.h"
 #include "testing.h"
@@ -111,7 +110,7 @@ void goCommand(Board &b, const std::vector<std::string> &words)
     double whiteInc = 0;
     double blackInc = 0;
     double moveTime = 0;
-    // int movesToGo = 0;
+    int movesToGo = 0;
     int depth = 0;
 
     for (int i=1;i<(int)words.size();i++)
@@ -120,7 +119,7 @@ void goCommand(Board &b, const std::vector<std::string> &words)
         else if (words[i] == "btime") {blackTime = std::stoi(words[i+1]);}
         else if (words[i] == "winc") {whiteInc = std::stoi(words[i+1]);}
         else if (words[i] == "binc") {blackInc = std::stoi(words[i+1]);}
-        else if (words[i] == "movestogo") {}
+        else if (words[i] == "movestogo") {movesToGo = std::stoi(words[i+1]);}
         else if (words[i] == "depth") {depth = std::stoi(words[i+1]);}
         else if (words[i] == "nodes") {}
         else if (words[i] == "mate") {}
@@ -131,36 +130,38 @@ void goCommand(Board &b, const std::vector<std::string> &words)
     if (isInfinite)
     {
         //infinite search.
-        isSearching = true;
-        auto calculation = std::thread(searchThread, std::ref(b), 100, std::numeric_limits<double>::infinity());
-        calculation.detach();
+        depth = 100;
+        moveTime = std::numeric_limits<double>::infinity();
     }
-    else if (depth != 0)
+    else if (depth > 0)
     {
         //search to specified depth.
-        auto calculation = std::thread(searchThread, std::ref(b), depth, std::numeric_limits<double>::infinity());
-        calculation.detach();
+        moveTime = std::numeric_limits<double>::infinity();
     }
-    else if (moveTime != 0)
+    else if (moveTime > 0)
     {
         //search for a specified time.
-        auto calculation = std::thread(searchThread, std::ref(b), 100, moveTime);
-        calculation.detach();
+        depth = 100;
     }
     else
     {
         //allocate the time to search for.
 
-        //current time management is quite basic.
-        //use 3% of remaining time plus 75% of any increment.
+        //use 5% of remaining time plus 50% of increment.
+        //if this exceeds time left, then use 80% of time left.
 
-        double totalTime = 0;
-        if (b.moveHistory.size() & 1) {totalTime = 0.03 * blackTime + 0.75 * blackInc;}
-        else {totalTime = 0.03 * whiteTime + 0.75 * whiteInc;}
+        depth = 100;
 
-        auto calculation = std::thread(searchThread, std::ref(b), 100, totalTime);
-        calculation.detach();
+        double timeLeft = (b.moveHistory.size() & 1) ? blackTime : whiteTime;
+        double increment = (b.moveHistory.size() & 1) ? blackInc : whiteInc;
+
+        moveTime = timeLeft / std::max(movesToGo, 20) + 0.5 * increment;
+        if (moveTime > timeLeft) {moveTime = 0.8 * timeLeft;}
     }
+
+    isSearching = true;
+    auto calculation = std::thread(searchThread, std::ref(b), depth, moveTime);
+    calculation.detach();
 }
 
 void prepareForNewGame(Board &b)
