@@ -24,6 +24,7 @@ set(HEADER_FILES
     ${INCLUDE_DIR}/board.h
     ${INCLUDE_DIR}/constants.h
     ${INCLUDE_DIR}/evaluation.h
+    ${INCLUDE_DIR}/engine-commands.h
     ${INCLUDE_DIR}/format.h
     ${INCLUDE_DIR}/king.h
     ${INCLUDE_DIR}/knight.h
