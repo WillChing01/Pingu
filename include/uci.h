@@ -2,11 +2,13 @@
 #define UCI_H_INCLUDED
 
 #include <iostream>
+#include <iomanip>
 #include <cassert>
 #include <limits>
 #include <thread>
 
 #include "constants.h"
+#include "engine-commands.h"
 #include "testing.h"
 #include "format.h"
 #include "search.h"
@@ -102,32 +104,65 @@ void testCommand(Board &b, const std::vector<std::string> &words)
     catch (...) {}
 }
 
-void helpCommand(Board &b, const std::vector<std::string> &words)
+void helpCommand(const std::vector<std::string> &words)
 {
     //display help.
 
     const std::string t = "    ";
 
-    //short-form.
-    std::cout
-        << "\n"
-        << "UCI Commands:\n"
-        << t << "uci\n"
-        << t << "isready\n"
-        << t << "setoption name <id> [value <x>]\n"
-        << t << "ucinewgame\n"
-        << t << "position [fen <fenstring> | startpos] moves <move1> ... <movei>\n"
-        << t << "go\n"
-        << t << "stop\n"
-        << t << "quit\n"
-        << "\n"
-        << "Custom Commands:\n"
-        << t << "perft <depth>\n"
-        << t << "test (validation | zobrist) <depth>\n"
-        << t << "display\n"
-        << "\n"
-        << "Type 'help <command>' for more information\n"
-    << std::endl;
+    //overview.
+    if (words.size() == 1)
+    {
+        int maxLength = 0;
+        for (const auto &command: COMMANDS)
+        {
+            maxLength = std::max(maxLength,(int)command.name.length());
+        }
+        std::cout << "\nCommands:\n";
+        for (const auto &command: COMMANDS)
+        {
+            std::cout << std::left << t << std::setw(maxLength+4)
+                << command.name << command.desc
+            << "\n";
+        }
+        std::cout << "\nType 'help <command>' for more information\n";
+        std::cout << std::endl;
+        return;
+    }
+
+    //verbose.
+    for (const auto &command: COMMANDS)
+    {
+        if (words[1] != command.name) {continue;}
+        std::cout << "\n" << command.desc << "\n";
+        std::cout << "\nUsage: ";
+        if (command.usage.size())
+        {
+            std::cout << "\n";
+            for (const auto &use: command.usage)
+            {
+                std::cout << t << use << "\n";
+            }
+        }
+        else {std::cout << command.name << "\n";}
+        if (command.options.size())
+        {
+            int maxLength = 0;
+            for (const auto &[option,desc]: command.options)
+            {
+                maxLength = std::max(maxLength,(int)option.length());
+            }
+            std::cout << "\nOptions:\n";
+            for (const auto &[option,desc]: command.options)
+            {
+                std::cout << std::left << t << std::setw(maxLength+4)
+                    << option << desc
+                << "\n";
+            }
+        }
+        std::cout << std::endl;
+        return;
+    }
 }
 
 void goCommand(Board &b, const std::vector<std::string> &words)
@@ -231,7 +266,7 @@ void uciLoop()
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display();}
         else if (commands[0] == "test") {testCommand(b, commands);}
-        else if (commands[0] == "help") {helpCommand(b, commands);}
+        else if (commands[0] == "help") {helpCommand(commands);}
     }
 }
 
