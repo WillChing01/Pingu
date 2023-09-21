@@ -563,17 +563,37 @@ int alphaBetaRoot(Board &b, int depth)
         {
             U32 startMoveNodes = totalNodes;
             b.makeMove(moveCache[i].first);
-            if (itDepth >= 2 && i > 0)
+            if (i == 0)
             {
-                //PV search.
-                score = -alphaBeta(b, -alpha-1, -alpha, itDepth-1, 1, true);
-                if (score > alpha)
+                if (itDepth >= 5)
                 {
-                    //full window re-search.
+                    //aspiration window for pv move.
+                    alpha = std::max(storedBestScore - 200, alpha);
+                    beta = std::min(storedBestScore + 200, beta);
                     score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
+                    if ((score <= alpha || score >= beta) && score != MATE_SCORE)
+                    {
+                        //shift to full search window.
+                        alpha = -MATE_SCORE-1; beta = MATE_SCORE;
+                        score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
+                    }
                 }
+                else {score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);}
             }
-            else {score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);}
+            else
+            {
+                if (itDepth >= 2)
+                {
+                    //PV search.
+                    score = -alphaBeta(b, -alpha-1, -alpha, itDepth-1, 1, true);
+                    if (score > alpha)
+                    {
+                        //full window re-search.
+                        score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
+                    }
+                }
+                else {score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);}
+            }
             b.unmakeMove();
             if (score > alpha && !isSearchAborted)
             {
