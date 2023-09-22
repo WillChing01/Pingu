@@ -535,7 +535,7 @@ void optimiseFeatures(int epochs = 100, long double alpha = 0.00001)
         //update the gradient.
         for (int i=0;i<N;i++)
         {
-            long double factor = (dataset[i].res - sigmoid(dataset[i].eval)) * sigmoid(dataset[i].eval);
+            long double factor = (dataset[i].res - sigmoid(dataset[i].eval)) * sigmoid(dataset[i].eval) * (1. - sigmoid(dataset[i].eval));
             for (int j=0;j<(int)dataset[i].featuresWhite.size();j++)
             {
                 gradStart[dataset[i].featuresWhite[j]] += factor * dataset[i].phaseStart;
