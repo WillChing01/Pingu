@@ -1,6 +1,10 @@
 #ifndef MAGIC_H_INCLUDED
 #define MAGIC_H_INCLUDED
 
+#include <iostream>
+#include <stdlib.h>
+
+#include "bitboard.h"
 #include "slider.h"
 
 //b stores occupied squares (any piece type/colour).
