@@ -32,7 +32,7 @@ $$
     - \alpha \sum_{j=1}^{N} \left( R_j - \sigma \left( E_j \right) \right) \cdot
     \sigma \left( E_j \right) \cdot
     \left( 1 - \sigma \left( E_j \right) \right) \cdot
-    \rho_{mg,j} \left ( \underline{C}_w - \underline{C}_b \right)
+    \rho_{mg,j} \left ( \underline{C}_{w,j} - \underline{C}_{b,j} \right)
 $$
 
 $$
@@ -40,7 +40,7 @@ $$
     - \alpha \sum_{j=1}^{N} \left( R_j - \sigma \left( E_j \right) \right) \cdot
     \sigma \left( E_j \right) \cdot
     \left( 1 - \sigma \left( E_j \right) \right) \cdot
-    \rho_{eg,j} \left ( \underline{C}_w - \underline{C}_b \right)
+    \rho_{eg,j} \left ( \underline{C}_{w,j} - \underline{C}_{b,j} \right)
 $$
 
 for the middlegame and endgame weights respectively. All constants have been absorbed into an arbitrary term $ \alpha > 0 $ which can be scaled to adjust the learning rate of gradient descent.
