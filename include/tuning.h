@@ -113,7 +113,6 @@ void readPositions()
             dataset.back().R = std::stold(str.substr(x+1, 3));
             populateFeatures(dataset.back());
             ++N;
-            if (N == 20) {break;}
         }
         std::cout << "Finished reading " << entry.path() << std::endl;
     }
@@ -252,10 +251,88 @@ void updateEval(dataSample &sample)
     sample.eval = evalStart * sample.phase_start + evalEnd * sample.phase_end;
 }
 
-// inline long double sigmoid(const long double x)
-// {
-//     return 1./(1. + exp(-K*x));
-// }
+inline long double sigmoid(const long double x)
+{
+    return 1./(1. + exp(-K*x));
+}
+
+long double getError()
+{
+    long double E = 0.;
+    for (const auto& sample: dataset)
+    {
+        E += powl(sample.R - sigmoid(sample.eval), 2.);
+    }
+    return E / N;
+}
+
+void optimiseFeatures(int epochs = 100, long double alpha = 0.00001)
+{
+    std::array<long double, NUM_FEATURES> gradStart = {};
+    std::array<long double, NUM_FEATURES> gradEnd = {};
+
+    long double err;
+
+    for (int epoch = 1; epoch <= epochs; epoch++)
+    {
+        std::cout << "Starting epoch " << epoch << std::endl;
+
+        //update eval.
+        for (auto& x: dataset) {updateEval(x);}
+
+        //update error.
+        err = getError();
+        std::cout << std::setprecision(10) << "Error: " << err << std::endl;
+
+        //reset the gradient.
+        gradStart.fill(0);
+        gradEnd.fill(0);
+
+        //update gradient.
+        for (const auto& s: dataset)
+        {
+            long double factor = (s.R - sigmoid(s.eval)) * sigmoid(s.eval) * (1. - sigmoid(s.eval));
+            
+            //material.
+            for (int i=0;i<6;i++)
+            {
+                gradStart[MAT_INDEX + i] += factor * s.phase_start * s.material[i];
+                gradEnd[MAT_INDEX + i] += factor * s.phase_end * s.material[i];
+            }
+
+            //mobility.
+            for (int i=0;i<2;i++)
+            {
+                gradStart[MOB_INDEX + i] += factor * s.phase_start * s.mobility[i];
+                gradEnd[MOB_INDEX + i] += factor * s.phase_end * s.mobility[i];
+            }
+
+            //pst.
+            for (const auto& x: s.pstWhite)
+            {
+                gradStart[PST_INDEX + x] += factor * s.phase_start;
+                gradEnd[PST_INDEX + x] += factor * s.phase_end;
+            }
+            for (const auto& x: s.pstBlack)
+            {
+                gradStart[PST_INDEX + x] -= factor * s.phase_start;
+                gradEnd[PST_INDEX + x] -= factor * s.phase_end;
+            }
+        }
+
+        //update weights.
+        for (int i=0;i<NUM_FEATURES;i++)
+        {
+            weights_start[i] += alpha * gradStart[i];
+            weights_end[i] += alpha * gradEnd[i];
+        }
+
+        //save weights.
+        saveWeights();
+
+        std::cout << "Finished epoch " << epoch << std::endl;
+    }
+}
 
 // //calculate mean squared error for a subset of data (allows for threading).
 // inline long double errorChild(int startInd, int finishInd)
@@ -307,63 +384,6 @@ void updateEval(dataSample &sample)
 //     }
 
 //     return E;
-// }
-
-// void optimiseFeatures(int epochs = 100, long double alpha = 0.00001)
-// {
-//     std::array<long double, 384> gradStart = {};
-//     std::array<long double, 384> gradEnd = {};
-    
-//     long double err;
-
-//     for (int epoch = 1; epoch <= epochs; epoch++)
-//     {
-
-//         //reset the gradient.
-//         for (int i=0;i<384;i++)
-//         {
-//             gradStart[i] = 0.;
-//             gradEnd[i] = 0.;
-//         }
-
-//         //update the gradient.
-//         for (int i=0;i<N;i++)
-//         {
-//             long double factor = (dataset[i].res - sigmoid(dataset[i].eval)) * sigmoid(dataset[i].eval) * (1. - sigmoid(dataset[i].eval));
-//             for (int j=0;j<(int)dataset[i].featuresWhite.size();j++)
-//             {
-//                 gradStart[dataset[i].featuresWhite[j]] += factor * dataset[i].phaseStart;
-//                 gradEnd[dataset[i].featuresWhite[j]] += factor * dataset[i].phaseEnd;
-//             }
-//             for (int j=0;j<(int)dataset[i].featuresBlack.size();j++)
-//             {
-//                 gradStart[dataset[i].featuresBlack[j]] -= factor * dataset[i].phaseStart;
-//                 gradEnd[dataset[i].featuresBlack[j]] -= factor * dataset[i].phaseEnd;
-//             }
-//         }
-
-//         //increment pst by gradient.
-//         for (int i=0;i<384;i++)
-//         {
-//             evalStart[i] += gradStart[i] * alpha;
-//             evalEnd[i] += gradEnd[i] * alpha;
-//         }
-
-//         //evaluate positions and error.
-//         err = 0.;
-//         for (int i=0;i<N;i++)
-//         {
-//             dataset[i].eval = evalFeatures(dataset[i]);
-//             err += powl(dataset[i].res - sigmoid(dataset[i].eval), 2.); 
-//         }
-//         err /= N;
-
-//         std::cout << "Epoch: " << epoch << std::endl;
-//         std::cout << std::setprecision(10) << "Error: " << err << std::endl;
-
-//         //save weights.
-//         saveWeights();
-//     }
 // }
 
 // void optimiseK()
