@@ -78,14 +78,14 @@ void populateFeatures(dataSample &sample)
             //bishop mobility.
             if (i >> 1 == b._nBishops >> 1)
             {
-                int mob = __builtin_popcountll(magicBishopAttacks(b.occupied[0] | b.occupied[1], x));
+                int mob = magicBishopMob(b.occupied[0] | b.occupied[1], x);
                 if (i & 1) {sample.mobility[0] -= mob;}
                 else {sample.mobility[0] += mob;}
             }
             //rook mobility.
             if (i >> 1 == b._nRooks >> 1)
             {
-                int mob = __builtin_popcountll(magicRookAttacks(b.occupied[0] | b.occupied[1], x));
+                int mob = magicRookMob(b.occupied[0] | b.occupied[1], x);
                 if (i & 1) {sample.mobility[1] -= mob;}
                 else {sample.mobility[1] += mob;}
             }
