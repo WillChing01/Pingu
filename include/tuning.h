@@ -10,6 +10,7 @@
 #include <vector>
 #include <array>
 #include <math.h>
+#include <cmath>
 #include <thread>
 #include <future>
 
@@ -166,24 +167,24 @@ void saveWeights()
 
     //piece values start.
     file << "Piece values start" << std::endl;
-    for (int i=0;i<6;i++) {file << (int)weights_start[MAT_INDEX + i] << "," << std::endl;}
+    for (int i=0;i<6;i++) {file << std::lround(weights_start[MAT_INDEX + i]) << "," << std::endl;}
     file << std::endl;
 
     //piece values end.
     file << "Piece values end" << std::endl;
-    for (int i=0;i<6;i++) {file << (int)weights_end[MAT_INDEX + i] << "," << std::endl;}
+    for (int i=0;i<6;i++) {file << std::lround(weights_end[MAT_INDEX + i]) << "," << std::endl;}
     file << std::endl;
 
     //mobility start.
     file << "Mobility start" << std::endl;
-    file << (int)weights_start[MOB_INDEX] << "," << std::endl;
-    file << (int)weights_start[MOB_INDEX + 1] << "," << std::endl;
+    file << std::lround(weights_start[MOB_INDEX]) << "," << std::endl;
+    file << std::lround(weights_start[MOB_INDEX + 1]) << "," << std::endl;
     file << std::endl;
 
     //mobility end.
     file << "Mobility end" << std::endl;
-    file << (int)weights_end[MOB_INDEX] << "," << std::endl;
-    file << (int)weights_end[MOB_INDEX + 1] << "," << std::endl;
+    file << std::lround(weights_end[MOB_INDEX]) << "," << std::endl;
+    file << std::lround(weights_end[MOB_INDEX + 1]) << "," << std::endl;
     file << std::endl;
 
     //pst start.
@@ -194,7 +195,7 @@ void saveWeights()
         {
             for (int k=0;k<8;k++)
             {
-                file << formatWeight((int)weights_start[PST_INDEX + 64 * i + 8 * j + k]) << ",";
+                file << formatWeight(std::lround(weights_start[PST_INDEX + 64 * i + 8 * j + k])) << ",";
             } file << std::endl;
         } file << std::endl;
     }
@@ -207,7 +208,7 @@ void saveWeights()
         {
             for (int k=0;k<8;k++)
             {
-                file << formatWeight((int)weights_end[PST_INDEX + 64 * i + 8 * j + k]) << ",";
+                file << formatWeight(std::lround(weights_end[PST_INDEX + 64 * i + 8 * j + k])) << ",";
             } file << std::endl;
         } file << std::endl;
     }
