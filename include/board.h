@@ -1775,6 +1775,7 @@ class Board {
             int endTotal = 0;
 
             U64 x;
+            U64 b = occupied[0] | occupied[1];
 
             //queens.
             U64 temp = pieces[_nQueens];
@@ -1797,34 +1798,34 @@ class Board {
             temp = pieces[_nRooks];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x ^ 56];
-                endTotal += PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x ^ 56];
+                x = popLSB(temp); int mob = magicRookMob(b, x);
+                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x ^ 56] + MOB_ROOK_START * mob;
+                endTotal += PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x ^ 56] + MOB_ROOK_END * mob;
             }
 
             temp = pieces[_nRooks+1];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal -= PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x];
-                endTotal -= PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x];
+                x = popLSB(temp); int mob = magicRookMob(b, x);
+                startTotal -= PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x] + MOB_ROOK_START * mob;
+                endTotal -= PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x] + MOB_ROOK_END * mob;
             }
 
             //bishops.
             temp = pieces[_nBishops];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x ^ 56];
-                endTotal += PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x ^ 56];
+                x = popLSB(temp); int mob = magicBishopMob(b, x);
+                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x ^ 56] + MOB_BISHOP_START * mob;
+                endTotal += PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x ^ 56] + MOB_BISHOP_END * mob;
             }
 
             temp = pieces[_nBishops+1];
             while (temp)
             {
-                x = popLSB(temp);
-                startTotal -= PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x];
-                endTotal -= PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x];
+                x = popLSB(temp); int mob = magicBishopMob(b, x);
+                startTotal -= PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x] + MOB_BISHOP_START * mob;
+                endTotal -= PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x] + MOB_BISHOP_END * mob;
             }
 
             //knights.
