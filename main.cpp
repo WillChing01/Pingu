@@ -1,33 +1,26 @@
-#include "uci.h"
-
 #ifdef TUNING
 
 #include <chrono>
 
+#include "magic.h"
 #include "tuning.h"
 
 int main()
 {
     populateMagicTables();
     populateRandomNums();
-    clearTT();
 
+    readWeights();
     readPositions();
-    populateEval();
 
-    // optimiseMaterial(8);
-    // optimiseMaterial(4);
-    // optimiseMaterial(2);
-    // optimiseMaterial(1);
-
-    populateDataset();
-
-    optimiseFeatures();
+    optimiseFeatures(10000, 0.00001);
 
     return 0;
 }
 
 #else
+
+#include "uci.h"
 
 int main()
 {
