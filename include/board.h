@@ -81,6 +81,9 @@ class Board {
         int phase = 24;
         int shiftedPhase = (64 * phase + 3)/6;
 
+        int materialStart = 0;
+        int materialEnd = 0;
+
         //overall zHash is XOR of these two.
         U64 zHashPieces = 0;
         U64 zHashState = 0;
@@ -125,6 +128,7 @@ class Board {
 
             zHashHardUpdate();
             phaseHardUpdate();
+            materialHardUpdate();
         };
 
         void zHashHardUpdate()
@@ -172,6 +176,17 @@ class Board {
                 }
             }
             shiftedPhase = (64 * phase + 3)/6;
+        }
+
+        void materialHardUpdate()
+        {
+            materialStart = 0;
+            materialEnd = 0;
+            for (int i=0;i<12;i+=2)
+            {
+                materialStart += (__builtin_popcountll(pieces[i]) - __builtin_popcountll(pieces[i+1])) * PIECE_VALUES_START[i >> 1];
+                materialEnd += (__builtin_popcountll(pieces[i]) - __builtin_popcountll(pieces[i+1])) * PIECE_VALUES_END[i >> 1];
+            }
         }
 
         void setPositionFen(const std::string &fen)
@@ -237,6 +252,7 @@ class Board {
 
             zHashHardUpdate();
             phaseHardUpdate();
+            materialHardUpdate();
         }
 
         bool isValidPawnMove(bool inCheck)
@@ -1481,6 +1497,10 @@ class Board {
                 //update the game phase.
                 phase -= piecePhases[currentMove.capturedPieceType >> 1];
                 shiftedPhase = (64 * phase + 3) / 6;
+
+                //update material.
+                materialStart -= PIECE_VALUES_START[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
+                materialEnd -= PIECE_VALUES_END[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
             }
 
             //if castles, then move the rook too.
@@ -1538,6 +1558,10 @@ class Board {
                 //update the game phase.
                 phase += piecePhases[currentMove.capturedPieceType >> 1];
                 shiftedPhase = (64 * phase + 3) / 6;
+
+                //update material.
+                materialStart += PIECE_VALUES_START[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
+                materialEnd += PIECE_VALUES_END[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
             }
 
             //if castles move the rook back.
@@ -1771,8 +1795,8 @@ class Board {
 
         int regularEval()
         {
-            int startTotal = 0;
-            int endTotal = 0;
+            int startTotal = materialStart;
+            int endTotal = materialEnd;
 
             U64 x;
             U64 b = occupied[0] | occupied[1];
@@ -1782,16 +1806,16 @@ class Board {
             while (temp)
             {
                 x = popLSB(temp);
-                startTotal += PIECE_VALUES_START[1] + PIECE_TABLES_START[1][x ^ 56];
-                endTotal += PIECE_VALUES_END[1] + PIECE_TABLES_END[1][x ^ 56];
+                startTotal += PIECE_TABLES_START[1][x ^ 56];
+                endTotal += PIECE_TABLES_END[1][x ^ 56];
             }
 
             temp = pieces[_nQueens+1];
             while (temp)
             {
                 x = popLSB(temp);
-                startTotal -= PIECE_VALUES_START[1] + PIECE_TABLES_START[1][x];
-                endTotal -= PIECE_VALUES_END[1] + PIECE_TABLES_END[1][x];
+                startTotal -= PIECE_TABLES_START[1][x];
+                endTotal -= PIECE_TABLES_END[1][x];
             }
 
             //rooks.
@@ -1799,16 +1823,16 @@ class Board {
             while (temp)
             {
                 x = popLSB(temp); int mob = magicRookMob(b, x);
-                startTotal += PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x ^ 56] + MOB_ROOK_START * mob;
-                endTotal += PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x ^ 56] + MOB_ROOK_END * mob;
+                startTotal += PIECE_TABLES_START[2][x ^ 56] + MOB_ROOK_START * mob;
+                endTotal += PIECE_TABLES_END[2][x ^ 56] + MOB_ROOK_END * mob;
             }
 
             temp = pieces[_nRooks+1];
             while (temp)
             {
                 x = popLSB(temp); int mob = magicRookMob(b, x);
-                startTotal -= PIECE_VALUES_START[2] + PIECE_TABLES_START[2][x] + MOB_ROOK_START * mob;
-                endTotal -= PIECE_VALUES_END[2] + PIECE_TABLES_END[2][x] + MOB_ROOK_END * mob;
+                startTotal -= PIECE_TABLES_START[2][x] + MOB_ROOK_START * mob;
+                endTotal -= PIECE_TABLES_END[2][x] + MOB_ROOK_END * mob;
             }
 
             //bishops.
@@ -1816,16 +1840,16 @@ class Board {
             while (temp)
             {
                 x = popLSB(temp); int mob = magicBishopMob(b, x);
-                startTotal += PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x ^ 56] + MOB_BISHOP_START * mob;
-                endTotal += PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x ^ 56] + MOB_BISHOP_END * mob;
+                startTotal += PIECE_TABLES_START[3][x ^ 56] + MOB_BISHOP_START * mob;
+                endTotal += PIECE_TABLES_END[3][x ^ 56] + MOB_BISHOP_END * mob;
             }
 
             temp = pieces[_nBishops+1];
             while (temp)
             {
                 x = popLSB(temp); int mob = magicBishopMob(b, x);
-                startTotal -= PIECE_VALUES_START[3] + PIECE_TABLES_START[3][x] + MOB_BISHOP_START * mob;
-                endTotal -= PIECE_VALUES_END[3] + PIECE_TABLES_END[3][x] + MOB_BISHOP_END * mob;
+                startTotal -= PIECE_TABLES_START[3][x] + MOB_BISHOP_START * mob;
+                endTotal -= PIECE_TABLES_END[3][x] + MOB_BISHOP_END * mob;
             }
 
             //knights.
@@ -1833,16 +1857,16 @@ class Board {
             while (temp)
             {
                 x = popLSB(temp);
-                startTotal += PIECE_VALUES_START[4] + PIECE_TABLES_START[4][x ^ 56];
-                endTotal += PIECE_VALUES_END[4] + PIECE_TABLES_END[4][x ^ 56];
+                startTotal += PIECE_TABLES_START[4][x ^ 56];
+                endTotal += PIECE_TABLES_END[4][x ^ 56];
             }
 
             temp = pieces[_nKnights+1];
             while (temp)
             {
                 x = popLSB(temp);
-                startTotal -= PIECE_VALUES_START[4] + PIECE_TABLES_START[4][x];
-                endTotal -= PIECE_VALUES_END[4] + PIECE_TABLES_END[4][x];
+                startTotal -= PIECE_TABLES_START[4][x];
+                endTotal -= PIECE_TABLES_END[4][x];
             }
 
             //pawns.
@@ -1862,16 +1886,16 @@ class Board {
                 while (temp)
                 {
                     x = popLSB(temp);
-                    pawnHash[index].second.first += PIECE_VALUES_START[5] + PIECE_TABLES_START[5][x ^ 56];
-                    pawnHash[index].second.second += PIECE_VALUES_END[5] + PIECE_TABLES_END[5][x ^ 56];
+                    pawnHash[index].second.first += PIECE_TABLES_START[5][x ^ 56];
+                    pawnHash[index].second.second += PIECE_TABLES_END[5][x ^ 56];
                 }
 
                 temp = pieces[_nPawns+1];
                 while (temp)
                 {
                     x = popLSB(temp);
-                    pawnHash[index].second.first -= PIECE_VALUES_START[5] + PIECE_TABLES_START[5][x];
-                    pawnHash[index].second.second -= PIECE_VALUES_END[5] + PIECE_TABLES_END[5][x];
+                    pawnHash[index].second.first -= PIECE_TABLES_START[5][x];
+                    pawnHash[index].second.second -= PIECE_TABLES_END[5][x];
                 }
 
                 startTotal += pawnHash[index].second.first;
