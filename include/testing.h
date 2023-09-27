@@ -122,10 +122,8 @@ bool testZobristHashing(Board &b, int depth)
     {
         //check if current position is equal to zHash.
         U64 incrementalHash = b.zHashState ^ b.zHashPieces;
-        U64 pawnHash = b.zHashPawns;
         b.zHashHardUpdate();
-        return ((b.zHashState ^ b.zHashPieces) == incrementalHash) &&
-                (b.zHashPawns == pawnHash);
+        return ((b.zHashState ^ b.zHashPieces) == incrementalHash);
     }
 
     //make moves recursively.
@@ -135,10 +133,8 @@ bool testZobristHashing(Board &b, int depth)
 
     //verify hash at current position.
     U64 incrementalHash = b.zHashState ^ b.zHashPieces;
-    U64 pawnHash = b.zHashPawns;
     b.zHashHardUpdate();
-    if (((b.zHashState ^ b.zHashPieces) != incrementalHash) ||
-        (b.zHashPawns != pawnHash))
+    if ((b.zHashState ^ b.zHashPieces) != incrementalHash)
     {
         //error!
         b.display();

@@ -236,9 +236,6 @@ void prepareForNewGame(Board &b)
     //reset hash table.
     clearTT();
     rootCounter = 0;
-
-    //clear pawn hash table.
-    for (int i=0;i<(int)(b.pawnHashMask + 1);i++) {b.pawnHash[i] = std::pair<U64,std::pair<int,int> >(0,std::pair<int,int>(0,0));}
 }
 
 void uciLoop()

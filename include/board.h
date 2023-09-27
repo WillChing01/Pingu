@@ -84,6 +84,9 @@ class Board {
         int materialStart = 0;
         int materialEnd = 0;
 
+        int pstStart = 0;
+        int pstEnd = 0;
+
         //overall zHash is XOR of these two.
         U64 zHashPieces = 0;
         U64 zHashState = 0;
@@ -93,11 +96,6 @@ class Board {
 
         //history table, history[pieceType][to_square]
         int history[12][64] = {};
-
-        //pawn hash tables.
-        static const U64 pawnHashMask = 1023;
-        std::pair<U64,std::pair<int,int> > pawnHash[pawnHashMask + 1] = {};
-        U64 zHashPawns = 0;
 
         //temp variable for move appending.
         U32 newMove;
@@ -128,21 +126,13 @@ class Board {
 
             zHashHardUpdate();
             phaseHardUpdate();
-            materialHardUpdate();
+            evalHardUpdate();
         };
 
         void zHashHardUpdate()
         {
             zHashPieces = 0;
             zHashState = 0;
-
-            zHashPawns = 0;
-
-            U64 x = pieces[_nPawns];
-            while (x) {zHashPawns ^= randomNums[ZHASH_PIECES[_nPawns] + popLSB(x)];}
-
-            x = pieces[_nPawns+1];
-            while (x) {zHashPawns ^= randomNums[ZHASH_PIECES[_nPawns+1] + popLSB(x)];}
 
             for (int i=0;i<12;i++)
             {
@@ -178,14 +168,31 @@ class Board {
             shiftedPhase = (64 * phase + 3)/6;
         }
 
-        void materialHardUpdate()
+        void evalHardUpdate()
         {
             materialStart = 0;
             materialEnd = 0;
+            pstStart = 0;
+            pstEnd = 0;
             for (int i=0;i<12;i+=2)
             {
                 materialStart += (__builtin_popcountll(pieces[i]) - __builtin_popcountll(pieces[i+1])) * PIECE_VALUES_START[i >> 1];
                 materialEnd += (__builtin_popcountll(pieces[i]) - __builtin_popcountll(pieces[i+1])) * PIECE_VALUES_END[i >> 1];
+                U64 white = pieces[i];
+                U64 black = pieces[i+1];
+                U64 x;
+                while (white)
+                {
+                    x = popLSB(white);
+                    pstStart += PIECE_TABLES_START[i >> 1][x ^ 56];
+                    pstEnd += PIECE_TABLES_END[i >> 1][x ^ 56];
+                }
+                while (black)
+                {
+                    x = popLSB(black);
+                    pstStart -= PIECE_TABLES_START[i >> 1][x];
+                    pstEnd -= PIECE_TABLES_END[i >> 1][x];
+                }
             }
         }
 
@@ -252,7 +259,7 @@ class Board {
 
             zHashHardUpdate();
             phaseHardUpdate();
-            materialHardUpdate();
+            evalHardUpdate();
         }
 
         bool isValidPawnMove(bool inCheck)
@@ -1466,41 +1473,64 @@ class Board {
             }
         }
 
+        void updatePST(int pieceType, int finishPieceType, int fromSquare, int toSquare)
+        {
+            if (pieceType & 1)
+            {
+                pstStart -= PIECE_TABLES_START[finishPieceType >> 1][toSquare] - PIECE_TABLES_START[pieceType >> 1][fromSquare];
+                pstEnd -= PIECE_TABLES_END[finishPieceType >> 1][toSquare] - PIECE_TABLES_END[pieceType >> 1][fromSquare];
+            }
+            else
+            {
+                pstStart += PIECE_TABLES_START[finishPieceType >> 1][toSquare ^ 56] - PIECE_TABLES_START[pieceType >> 1][fromSquare ^ 56];
+                pstEnd += PIECE_TABLES_END[finishPieceType >> 1][toSquare ^ 56] - PIECE_TABLES_END[pieceType >> 1][fromSquare ^ 56];
+            }
+        }
+
+        void updateCapturePST(int capturedPieceType, int capturedSquare, bool reverse)
+        {
+            if (capturedPieceType & 1)
+            {
+                pstStart += PIECE_TABLES_START[capturedPieceType >> 1][capturedSquare] * (1-2*(int)(reverse));
+                pstEnd += PIECE_TABLES_END[capturedPieceType >> 1][capturedSquare] * (1-2*(int)(reverse));
+            }
+            else
+            {
+                pstStart -= PIECE_TABLES_START[capturedPieceType >> 1][capturedSquare ^ 56] * (1-2*(int)(reverse));
+                pstEnd -= PIECE_TABLES_END[capturedPieceType >> 1][capturedSquare ^ 56] * (1-2*(int)(reverse));
+            }
+        }
+
         void movePieces()
         {
             //remove piece from start square;
             pieces[currentMove.pieceType] -= 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
-            if (currentMove.pieceType >> 1 == _nPawns >> 1)
-            {
-                zHashPawns ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
-            }
 
             //add piece to end square, accounting for promotion.
             pieces[currentMove.finishPieceType] += 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
-            if (currentMove.finishPieceType >> 1 == _nPawns >> 1)
-            {
-                zHashPawns ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
-            }
+
+            //update pst.
+            updatePST(currentMove.pieceType, currentMove.finishPieceType, currentMove.startSquare, currentMove.finishSquare);
 
             //remove any captured pieces.
             if (currentMove.capturedPieceType != 15)
             {
-                pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
-                zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
-                if (currentMove.capturedPieceType >> 1 == _nPawns >> 1)
-                {
-                    zHashPawns ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
-                }
+                int capturedSquare = currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1));
+                pieces[currentMove.capturedPieceType] -= 1ull << capturedSquare;
+                zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + capturedSquare];
 
                 //update the game phase.
                 phase -= piecePhases[currentMove.capturedPieceType >> 1];
                 shiftedPhase = (64 * phase + 3) / 6;
 
                 //update material.
-                materialStart -= PIECE_VALUES_START[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
-                materialEnd -= PIECE_VALUES_END[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
+                materialStart -= PIECE_VALUES_START[currentMove.capturedPieceType >> 1] * (1-2*(int)(currentMove.capturedPieceType & 1));
+                materialEnd -= PIECE_VALUES_END[currentMove.capturedPieceType >> 1] * (1-2*(int)(currentMove.capturedPieceType & 1));
+
+                //update pst.
+                updateCapturePST(currentMove.capturedPieceType, capturedSquare, false);
             }
 
             //if castles, then move the rook too.
@@ -1514,6 +1544,9 @@ class Board {
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
+
+                    //update pst.
+                    updatePST(_nRooks+(currentMove.pieceType & 1), _nRooks+(currentMove.pieceType & 1), KING_ROOK_SQUARE[currentMove.pieceType & 1], KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2);
                 }
                 else
                 {
@@ -1523,6 +1556,9 @@ class Board {
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
+
+                    //update pst.
+                    updatePST(_nRooks+(currentMove.pieceType & 1), _nRooks+(currentMove.pieceType & 1), QUEEN_ROOK_SQUARE[currentMove.pieceType & 1], QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
                 }
             }
         }
@@ -1532,28 +1568,20 @@ class Board {
             //remove piece from destination square.
             pieces[currentMove.finishPieceType] -= 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
-            if (currentMove.finishPieceType >> 1 == _nPawns >> 1)
-            {
-                zHashPawns ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
-            }
             
             //add piece to start square.
             pieces[currentMove.pieceType] += 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
-            if (currentMove.pieceType >> 1 == _nPawns >> 1)
-            {
-                zHashPawns ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
-            }
+
+            //update pst.
+            updatePST(currentMove.finishPieceType, currentMove.pieceType, currentMove.finishSquare, currentMove.startSquare);
 
             //add back captured pieces.
             if (currentMove.capturedPieceType != 15)
             {
-                pieces[currentMove.capturedPieceType] += 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)));
-                zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
-                if (currentMove.capturedPieceType >> 1 == _nPawns >> 1)
-                {
-                    zHashPawns ^= randomNums[64 * currentMove.capturedPieceType + (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1)))];
-                }
+                int capturedSquare = currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1));
+                pieces[currentMove.capturedPieceType] += 1ull << capturedSquare;
+                zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + capturedSquare];
 
                 //update the game phase.
                 phase += piecePhases[currentMove.capturedPieceType >> 1];
@@ -1562,6 +1590,9 @@ class Board {
                 //update material.
                 materialStart += PIECE_VALUES_START[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
                 materialEnd += PIECE_VALUES_END[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
+
+                //update pst.
+                updateCapturePST(currentMove.capturedPieceType, capturedSquare, true);
             }
 
             //if castles move the rook back.
@@ -1575,6 +1606,9 @@ class Board {
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
+
+                    //update pst.
+                    updatePST(_nRooks+(currentMove.pieceType & 1), _nRooks+(currentMove.pieceType & 1), KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2, KING_ROOK_SQUARE[currentMove.pieceType & 1]);
                 }
                 else
                 {
@@ -1584,6 +1618,9 @@ class Board {
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
+
+                    //update pst.
+                    updatePST(_nRooks+(currentMove.pieceType & 1), _nRooks+(currentMove.pieceType & 1), QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3, QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]);
                 }
             }
         }
@@ -1795,119 +1832,44 @@ class Board {
 
         int regularEval()
         {
-            int startTotal = materialStart;
-            int endTotal = materialEnd;
+            int startTotal = materialStart + pstStart;
+            int endTotal = materialEnd + pstEnd;
 
             U64 x;
             U64 b = occupied[0] | occupied[1];
 
-            //queens.
-            U64 temp = pieces[_nQueens];
-            while (temp)
+            //mobility.
+            x = pieces[_nRooks];
+            while (x)
             {
-                x = popLSB(temp);
-                startTotal += PIECE_TABLES_START[1][x ^ 56];
-                endTotal += PIECE_TABLES_END[1][x ^ 56];
+                int mob = magicRookMob(b, popLSB(x));
+                startTotal += MOB_ROOK_START * mob;
+                endTotal += MOB_ROOK_END * mob;
             }
 
-            temp = pieces[_nQueens+1];
-            while (temp)
+            x = pieces[_nRooks + 1];
+            while (x)
             {
-                x = popLSB(temp);
-                startTotal -= PIECE_TABLES_START[1][x];
-                endTotal -= PIECE_TABLES_END[1][x];
+                int mob = magicRookMob(b, popLSB(x));
+                startTotal -= MOB_ROOK_START * mob;
+                endTotal -= MOB_ROOK_END * mob;
             }
 
-            //rooks.
-            temp = pieces[_nRooks];
-            while (temp)
+            x = pieces[_nBishops];
+            while (x)
             {
-                x = popLSB(temp); int mob = magicRookMob(b, x);
-                startTotal += PIECE_TABLES_START[2][x ^ 56] + MOB_ROOK_START * mob;
-                endTotal += PIECE_TABLES_END[2][x ^ 56] + MOB_ROOK_END * mob;
+                int mob = magicBishopMob(b, popLSB(x));
+                startTotal += MOB_BISHOP_START * mob;
+                endTotal += MOB_BISHOP_END * mob;
             }
 
-            temp = pieces[_nRooks+1];
-            while (temp)
+            x = pieces[_nBishops + 1];
+            while (x)
             {
-                x = popLSB(temp); int mob = magicRookMob(b, x);
-                startTotal -= PIECE_TABLES_START[2][x] + MOB_ROOK_START * mob;
-                endTotal -= PIECE_TABLES_END[2][x] + MOB_ROOK_END * mob;
+                int mob = magicBishopMob(b, popLSB(x));
+                startTotal -= MOB_BISHOP_START * mob;
+                endTotal -= MOB_BISHOP_END * mob;
             }
-
-            //bishops.
-            temp = pieces[_nBishops];
-            while (temp)
-            {
-                x = popLSB(temp); int mob = magicBishopMob(b, x);
-                startTotal += PIECE_TABLES_START[3][x ^ 56] + MOB_BISHOP_START * mob;
-                endTotal += PIECE_TABLES_END[3][x ^ 56] + MOB_BISHOP_END * mob;
-            }
-
-            temp = pieces[_nBishops+1];
-            while (temp)
-            {
-                x = popLSB(temp); int mob = magicBishopMob(b, x);
-                startTotal -= PIECE_TABLES_START[3][x] + MOB_BISHOP_START * mob;
-                endTotal -= PIECE_TABLES_END[3][x] + MOB_BISHOP_END * mob;
-            }
-
-            //knights.
-            temp = pieces[_nKnights];
-            while (temp)
-            {
-                x = popLSB(temp);
-                startTotal += PIECE_TABLES_START[4][x ^ 56];
-                endTotal += PIECE_TABLES_END[4][x ^ 56];
-            }
-
-            temp = pieces[_nKnights+1];
-            while (temp)
-            {
-                x = popLSB(temp);
-                startTotal -= PIECE_TABLES_START[4][x];
-                endTotal -= PIECE_TABLES_END[4][x];
-            }
-
-            //pawns.
-            U64 index = zHashPawns & pawnHashMask;
-            if (pawnHash[index].first == zHashPawns)
-            {
-                startTotal += pawnHash[index].second.first;
-                endTotal += pawnHash[index].second.second;
-            }
-            else
-            {
-                pawnHash[index].first = zHashPawns;
-                pawnHash[index].second.first = 0;
-                pawnHash[index].second.second = 0;
-
-                temp = pieces[_nPawns];
-                while (temp)
-                {
-                    x = popLSB(temp);
-                    pawnHash[index].second.first += PIECE_TABLES_START[5][x ^ 56];
-                    pawnHash[index].second.second += PIECE_TABLES_END[5][x ^ 56];
-                }
-
-                temp = pieces[_nPawns+1];
-                while (temp)
-                {
-                    x = popLSB(temp);
-                    pawnHash[index].second.first -= PIECE_TABLES_START[5][x];
-                    pawnHash[index].second.second -= PIECE_TABLES_END[5][x];
-                }
-
-                startTotal += pawnHash[index].second.first;
-                endTotal += pawnHash[index].second.second;
-            }
-
-            //kings.
-            int kingPos = __builtin_ctzll(pieces[_nKing]);
-            int kingPos2 = __builtin_ctzll(pieces[_nKing+1]);
-
-            startTotal += PIECE_TABLES_START[0][kingPos ^ 56] - PIECE_TABLES_START[0][kingPos2];
-            endTotal += PIECE_TABLES_END[0][kingPos ^ 56] - PIECE_TABLES_END[0][kingPos2];
 
             return (((startTotal * shiftedPhase) + (endTotal * (256 - shiftedPhase))) / 256) * (1-2*(int)(moveHistory.size() & 1));
         }
