@@ -1514,6 +1514,13 @@ class Board {
             //update pst.
             updatePST(currentMove.pieceType, currentMove.finishPieceType, currentMove.startSquare, currentMove.finishSquare);
 
+            //update material on promotion.
+            if (currentMove.pieceType != currentMove.finishPieceType)
+            {
+                materialStart += (PIECE_VALUES_START[currentMove.finishPieceType >> 1] - PIECE_VALUES_START[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
+                materialEnd += (PIECE_VALUES_END[currentMove.finishPieceType >> 1] - PIECE_VALUES_END[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
+            }
+
             //remove any captured pieces.
             if (currentMove.capturedPieceType != 15)
             {
@@ -1576,6 +1583,13 @@ class Board {
             //update pst.
             updatePST(currentMove.finishPieceType, currentMove.pieceType, currentMove.finishSquare, currentMove.startSquare);
 
+            //update material on promotion.
+            if (currentMove.pieceType != currentMove.finishPieceType)
+            {
+                materialStart -= (PIECE_VALUES_START[currentMove.finishPieceType >> 1] - PIECE_VALUES_START[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
+                materialEnd -= (PIECE_VALUES_END[currentMove.finishPieceType >> 1] - PIECE_VALUES_END[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
+            }
+
             //add back captured pieces.
             if (currentMove.capturedPieceType != 15)
             {
@@ -1588,8 +1602,8 @@ class Board {
                 shiftedPhase = (64 * phase + 3) / 6;
 
                 //update material.
-                materialStart += PIECE_VALUES_START[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
-                materialEnd += PIECE_VALUES_END[currentMove.capturedPieceType >> 1] * (int)(1-2*(currentMove.capturedPieceType & 1));
+                materialStart += PIECE_VALUES_START[currentMove.capturedPieceType >> 1] * (1-2*(int)(currentMove.capturedPieceType & 1));
+                materialEnd += PIECE_VALUES_END[currentMove.capturedPieceType >> 1] * (1-2*(int)(currentMove.capturedPieceType & 1));
 
                 //update pst.
                 updateCapturePST(currentMove.capturedPieceType, capturedSquare, true);
