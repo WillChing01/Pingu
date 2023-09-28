@@ -1687,11 +1687,11 @@ class Board {
 
             if (currentMove.pieceType >> 1 == _nRooks >> 1)
             {
-                if ((currentMove.startSquare & 7) == 7)
+                if (currentMove.startSquare == (U32)KING_ROOK_SQUARE[currentMove.pieceType & 1])
                 {
                     current.canKingCastle[currentMove.pieceType & 1] = false;
                 }
-                else if ((currentMove.startSquare & 7) == 0)
+                else if (currentMove.startSquare == (U32)QUEEN_ROOK_SQUARE[currentMove.pieceType & 1])
                 {
                     current.canQueenCastle[currentMove.pieceType & 1] = false;
                 }
@@ -1704,11 +1704,11 @@ class Board {
 
             if (currentMove.capturedPieceType >> 1 == _nRooks >> 1)
             {
-                if ((currentMove.finishSquare & 7) == 7)
+                if (currentMove.finishSquare == (U32)KING_ROOK_SQUARE[currentMove.capturedPieceType & 1])
                 {
                     current.canKingCastle[currentMove.capturedPieceType & 1] = false;
                 }
-                else if ((currentMove.finishSquare & 7) == 0)
+                else if (currentMove.finishSquare == (U32)QUEEN_ROOK_SQUARE[currentMove.capturedPieceType & 1])
                 {
                     current.canQueenCastle[currentMove.capturedPieceType & 1] = false;
                 }
