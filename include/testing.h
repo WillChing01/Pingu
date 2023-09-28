@@ -115,6 +115,25 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
     }
 }
 
+bool testIncrementalUpdate(Board &b, int depth, auto Board::* param, void (Board::* hardUpdate)())
+{
+    //verify incremental updates of 'param' for given position.
+    auto oldParam = b.*param;
+    (b.*hardUpdate)();
+    if ((depth == 0) || (oldParam != b.*param)) {return (oldParam == b.*param);}
+
+    //make moves recursively.
+    b.generatePseudoMoves(b.moveHistory.size() & 1);
+    std::vector<U32> moveCache = b.moveBuffer;
+    for (const auto &move: moveCache)
+    {
+        b.makeMove(move);
+        if (!testIncrementalUpdate(b, depth-1, param, hardUpdate)) {return false;}
+        b.unmakeMove();
+    }
+    return true;
+}
+
 bool testZobristHashing(Board &b, int depth)
 {
     //verify the zobrist hashing for position.
