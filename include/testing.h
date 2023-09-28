@@ -134,43 +134,28 @@ bool testIncrementalUpdate(Board &b, int depth, auto Board::* param, void (Board
     return true;
 }
 
-bool testZobristHashing(Board &b, int depth)
+bool incrementalTest(Board &b, int depth)
 {
-    //verify the zobrist hashing for position.
-    if (depth == 0)
-    {
-        //check if current position is equal to zHash.
-        U64 incrementalHash = b.zHashState ^ b.zHashPieces;
-        b.zHashHardUpdate();
-        return ((b.zHashState ^ b.zHashPieces) == incrementalHash);
-    }
+    //test all incrementally updated parameters.
 
-    //make moves recursively.
     bool res = true;
-    b.generatePseudoMoves(b.moveHistory.size() & 1);
-    std::vector<U32> moveCache = b.moveBuffer;
 
-    //verify hash at current position.
-    U64 incrementalHash = b.zHashState ^ b.zHashPieces;
-    b.zHashHardUpdate();
-    if ((b.zHashState ^ b.zHashPieces) != incrementalHash)
-    {
-        //error!
-        b.display();
-        for (const auto &history: b.moveHistory)
-        {
-            std::cout << moveToString(history) << " ";
-        }
-        std::cout << "\nIncorrect zobrist hash" << std::endl;
-        return false;
-    }
+    //material.
+    res &= testIncrementalUpdate(b, depth, &Board::materialStart, &Board::evalHardUpdate);
+    res &= testIncrementalUpdate(b, depth, &Board::materialEnd, &Board::evalHardUpdate);
 
-    for (const auto &move: moveCache)
-    {
-        b.makeMove(move);
-        res = res && testZobristHashing(b, depth-1);
-        b.unmakeMove();
-    }
+    //pst.
+    res &= testIncrementalUpdate(b, depth, &Board::pstStart, &Board::evalHardUpdate);
+    res &= testIncrementalUpdate(b, depth, &Board::pstEnd, &Board::evalHardUpdate);
+
+    //phase.
+    res &= testIncrementalUpdate(b, depth, &Board::phase, &Board::phaseHardUpdate);
+    res &= testIncrementalUpdate(b, depth, &Board::shiftedPhase, &Board::phaseHardUpdate);
+
+    //zobrist.
+    res &= testIncrementalUpdate(b, depth, &Board::zHashPieces, &Board::zHashHardUpdate);
+    res &= testIncrementalUpdate(b, depth, &Board::zHashState, &Board::zHashHardUpdate);
+
     return res;
 }
 

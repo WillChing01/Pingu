@@ -14,7 +14,7 @@ def main():
             depth = data.split(" ")[0][1:]
 
             e.stdin("position fen " + fen)
-            e.stdin("test zobrist " + depth)
+            e.stdin("test incremental depth " + depth)
 
             i += 1
 
