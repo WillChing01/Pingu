@@ -1514,9 +1514,12 @@ class Board {
             //update pst.
             updatePST(currentMove.pieceType, currentMove.finishPieceType, currentMove.startSquare, currentMove.finishSquare);
 
-            //update material on promotion.
+            //update material+phase on promotion.
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
+                phase += piecePhases[currentMove.finishPieceType >> 1];
+                shiftedPhase = (64 * phase + 3) / 6;
+
                 materialStart += (PIECE_VALUES_START[currentMove.finishPieceType >> 1] - PIECE_VALUES_START[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
                 materialEnd += (PIECE_VALUES_END[currentMove.finishPieceType >> 1] - PIECE_VALUES_END[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
             }
@@ -1583,9 +1586,12 @@ class Board {
             //update pst.
             updatePST(currentMove.finishPieceType, currentMove.pieceType, currentMove.finishSquare, currentMove.startSquare);
 
-            //update material on promotion.
+            //update material+phase on promotion.
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
+                phase -= piecePhases[currentMove.finishPieceType >> 1];
+                shiftedPhase = (64 * phase + 3) / 6;
+
                 materialStart -= (PIECE_VALUES_START[currentMove.finishPieceType >> 1] - PIECE_VALUES_START[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
                 materialEnd -= (PIECE_VALUES_END[currentMove.finishPieceType >> 1] - PIECE_VALUES_END[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
             }
