@@ -76,7 +76,6 @@ More information on [CCRL Blitz](http://ccrl.chessdom.com/ccrl/404/).
 - Material
 - Piece square tables
 - Mobility (bishop/rook)
-- Pawn hash table
 
 Evaluation features are tuned via Texel's method - logistic regression via gradient descent.
 

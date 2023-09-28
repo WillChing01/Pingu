@@ -44,8 +44,8 @@ jobs:
       - name: Run tests
         run: python testing/move_validation_check.py
 
-  zobrist_check:
-    name: Zobrist check
+  incremental_check:
+    name: Incremental check
     runs-on: windows-latest
     steps:
       - name: Checkout Repository
@@ -60,4 +60,4 @@ jobs:
           cmake --build build --target Pingu --config Release --
 
       - name: Run tests
-        run: python testing/zobrist_check.py
+        run: python testing/incremental_check.py

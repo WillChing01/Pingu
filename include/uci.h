@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <iomanip>
-#include <cassert>
 #include <limits>
 #include <thread>
 
@@ -71,37 +70,31 @@ void positionCommand(Board &b, const std::vector<std::string> &words)
 
 void perftCommand(Board &b, const std::vector<std::string> &words)
 {
-    try
-    {
-        int depth = std::stoi(words[1]);
-        assert(depth >= 0);
-        U64 nodes = perft(b, depth);
-        std::cout << "info nodes " << nodes << std::endl;
-    }
-    catch (...) {}
+    if (words.size() != 3) {return;}
+    if (words[1] != "depth") {return;}
+    if (!isNumber(words[2])) {return;}
+    int depth = std::stoi(words[2]);
+    U64 nodes = perft(b, depth);
+    std::cout << "info nodes " << nodes << std::endl;
 }
 
 void testCommand(Board &b, const std::vector<std::string> &words)
 {
-    try
+    if (words.size() != 4) {return;}
+    if (words[2] != "depth") {return;}
+    if (!isNumber(words[3])) {return;}
+    int depth = std::stoi(words[3]);
+    if (words[1] == "validation")
     {
-        assert(words.size() == 3);
-        int depth = std::stoi(words[2]);
-        assert(depth >= 0);
-        assert(depth < 10);
-        if (words[1] == "validation")
-        {
-            U32 cache[10][128] = {};
-            bool res = testMoveValidation(b, depth, cache);
-            std::cout << "info success " << res << std::endl;
-        }
-        else if (words[1] == "zobrist")
-        {
-            bool res = testZobristHashing(b, depth);
-            std::cout << "info success " << res << std::endl;
-        }
+        U32 cache[10][128] = {};
+        bool res = testMoveValidation(b, depth, cache);
+        std::cout << "info success " << res << std::endl;
     }
-    catch (...) {}
+    else if (words[1] == "incremental")
+    {
+        bool res = incrementalTest(b, depth);
+        std::cout << "info success " << res << std::endl;
+    }
 }
 
 void helpCommand(const std::vector<std::string> &words)
@@ -236,9 +229,6 @@ void prepareForNewGame(Board &b)
     //reset hash table.
     clearTT();
     rootCounter = 0;
-
-    //clear pawn hash table.
-    for (int i=0;i<(int)(b.pawnHashMask + 1);i++) {b.pawnHash[i] = std::pair<U64,std::pair<int,int> >(0,std::pair<int,int>(0,0));}
 }
 
 void uciLoop()

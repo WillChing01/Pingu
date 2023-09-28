@@ -107,24 +107,24 @@ const std::vector<engineCommand> COMMANDS = {
         "perft",
         "count moves to given depth in current position",
         {
-            "perft <depth>",
-            "e.g. perft 5"
+            "perft depth <n>",
+            "e.g. perft depth 5"
         },
         {
-            {"<depth>", "positive integer depth in ply"}
+            {"depth <n>", "positive integer depth in units of ply"}
         }
     ),
     engineCommand(
         "test",
         "test engine features via perft-like search",
         {
-            "test (validation | zobrist) <depth>",
-            "e.g. test validation 5"
+            "test (validation | incremental) depth <n>",
+            "e.g. test validation depth 5"
         },
         {
             {"validation", "test if move legality check works"},
-            {"zobrist", "test if zobrist hashing works"},
-            {"<depth>", "positive integer depth in units of ply"}
+            {"incremental", "test incremental updates of game state"},
+            {"depth <n>", "positive integer depth in units of ply"}
         }
     ),
     engineCommand(

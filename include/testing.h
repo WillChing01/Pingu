@@ -115,47 +115,47 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
     }
 }
 
-bool testZobristHashing(Board &b, int depth)
+bool testIncrementalUpdate(Board &b, int depth, auto Board::* param, void (Board::* hardUpdate)())
 {
-    //verify the zobrist hashing for position.
-    if (depth == 0)
-    {
-        //check if current position is equal to zHash.
-        U64 incrementalHash = b.zHashState ^ b.zHashPieces;
-        U64 pawnHash = b.zHashPawns;
-        b.zHashHardUpdate();
-        return ((b.zHashState ^ b.zHashPieces) == incrementalHash) &&
-                (b.zHashPawns == pawnHash);
-    }
+    //verify incremental updates of 'param' for given position.
+    auto oldParam = b.*param;
+    (b.*hardUpdate)();
+    if ((depth == 0) || (oldParam != b.*param)) {return (oldParam == b.*param);}
 
     //make moves recursively.
-    bool res = true;
     b.generatePseudoMoves(b.moveHistory.size() & 1);
     std::vector<U32> moveCache = b.moveBuffer;
-
-    //verify hash at current position.
-    U64 incrementalHash = b.zHashState ^ b.zHashPieces;
-    U64 pawnHash = b.zHashPawns;
-    b.zHashHardUpdate();
-    if (((b.zHashState ^ b.zHashPieces) != incrementalHash) ||
-        (b.zHashPawns != pawnHash))
-    {
-        //error!
-        b.display();
-        for (const auto &history: b.moveHistory)
-        {
-            std::cout << moveToString(history) << " ";
-        }
-        std::cout << "\nIncorrect zobrist hash" << std::endl;
-        return false;
-    }
-
     for (const auto &move: moveCache)
     {
         b.makeMove(move);
-        res = res && testZobristHashing(b, depth-1);
+        if (!testIncrementalUpdate(b, depth-1, param, hardUpdate)) {return false;}
         b.unmakeMove();
     }
+    return true;
+}
+
+bool incrementalTest(Board &b, int depth)
+{
+    //test all incrementally updated parameters.
+
+    bool res = true;
+
+    //material.
+    res &= testIncrementalUpdate(b, depth, &Board::materialStart, &Board::evalHardUpdate);
+    res &= testIncrementalUpdate(b, depth, &Board::materialEnd, &Board::evalHardUpdate);
+
+    //pst.
+    res &= testIncrementalUpdate(b, depth, &Board::pstStart, &Board::evalHardUpdate);
+    res &= testIncrementalUpdate(b, depth, &Board::pstEnd, &Board::evalHardUpdate);
+
+    //phase.
+    res &= testIncrementalUpdate(b, depth, &Board::phase, &Board::phaseHardUpdate);
+    res &= testIncrementalUpdate(b, depth, &Board::shiftedPhase, &Board::phaseHardUpdate);
+
+    //zobrist.
+    res &= testIncrementalUpdate(b, depth, &Board::zHashPieces, &Board::zHashHardUpdate);
+    res &= testIncrementalUpdate(b, depth, &Board::zHashState, &Board::zHashHardUpdate);
+
     return res;
 }
 

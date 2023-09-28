@@ -1,6 +1,8 @@
 #ifndef FORMAT_H_INCLUDED
 #define FORMAT_H_INCLUDED
 
+#include <cctype>
+
 #include "constants.h"
 #include "bitboard.h"
 #include "board.h"
@@ -8,6 +10,15 @@
 const std::string promotionLetters = "_qrbn";
 const std::string fileSymbols = "abcdefgh";
 const std::string rankSymbols = "12345678";
+
+bool isNumber(const std::string &input)
+{
+    for (const auto &c: input)
+    {
+        if (!isdigit(c)) {return false;}
+    }
+    return true;
+}
 
 inline std::vector<std::string> separateByWhiteSpace(const std::string &input)
 {

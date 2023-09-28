@@ -15,7 +15,7 @@ def main():
             depth = depth[1:]
 
             e.stdin("position fen " + fen)
-            e.stdin("perft " + depth)
+            e.stdin("perft depth " + depth)
 
             i += 1
 
