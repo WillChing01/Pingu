@@ -111,7 +111,7 @@ const std::vector<engineCommand> COMMANDS = {
             "e.g. perft depth 5"
         },
         {
-            {"depth <n>", "positive integer depth in ply"}
+            {"depth <n>", "positive integer depth in units of ply"}
         }
     ),
     engineCommand(
