@@ -1787,64 +1787,60 @@ class Board {
             hashHistory.pop_back();
         }
 
-        U64 getAttacksToSquare(bool side, U32 square)
-        {
-            U64 b = occupied[0] | occupied[1];
-
-            U64 isAttacked = kingAttacks(1ull << square) & pieces[_nKing+(int)(!side)];
-            isAttacked |= magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            isAttacked |= magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            isAttacked |= knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)];
-            isAttacked |= pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];
-
-            return isAttacked;
-        }
-
-        U64 getLeastValuableAttacker(bool side, U64 isAttacked, U32 &attackingPiece)
+        U64 getLeastValuableAttacker(bool side, U64 attackersBB, U32 &attackingPieceType)
         {
             for (int i=_nPawns+(int)(side); i >= (int)_nKing+(int)(side); i-=2)
             {
-                U64 x = isAttacked & pieces[i];
+                U64 x = attackersBB & pieces[i];
                 if (x)
                 {
-                    attackingPiece = i;
+                    attackingPieceType = i >> 1;
                     return x & (-x);
                 }
             }
             return 0; // no attacker found.
         }
 
-        int seeCaptures(U32 startSquare, U32 finishSquare, U32 pieceType, U32 capturedPieceType)
+        int seeCaptures(U32 startSquare, U32 finishSquare, U32 attackingPieceType, U32 capturedPieceType)
         {
             //perform static evaluation exchange (SEE).
-            //use the currentMove struct.
+            bool side = attackingPieceType & 1;
+            attackingPieceType = attackingPieceType >> 1;
             int d=0;
             gain[0] = seeValues[capturedPieceType >> 1];
-            U32 attackingPiece = pieceType;
             U64 attackingPieceBB = 1ull << startSquare;
-            U64 isAttacked[2] = {getAttacksToSquare(1,finishSquare),
-                                 getAttacksToSquare(0,finishSquare)};
             U64 occ = occupied[0] | occupied[1];
 
-            bool side = pieceType & 1;
+            U64 attackersBB = 0;
+            attackersBB ^= kingAttacks(1ull << finishSquare) & (pieces[_nKing] | pieces[_nKing+1]);
+            attackersBB ^= pawnAttacks(1ull << finishSquare, 0) & pieces[_nPawns+1];
+            attackersBB ^= pawnAttacks(1ull << finishSquare, 1) & pieces[_nPawns];
+            attackersBB ^= knightAttacks(1ull << finishSquare) & (pieces[_nKnights] | pieces[_nKnights+1]);
+            attackersBB ^= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]);
+            attackersBB ^= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]);
 
             do
             {
-                d++;
-                gain[d] = -gain[d-1] + seeValues[attackingPiece >> 1];
+                d++; side = !side;
+                gain[d] = -gain[d-1] + seeValues[attackingPieceType];
                 if (std::max(-gain[d-1],gain[d]) < 0) {break;}
+                attackersBB ^= attackingPieceBB;
                 occ ^= attackingPieceBB;
-                isAttacked[side] ^= attackingPieceBB;
-
-                side = !side;
 
                 //update possible x-ray attacks.
-                isAttacked[side] |= magicRookAttacks(occ,finishSquare) & (pieces[_nRooks+(int)(side)] | pieces[_nQueens+(int)(side)]) & occ;
-                isAttacked[side] |= magicBishopAttacks(occ,finishSquare) & (pieces[_nBishops+(int)(side)] | pieces[_nQueens+(int)(side)]) & occ;
+                if (attackingPieceType == _nRooks || attackingPieceType == _nQueens)
+                {
+                    //rook-like xray.
+                    attackersBB |= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
+                }
+                if (attackingPieceType == _nPawns || attackingPieceType == _nBishops || attackingPieceType == _nQueens)
+                {
+                    //bishop-like xray.
+                    attackersBB |= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
+                }
 
-                attackingPieceBB = getLeastValuableAttacker(side, isAttacked[side], attackingPiece);
+                attackingPieceBB = getLeastValuableAttacker(side, attackersBB, attackingPieceType);
             } while (attackingPieceBB);
-
             while (--d) {gain[d-1] = -std::max(-gain[d-1], gain[d]);}
 
             return gain[0];
