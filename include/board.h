@@ -826,20 +826,20 @@ class Board {
             U64 b = occupied[0] | occupied[1];
 
             U64 pinned = 0;
+            U64 attackers;
 
-            //for each potentially pinned piece, loop through and recalculate the attacks.
-            U64 potentialPinned = magicRookAttacks(b,kingPos) & occupied[(int)(side)];
-            while (potentialPinned)
+            //check for rook-like pins.
+            attackers = magicRookAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+            while (attackers)
             {
-                U64 x = 1ull << popLSB(potentialPinned);
-                if ((magicRookAttacks(b & ~x,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) != 0) {pinned |= x;}
+                pinned |= magicRookAttacks(b, popLSB(attackers)) & magicRookAttacks(b, kingPos);
             }
 
-            potentialPinned = magicBishopAttacks(b,kingPos) & occupied[(int)(side)];
-            while (potentialPinned)
+            //check for bishop-like pins.
+            attackers = magicBishopAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+            while (attackers)
             {
-                U64 x = 1ull << popLSB(potentialPinned);
-                if ((magicBishopAttacks(b & ~x,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) != 0) {pinned |= x;}
+                pinned |= magicBishopAttacks(b, popLSB(attackers)) & magicBishopAttacks(b, kingPos);
             }
 
             return pinned;
