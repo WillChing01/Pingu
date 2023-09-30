@@ -1801,15 +1801,21 @@ class Board {
             return 0; // no attacker found.
         }
 
-        int seeCaptures(U32 startSquare, U32 finishSquare, U32 attackingPieceType, U32 capturedPieceType)
+        int seeCaptures(U32 chessMove)
         {
             //perform static evaluation exchange (SEE).
+            U32 startSquare = (chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
+            U32 finishSquare = (chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+            U32 attackingPieceType = (chessMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
+            U32 capturedPieceType = (chessMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+
             bool side = attackingPieceType & 1;
-            attackingPieceType = attackingPieceType >> 1;
-            int d=0;
-            gain[0] = seeValues[capturedPieceType >> 1];
+            int d = 0;
+            gain[0] = (capturedPieceType != 15 ? seeValues[capturedPieceType >> 1] : 0)
+            + (attackingPieceType == ((chessMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET) ? 0 : seeValues[attackingPieceType >> 1] - seeValues[_nPawns >> 1]);
             U64 attackingPieceBB = 1ull << startSquare;
             U64 occ = occupied[0] | occupied[1];
+            if (chessMove & MOVEINFO_ENPASSANT_MASK) {occ ^= 1ull << (finishSquare - 8 + side * 16);}
 
             U64 attackersBB = 0;
             attackersBB ^= kingAttacks(1ull << finishSquare) & (pieces[_nKing] | pieces[_nKing+1]);
@@ -1818,6 +1824,8 @@ class Board {
             attackersBB ^= knightAttacks(1ull << finishSquare) & (pieces[_nKnights] | pieces[_nKnights+1]);
             attackersBB ^= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]);
             attackersBB ^= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]);
+
+            attackingPieceType = attackingPieceType >> 1;
 
             do
             {
@@ -1828,12 +1836,12 @@ class Board {
                 occ ^= attackingPieceBB;
 
                 //update possible x-ray attacks.
-                if (attackingPieceType == _nRooks || attackingPieceType == _nQueens)
+                if (attackingPieceType == (_nRooks >> 1) || attackingPieceType == (_nQueens >> 1))
                 {
                     //rook-like xray.
                     attackersBB |= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
                 }
-                if (attackingPieceType == _nPawns || attackingPieceType == _nBishops || attackingPieceType == _nQueens)
+                if (attackingPieceType == (_nPawns >> 1) || attackingPieceType == (_nBishops >> 1) || attackingPieceType == (_nQueens >> 1))
                 {
                     //bishop-like xray.
                     attackersBB |= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
@@ -1892,79 +1900,11 @@ class Board {
 
         int evaluateBoard()
         {
-            //see if checkmate or stalemate.
             bool turn = moveHistory.size() & 1;
-
             bool inCheck = generateEvalMoves(turn);
 
-            if (moveBuffer.size() > 0)
-            {
-                return regularEval();
-            }
-            else if (inCheck)
-            {
-                //checkmate.
-                return -MATE_SCORE;
-            }
-            else
-            {
-                //stalemate.
-                return 0;
-            }
-        }
-
-        std::vector<std::pair<U32,int> > orderMoves(int ply, U32 bestMove = 0)
-        {
-            //assumes that getOccupied() has been called immediately before.
-            scoredMoves.clear();
-
-            for (int i=0;i<(int)(moveBuffer.size());i++)
-            {
-                if (moveBuffer[i] == bestMove)
-                {
-                    //best move from hash table should be checked first.
-                    scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], INT_MAX));
-                }
-                else
-                {
-                    U32 capturedPieceType = (moveBuffer[i] & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                    if (capturedPieceType != 15)
-                    {
-                        //capture.
-                        U32 startSquare = (moveBuffer[i] & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
-                        U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                        U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        //scale captures for move ordering, captures before quiets
-                        //killers and v.good history will precede losing captures
-                        scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], HISTORY_MAX + 3 + seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType)));
-                    }
-                    else
-                    {
-                        //quiet moves.
-                        if (moveBuffer[i] == killerMoves[ply][0])
-                        {
-                            //first killer.
-                            scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], HISTORY_MAX + 2));
-                        }
-                        else if (moveBuffer[i] == killerMoves[ply][1])
-                        {
-                            //second killer.
-                            scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], HISTORY_MAX + 1));
-                        }
-                        else
-                        {
-                            //non-killer.
-                            U32 finishSquare = (moveBuffer[i] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                            U32 pieceType = (moveBuffer[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                            scoredMoves.push_back(std::pair<U32,int>(moveBuffer[i], history[pieceType][finishSquare]));
-                        }
-                    }
-                }
-            }
-
-            //sort the moves.
-            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-            return scoredMoves;
+            if (moveBuffer.size() > 0) {return regularEval();}
+            return inCheck ? -MATE_SCORE : 0;
         }
 
         std::vector<std::pair<U32,int> > orderCaptures()
@@ -1975,32 +1915,7 @@ class Board {
 
             for (const auto &move: moveBuffer)
             {
-                U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                if (capturedPieceType != 15)
-                {
-                    //capture - SEE.
-                    scoredMoves.push_back(
-                        std::pair<U32,int>(
-                            move,
-                            seeCaptures(
-                                (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET,
-                                (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET,
-                                (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET,
-                                capturedPieceType
-                            )
-                        )
-                    );
-                }
-                else
-                {
-                    //promotion - priority order is queen, rook, bishop, knight
-                    scoredMoves.push_back(
-                        std::pair<U32,int>(
-                            move,
-                            (int)(_nPawns) - (int)((move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET)
-                        )
-                    );
-                }
+                scoredMoves.push_back(std::pair<U32,int>(move,seeCaptures(move)));
             }
 
             //sort the moves.
@@ -2032,17 +1947,15 @@ class Board {
         {
             //assumes that updateOccupied() has been called immediately before.
             scoredMoves.clear();
-            
+
             for (const auto &move: moveBuffer)
             {
+                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                if (capturedPieceType != 15)
+                if (capturedPieceType != 15 || pieceType != finishPieceType)
                 {
-                    //capture.
-                    U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
-                    U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    int score = seeCaptures(startSquare, finishSquare, pieceType, capturedPieceType);
+                    int score = seeCaptures(move);
                     if (score >= threshhold) {scoredMoves.push_back(std::pair<U32,int>(move, score));}
                 }
                 else
