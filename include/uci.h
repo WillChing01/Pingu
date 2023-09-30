@@ -97,6 +97,15 @@ void testCommand(Board &b, const std::vector<std::string> &words)
     }
 }
 
+void seeCommand(Board &b, const std::vector<std::string> &words)
+{
+    if (words.size() != 3) {return;}
+    if (words[1] != "move") {return;}
+    U32 chessMove = stringToMove(b, words[2]);
+    if (!chessMove) {return;}
+    std::cout << "info score " << b.seeCaptures(chessMove) << std::endl;
+}
+
 void helpCommand(const std::vector<std::string> &words)
 {
     //display help.
@@ -253,6 +262,7 @@ void uciLoop()
         else if (commands[0] == "ucinewgame") {prepareForNewGame(b);}
         else if (commands[0] == "position") {positionCommand(b, commands);}
         else if (commands[0] == "go") {goCommand(b, commands);}
+        else if (commands[0] == "see") {seeCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display();}
         else if (commands[0] == "test") {testCommand(b, commands);}
