@@ -1830,7 +1830,6 @@ class Board {
             {
                 d++; side = !side;
                 gain[d] = -gain[d-1] + seeValues[attackingPieceType];
-                if (std::max(-gain[d-1],gain[d]) < 0) {break;}
                 attackersBB ^= attackingPieceBB;
                 occ ^= attackingPieceBB;
 
@@ -1847,6 +1846,12 @@ class Board {
                 }
 
                 attackingPieceBB = getLeastValuableAttacker(side, attackersBB, attackingPieceType);
+                if (((finishSquare >> 3) == 0 || (finishSquare >> 3) == 7) && (attackingPieceType == _nPawns >> 1))
+                {
+                    gain[d] += seeValues[_nQueens >> 1] - seeValues[_nPawns >> 1];
+                    attackingPieceType = _nQueens >> 1;
+                }
+                if (gain[d] < 0) {break;}
             } while (attackingPieceBB);
             while (--d) {gain[d-1] = -std::max(-gain[d-1], gain[d]);}
 
