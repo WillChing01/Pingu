@@ -779,19 +779,6 @@ class Board {
             return __builtin_popcountll(inCheck);
         }
 
-//        U32 isSquareAttacked(bool side, U32 square)
-//        {
-//            U64 b = occupied[0] | occupied[1];
-//
-//            U64 isAttacked = kingAttacks(1ull << square) & pieces[_nKing+(int)(!side)];
-//            isAttacked |= magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-//            isAttacked |= magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-//            isAttacked |= knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)];
-//            isAttacked |= pawnAttacks(1ull << square,(int)(side)) & pieces[_nPawns+(int)(!side)];
-//
-//            return __builtin_popcountll(isAttacked);
-//        }
-
         U64 getCheckPiece(bool side, U32 square)
         {
             //assumes a single piece is giving check.
