@@ -68,7 +68,7 @@ const std::vector<engineCommand> COMMANDS = {
         {
             {"fen <fenstring>", "the position as described by FEN"},
             {"startpos", "the starting position"},
-            {"moves <move1> ... <movei>", "moves to be played from the given position"}
+            {"moves <move1> ... <movei>", "moves to be played from the given position, in long algebraic notation"}
         }
     ),
     engineCommand(
@@ -98,10 +98,15 @@ const std::vector<engineCommand> COMMANDS = {
         {}
     ),
     engineCommand(
-        "quit",
-        "quit the program as soon as possible",
-        {},
-        {}
+        "see",
+        "perform static exchange evaluation in current position",
+        {
+            "see move <x>",
+            "e.g. see move e4d5"
+        },
+        {
+            {"move <x>", "move in long algebraic notation"}
+        }
     ),
     engineCommand(
         "perft",
@@ -130,6 +135,12 @@ const std::vector<engineCommand> COMMANDS = {
     engineCommand(
         "display",
         "display the position of the internal board",
+        {},
+        {}
+    ),
+    engineCommand(
+        "quit",
+        "quit the program as soon as possible",
         {},
         {}
     )

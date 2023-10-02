@@ -61,3 +61,21 @@ jobs:
 
       - name: Run tests
         run: python testing/incremental_check.py
+
+  see_check:
+    name: SEE check
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Create build directory
+        run: mkdir build
+
+      - name: Compile program
+        run: |
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target Pingu --config Release --
+
+      - name: Run tests
+        run: python testing/see_check.py

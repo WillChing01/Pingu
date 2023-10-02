@@ -527,8 +527,12 @@ int alphaBetaRoot(Board &b, int depth)
     //if only one move, return immediately.
     if (b.moveBuffer.size() == 1) {storedBestMove = b.moveBuffer[0]; return 0;}
 
-    //order moves using old history.
-    std::vector<std::pair<U32,int> > moveCache = b.orderMoves(0);
+    //create move cache.
+    std::vector<std::pair<U32,int> > moveCache;
+    for (const auto move: b.moveBuffer)
+    {
+        moveCache.push_back(std::pair<U32,int>(move, 0));
+    }
 
     //reset history at root.
     b.clearHistory();
