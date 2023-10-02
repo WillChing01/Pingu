@@ -784,26 +784,10 @@ class Board {
             //assumes a single piece is giving check.
             U64 b = occupied[0] | occupied[1];
 
-            if (U64 bishop = magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
-            {
-                //diagonal attack.
-                return bishop;
-            }
-            else if (U64 rook = magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
-            {
-                //rook-like attack.
-                return rook;
-            }
-            else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)])
-            {
-                //knight attack.
-                return knight;
-            }
-            else
-            {
-                //pawn.
-                return pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];
-            }
+            if (U64 bishop = magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return bishop;}
+            else if (U64 rook = magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return rook;}
+            else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)]) {return knight;}
+            else {return pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];}
         }
 
         U64 getPinnedPieces(bool side)
