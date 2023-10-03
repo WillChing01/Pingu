@@ -779,44 +779,31 @@ class Board {
             return __builtin_popcountll(inCheck);
         }
 
-//        U32 isSquareAttacked(bool side, U32 square)
-//        {
-//            U64 b = occupied[0] | occupied[1];
-//
-//            U64 isAttacked = kingAttacks(1ull << square) & pieces[_nKing+(int)(!side)];
-//            isAttacked |= magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-//            isAttacked |= magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-//            isAttacked |= knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)];
-//            isAttacked |= pawnAttacks(1ull << square,(int)(side)) & pieces[_nPawns+(int)(!side)];
-//
-//            return __builtin_popcountll(isAttacked);
-//        }
-
         U64 getCheckPiece(bool side, U32 square)
         {
             //assumes a single piece is giving check.
             U64 b = occupied[0] | occupied[1];
 
-            if (U64 bishop = magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
+            if (U64 bishop = magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return bishop;}
+            else if (U64 rook = magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return rook;}
+            else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)]) {return knight;}
+            else {return pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];}
+        }
+
+        U64 getBlockSquares(bool side, U32 square)
+        {
+            //assumes a single piece is giving check.
+            U64 b = occupied[0] | occupied[1];
+
+            if (U64 bishop = magicBishopAttacks(b, square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
             {
-                //diagonal attack.
-                return bishop;
+                return magicBishopAttacks(b, square) & magicBishopAttacks(b, __builtin_ctzll(bishop));
             }
-            else if (U64 rook = magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
+            if (U64 rook = magicRookAttacks(b, square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
             {
-                //rook-like attack.
-                return rook;
+                return magicRookAttacks(b, square) & magicRookAttacks(b, __builtin_ctzll(rook));
             }
-            else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)])
-            {
-                //knight attack.
-                return knight;
-            }
-            else
-            {
-                //pawn.
-                return pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];
-            }
+            return 0;
         }
 
         U64 getPinnedPieces(bool side)
@@ -898,7 +885,7 @@ class Board {
                     if (!side) {x |= ((pawnPosBoard & FILE_7) << 8) & (~p);}
                     else {x |= ((pawnPosBoard & FILE_2) >> 8) & (~p);}
 
-                    while (x) {appendPawnCapture(_nPawns+(int)(side), pos,popLSB(x), false, (pawnPosBoard & pinned)!=0);}
+                    while (x) {appendPawnCapture(_nPawns+(int)(side), pos, popLSB(x), false, (pawnPosBoard & pinned)!=0);}
                 }
 
                 //enPassant.
@@ -979,7 +966,7 @@ class Board {
                     if (!side) {x |= ((pawnPosBoard & FILE_7) << 8) & (~p);}
                     else {x |= ((pawnPosBoard & FILE_2) >> 8) & (~p);}
 
-                    while (x) {appendPawnCapture(_nPawns+(int)(side), pos,popLSB(x), false, true);}
+                    while (x) {appendPawnCapture(_nPawns+(int)(side), pos, popLSB(x), false, true);}
                 }
 
                 //enPassant.
@@ -1111,7 +1098,7 @@ class Board {
                         x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
                     }
 
-                    while (x) {appendQuiet(_nPawns+(int)(side), pos,popLSB(x), (pawnPosBoard & pinned)!=0);}
+                    while (x) {appendQuiet(_nPawns+(int)(side), pos, popLSB(x), (pawnPosBoard & pinned)!=0);}
                 }
 
                 //rook.
@@ -1144,6 +1131,9 @@ class Board {
                 U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & ~p;
                 while (x) {appendQuiet(_nKing+(int)(side), pos, popLSB(x), true);}
 
+                U64 blockBB = getBlockSquares(side, pos);
+                if (!blockBB) {return;}
+
                 U64 temp;
 
                 //pawns.
@@ -1158,16 +1148,16 @@ class Board {
                     //move forward (exclude promotion).
                     if (side==0)
                     {
-                        x |= ((pawnPosBoard & (~FILE_7)) << 8) & (~p);
-                        x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
+                        x |= ((pawnPosBoard & (~FILE_7)) << 8) & blockBB;
+                        x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & blockBB;
                     }
                     else
                     {
-                        x |= ((pawnPosBoard & (~FILE_2)) >> 8 & (~p));
-                        x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+                        x |= ((pawnPosBoard & (~FILE_2)) >> 8) & blockBB;
+                        x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & blockBB;
                     }
 
-                    while (x) {appendQuiet(_nPawns+(int)(side), pos,popLSB(x), true);}
+                    while (x) {appendQuiet(_nPawns+(int)(side), pos, popLSB(x), true);}
                 }
 
                 //bishops.
@@ -1175,7 +1165,7 @@ class Board {
                 while (temp)
                 {
                     pos = popLSB(temp);
-                    x = magicBishopAttacks(p,pos) & ~p;
+                    x = magicBishopAttacks(p,pos) & blockBB;
                     while (x) {appendQuiet(_nBishops+(int)(side), pos, popLSB(x), true);}
                 }
 
@@ -1184,7 +1174,7 @@ class Board {
                 while (temp)
                 {
                     pos = popLSB(temp);
-                    x = knightAttacks(1ull << pos) & ~p;
+                    x = knightAttacks(1ull << pos) & blockBB;
                     while (x) {appendQuiet(_nKnights+(int)(side), pos, popLSB(x), true);}
                 }
 
@@ -1193,7 +1183,7 @@ class Board {
                 while (temp)
                 {
                     pos = popLSB(temp);
-                    x = magicRookAttacks(p,pos) & ~p;
+                    x = magicRookAttacks(p,pos) & blockBB;
                     while (x) {appendQuiet(_nRooks+(int)(side), pos, popLSB(x), true);}
                 }
 
@@ -1202,7 +1192,7 @@ class Board {
                 while (temp)
                 {
                     pos = popLSB(temp);
-                    x = magicQueenAttacks(p,pos) & ~p;
+                    x = magicQueenAttacks(p,pos) & blockBB;
                     while (x) {appendQuiet(_nQueens+(int)(side), pos, popLSB(x), true);}
                 }
             }
