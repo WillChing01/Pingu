@@ -4,6 +4,7 @@
 #include <iostream>
 #include <atomic>
 #include <algorithm>
+#include <cmath>
 
 #include "bitboard.h"
 #include "transposition.h"
@@ -413,9 +414,10 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         if (depth >= 2 && numMoves > 0)
         {
             //late move reductions (non pv nodes).
-            if (depth >= 3 && (alpha == (beta - 1)) && numMoves >= 3 && !inCheck)
+            int LMR = std::floor(0.5 * std::log((double)depth) * std::log((double)(numMoves+1)));
+            if (LMR && (alpha == (beta - 1)) && !inCheck)
             {
-                score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);
+                score = -alphaBeta(b, -beta, -alpha, depth-1-LMR, ply+1, true);
             }
             else {score = alpha + 1;}
 
