@@ -109,15 +109,12 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
         b.generateQuiets(side, numChecks);
     }
 
-    int score;
-    if (b.moveBuffer.size() == 0) {return inCheck ? -MATE_SCORE : bestScore;}
-    //no need to update occupied, just did move-gen.
     std::vector<std::pair<U32,int> > moveCache = b.orderQMoves();
 
     for (const auto &[move,moveScore]: moveCache)
     {
         b.makeMove(move);
-        score = -alphaBetaQuiescence(b, -beta, -alpha);
+        int score = -alphaBetaQuiescence(b, -beta, -alpha);
         b.unmakeMove();
 
         if (score > bestScore)
