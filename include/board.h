@@ -1848,6 +1848,42 @@ class Board {
             return gain[0];
         }
 
+        int countPassedPawns()
+        {
+            //diff in passed pawns from white pov.
+            int total = 0;
+            U64 whitePawnAttacks = pawnAttacks(pieces[_nPawns], 0);
+            U64 blackPawnAttacks = pawnAttacks(pieces[_nPawns+1], 1);
+
+            U64 p; U64 span;
+
+            p = pieces[_nPawns];
+            while (p)
+            {
+                span = northFill(p & -p);
+                if (!((span ^ (p & -p)) & (pieces[_nPawns] | pieces[_nPawns+1])) &&
+                    !(span & blackPawnAttacks))
+                {
+                    ++total;
+                }
+                p &= p - 1;
+            }
+            
+            p = pieces[_nPawns+1];
+            while (p)
+            {
+                span = southFill(p & -p);
+                if (!((span ^ (p & -p)) & (pieces[_nPawns] | pieces[_nPawns+1])) &&
+                    !(span & whitePawnAttacks))
+                {
+                    --total;
+                }
+                p &= p - 1;
+            }
+
+            return total;
+        }
+
         int regularEval()
         {
             int startTotal = materialStart + pstStart;

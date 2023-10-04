@@ -3,6 +3,22 @@
 
 #include "constants.h"
 
+inline U64 northFill(U64 b)
+{
+    b |= (b << 8);
+    b |= (b << 16);
+    b |= (b << 32);
+    return b;
+}
+
+inline U64 southFill(U64 b)
+{
+    b |= (b >> 8);
+    b |= (b >> 16);
+    b |= (b >> 32);
+    return b;
+}
+
 inline U64 nortFillOccluded(U64 g, U64 p)
 {
     U64 old = g;
