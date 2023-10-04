@@ -5,7 +5,7 @@
 
 //units are in centipawns.
 
-const int MATE_SCORE = 1000000;
+const int MATE_SCORE = 32767;
 
 //mobility.
 
