@@ -155,6 +155,7 @@ bool incrementalTest(Board &b, int depth)
     //zobrist.
     res &= testIncrementalUpdate(b, depth, &Board::zHashPieces, &Board::zHashHardUpdate);
     res &= testIncrementalUpdate(b, depth, &Board::zHashState, &Board::zHashHardUpdate);
+    res &= testIncrementalUpdate(b, depth, &Board::zHashPawns, &Board::zHashHardUpdate);
 
     return res;
 }
