@@ -18,10 +18,11 @@
 
 const long double K = 0.00475;
 
-static const int NUM_FEATURES = 392;
+static const int NUM_FEATURES = 393;
 const int PST_INDEX = 0;
 const int MAT_INDEX = 384;
 const int MOB_INDEX = 390;
+const int PAS_INDEX = 392;
 
 std::array<long double,NUM_FEATURES> weights_start = {};
 std::array<long double,NUM_FEATURES> weights_end = {};
@@ -34,6 +35,7 @@ struct dataSample
     //material and mobility feature vectors.
     std::array<long double,6> material;
     std::array<long double,2> mobility;
+    long double passers;
     //game phase in that position.
     long double phase_start;
     long double phase_end;
@@ -55,6 +57,9 @@ void populateFeatures(dataSample &sample)
     //phase.
     sample.phase_start = b.shiftedPhase / 256.;
     sample.phase_end = (256. - b.shiftedPhase) / 256.;
+
+    //passed pawns.
+    sample.passers = b.countPassedPawns();
 
     //features.
     U64 temp; U64 x;
@@ -147,6 +152,8 @@ void readWeights()
         else if (x == "Piece values end") {i = MAT_INDEX; start = false;}
         else if (x == "Mobility start") {i = MOB_INDEX; start = true;}
         else if (x == "Mobility end") {i = MOB_INDEX; start = false;}
+        else if (x == "Passers start") {i = PAS_INDEX; start = true;}
+        else if (x == "Passers end") {i = PAS_INDEX; start = false;}
         else if (x == "Piece tables start") {i = PST_INDEX; start = true;}
         else if (x == "Piece tables end") {i = PST_INDEX; start = false;}
         else
@@ -185,6 +192,16 @@ void saveWeights()
     file << "Mobility end" << std::endl;
     file << std::lround(weights_end[MOB_INDEX]) << "," << std::endl;
     file << std::lround(weights_end[MOB_INDEX + 1]) << "," << std::endl;
+    file << std::endl;
+
+    //passers start.
+    file << "Passers start" << std::endl;
+    file << std::lround(weights_start[PAS_INDEX]) << "," << std::endl;
+    file << std::endl;
+
+    //passers end.
+    file << "Passers end" << std::endl;
+    file << std::lround(weights_end[PAS_INDEX]) << "," << std::endl;
     file << std::endl;
 
     //pst start.
@@ -236,6 +253,10 @@ void updateEval(dataSample &sample)
         evalStart += sample.mobility[i] * weights_start[MOB_INDEX + i];
         evalEnd += sample.mobility[i] * weights_end[MOB_INDEX + i];
     }
+
+    //passers.
+    evalStart += sample.passers * weights_start[PAS_INDEX];
+    evalEnd += sample.passers * weights_end[PAS_INDEX];
 
     //pst.
     for (const int x: sample.pstWhite)
@@ -307,6 +328,10 @@ void optimiseFeatures(int epochs = 100, long double alpha = 0.00001)
                 gradStart[MOB_INDEX + i] += factor * s.phase_start * s.mobility[i];
                 gradEnd[MOB_INDEX + i] += factor * s.phase_end * s.mobility[i];
             }
+
+            //passers.
+            gradStart[PAS_INDEX] += factor * s.phase_start * s.passers;
+            gradEnd[PAS_INDEX] += factor * s.phase_end * s.passers;
 
             //pst.
             for (const auto& x: s.pstWhite)
