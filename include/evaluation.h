@@ -7,6 +7,11 @@
 
 const int MATE_SCORE = 32767;
 
+//pawn evaluation.
+
+const int PASSED_PAWN_START = 0;
+const int PASSED_PAWN_END = 0;
+
 //mobility.
 
 const int MOB_BISHOP_START = 5;

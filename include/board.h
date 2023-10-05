@@ -37,8 +37,8 @@ struct moveInfo
 struct pawnHashStore
 {
     U64 zHash;
-    int mgEval;
-    int egEval;
+    int startEval;
+    int endEval;
 };
 
 static const std::array<int,6> seeValues = 
@@ -1961,6 +1961,23 @@ class Board {
                 int mob = magicBishopMob(b, popLSB(x));
                 startTotal -= MOB_BISHOP_START * mob;
                 endTotal -= MOB_BISHOP_END * mob;
+            }
+
+            //pawn structure.
+            if (zHashPawns == pawnHashTable[zHashPawns & pawnHashMask].zHash)
+            {
+                startTotal += pawnHashTable[zHashPawns & pawnHashMask].startEval;
+                endTotal += pawnHashTable[zHashPawns & pawnHashMask].endEval;
+            }
+            else
+            {
+                int passedPawns = countPassedPawns();
+                startTotal += passedPawns * PASSED_PAWN_START;
+                endTotal += passedPawns * PASSED_PAWN_END;
+
+                pawnHashTable[zHashPawns & pawnHashMask].zHash = zHashPawns;
+                pawnHashTable[zHashPawns & pawnHashMask].startEval = passedPawns * PASSED_PAWN_START;
+                pawnHashTable[zHashPawns & pawnHashMask].endEval = passedPawns * PASSED_PAWN_END;
             }
 
             return (((startTotal * shiftedPhase) + (endTotal * (256 - shiftedPhase))) / 256) * (1-2*(int)(moveHistory.size() & 1));
