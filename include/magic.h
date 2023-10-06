@@ -393,6 +393,11 @@ inline int magicBishopMob(const U64 b, const int square)
     return bishopMagicMobility[square][((b & bishopMasks[square]) * bishopMagics[square]) >> 55ull];
 }
 
+inline int magicQueenMob(const U64 b, const int square)
+{
+    return magicRookMob(b, square) + magicBishopMob(b, square);
+}
+
 inline U64 magicRookAttacks(const U64 b, const int square)
 {
     return rookMagicMoves[square][((b & rookMasks[square]) * rookMagics[square]) >> 52ull];
