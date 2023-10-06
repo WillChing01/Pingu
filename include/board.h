@@ -1857,6 +1857,22 @@ class Board {
             U64 b = occupied[0] | occupied[1];
 
             //mobility.
+            x = pieces[_nQueens];
+            while (x)
+            {
+                int mob = magicQueenMob(b, popLSB(x));
+                startTotal += MOB_QUEEN_START * mob;
+                endTotal += MOB_QUEEN_END * mob;
+            }
+
+            x = pieces[_nQueens + 1];
+            while (x)
+            {
+                int mob = magicQueenMob(b, popLSB(x));
+                startTotal -= MOB_QUEEN_START * mob;
+                endTotal -= MOB_QUEEN_END * mob;
+            }
+
             x = pieces[_nRooks];
             while (x)
             {
