@@ -18,7 +18,7 @@
 
 const long double K = 0.00475;
 
-static const int NUM_FEATURES = 392;
+static const int NUM_FEATURES = 393;
 const int PST_INDEX = 0;
 const int MAT_INDEX = 384;
 const int MOB_INDEX = 390;
@@ -33,7 +33,7 @@ struct dataSample
     std::vector<int> pstBlack;
     //material and mobility feature vectors.
     std::array<long double,6> material;
-    std::array<long double,2> mobility;
+    std::array<long double,3> mobility;
     //game phase in that position.
     long double phase_start;
     long double phase_end;
@@ -88,6 +88,13 @@ void populateFeatures(dataSample &sample)
                 int mob = magicRookMob(b.occupied[0] | b.occupied[1], x);
                 if (i & 1) {sample.mobility[1] -= mob;}
                 else {sample.mobility[1] += mob;}
+            }
+            //queen mobility.
+            if (i >> 1 == b._nQueens >> 1)
+            {
+                int mob = magicQueenMob(b.occupied[0] | b.occupied[1], x);
+                if (i & 1) {sample.mobility[2] -= mob;}
+                else {sample.mobility[2] += mob;}
             }
         }
     }
@@ -177,14 +184,12 @@ void saveWeights()
 
     //mobility start.
     file << "Mobility start" << std::endl;
-    file << std::lround(weights_start[MOB_INDEX]) << "," << std::endl;
-    file << std::lround(weights_start[MOB_INDEX + 1]) << "," << std::endl;
+    for (int i=0;i<3;i++) {file << std::lround(weights_start[MOB_INDEX + i]) << "," << std::endl;}
     file << std::endl;
 
     //mobility end.
     file << "Mobility end" << std::endl;
-    file << std::lround(weights_end[MOB_INDEX]) << "," << std::endl;
-    file << std::lround(weights_end[MOB_INDEX + 1]) << "," << std::endl;
+    for (int i=0;i<3;i++) {file << std::lround(weights_end[MOB_INDEX + i]) << "," << std::endl;}
     file << std::endl;
 
     //pst start.
@@ -231,7 +236,7 @@ void updateEval(dataSample &sample)
     }
     
     //mobility.
-    for (int i=0;i<2;i++)
+    for (int i=0;i<3;i++)
     {
         evalStart += sample.mobility[i] * weights_start[MOB_INDEX + i];
         evalEnd += sample.mobility[i] * weights_end[MOB_INDEX + i];
@@ -302,7 +307,7 @@ void optimiseFeatures(int epochs = 100, long double alpha = 0.00001)
             }
 
             //mobility.
-            for (int i=0;i<2;i++)
+            for (int i=0;i<3;i++)
             {
                 gradStart[MOB_INDEX + i] += factor * s.phase_start * s.mobility[i];
                 gradEnd[MOB_INDEX + i] += factor * s.phase_end * s.mobility[i];
