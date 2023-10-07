@@ -81,6 +81,9 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
     if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
     if (isSearchAborted) {return 0;}
 
+    //draw by insufficient material.
+    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
+
     b.updateOccupied();
     bool side = b.moveHistory.size() & 1;
     bool inCheck = b.isInCheck(side);
@@ -141,6 +144,9 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
 
     //check for draw by repetition.
     if (isDraw(b)) {return 0;}
+
+    //draw by insufficient material.
+    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
 
     //qSearch at horizon.
     if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, alpha, beta);}
@@ -525,6 +531,9 @@ int alphaBetaRoot(Board &b, int depth)
 
     //if only one move, return immediately.
     if (b.moveBuffer.size() == 1) {storedBestMove = b.moveBuffer[0]; return 0;}
+
+    //draw by insufficient material.
+    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {storedBestMove = b.moveBuffer[0]; return 0;}
 
     //create move cache.
     std::vector<std::pair<U32,int> > moveCache;
