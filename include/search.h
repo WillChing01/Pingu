@@ -172,6 +172,8 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         else {if (tableEntry.evaluation <= alpha) {return tableEntry.evaluation;}}
     }
 
+    if (hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
+
     //null move pruning.
     if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
         (b.occupied[side] ^ b.pieces[b._nKing+side] ^ b.pieces[b._nPawns+side]))
