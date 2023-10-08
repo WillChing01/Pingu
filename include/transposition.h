@@ -49,8 +49,7 @@ const hashStore emptyStore =
 };
 
 U64 hashTableMask = 63; //start with a small hash.
-std::vector<hashStore> hashTableAlways(hashTableMask + 1);
-std::vector<hashStore> hashTableDeep(hashTableMask + 1);
+std::vector<std::pair<hashStore, hashStore> > hashTable(hashTableMask + 1);
 
 U64 randomNums[781] = {};
 
@@ -64,8 +63,7 @@ void clearTT()
     rootCounter = 0;
     for (int i=0;i<(int)(hashTableMask + 1);i++)
     {
-        hashTableAlways[i] = emptyStore;
-        hashTableDeep[i] = emptyStore;
+        hashTable[i] = std::pair<hashStore, hashStore>(emptyStore, emptyStore);
     }
 }
 
@@ -78,8 +76,7 @@ void resizeTT(U64 memory)
     while (hashTableMask <= length) {hashTableMask *= 2;}
     hashTableMask /= 2;
     hashTableMask -= 1;
-    hashTableAlways.resize(hashTableMask + 1, emptyStore);
-    hashTableDeep.resize(hashTableMask + 1, emptyStore);
+    hashTable.resize(hashTableMask + 1, std::pair<hashStore, hashStore>(emptyStore, emptyStore));
 }
 
 inline void unpackInfo(U64 info)
@@ -103,29 +100,29 @@ inline void ttSave(U64 zHash, int depth, U32 bestMove, int evaluation, bool isEx
     tableStore.info += ((U64)(isBeta) << BETAFLAGSHIFT);
     tableStore.info += ((U64)(rootCounter) << AGESHIFT) & AGEMASK;
 
-    if (depth >= (int)((hashTableDeep[zHash & hashTableMask].info & DEPTHMASK) >> DEPTHSHIFT) ||
-        rootCounter > (int)((hashTableDeep[zHash & hashTableMask].info & AGEMASK) >> AGESHIFT) + ageLimit)
+    if (depth >= (int)((hashTable[zHash & hashTableMask].first.info & DEPTHMASK) >> DEPTHSHIFT) ||
+        rootCounter > (int)((hashTable[zHash & hashTableMask].first.info & AGEMASK) >> AGESHIFT) + ageLimit)
     {
         //fits in deep table.
-        hashTableDeep[zHash & hashTableMask] = tableStore;
+        hashTable[zHash & hashTableMask].first = tableStore;
     }
     else
     {
         //fits in always table.
-        hashTableAlways[zHash & hashTableMask] = tableStore;
+        hashTable[zHash & hashTableMask].second = tableStore;
     }
 }
 
 inline bool ttProbe(U64 zHash)
 {
-    if (hashTableDeep[zHash & hashTableMask].zHash == zHash)
+    if (hashTable[zHash & hashTableMask].first.zHash == zHash)
     {
-        unpackInfo(hashTableDeep[zHash & hashTableMask].info);
+        unpackInfo(hashTable[zHash & hashTableMask].first.info);
         return true;
     }
-    if (hashTableAlways[zHash & hashTableMask].zHash == zHash)
+    if (hashTable[zHash & hashTableMask].second.zHash == zHash)
     {
-        unpackInfo(hashTableAlways[zHash & hashTableMask].info);
+        unpackInfo(hashTable[zHash & hashTableMask].second.info);
         return true;
     }
 
