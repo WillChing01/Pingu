@@ -461,6 +461,82 @@ class Board {
             return true;
         }
 
+        bool isCheckingMove(U32 chessMove)
+        {
+            //verifies if a legal move gives check.
+            updateOccupied();
+            U32 pieceType = (chessMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            U32 finishSquare = (chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+            bool side = pieceType & 1;
+
+            switch(pieceType >> 1)
+            {
+                case _nQueens >> 1:
+                    if (magicRookAttacks(occupied[0] | occupied[1], finishSquare) & pieces[_nKing+(int)(!side)]) {return true;}
+                    if (magicBishopAttacks(occupied[0] | occupied[1], finishSquare) & pieces[_nKing+(int)(!side)]) {return true;}
+                    break;
+                case _nRooks >> 1:
+                    if (magicRookAttacks(occupied[0] | occupied[1], finishSquare) & pieces[_nKing+(int)(!side)]) {return true;}
+                    break;
+                case _nBishops >> 1:
+                    if (magicBishopAttacks(occupied[0] | occupied[1], finishSquare) & pieces[_nKing+(int)(!side)]) {return true;}
+                    break;
+                case _nKnights >> 1:
+                    if (knightAttacks(1ull << finishSquare) & pieces[_nKing+(int)(!side)]) {return true;}
+                    break;
+                case _nPawns >> 1:
+                    if (pawnAttacks(1ull << finishSquare, side) & pieces[_nKing+(int)(!side)]) {return true;}
+                    break;
+            }
+
+            U32 startSquare = (chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
+            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(!side)]);
+
+            //regular discovered check (rook/bishop rays).
+            if ((magicRookAttacks(occupied[0] | occupied[1], kingPos) & (1ull << startSquare)) &&
+                (magicRookAttacks((occupied[0] | occupied[1]) ^ (1ull << startSquare), kingPos) & (pieces[_nRooks+(int)(side)] | pieces[_nQueens+(int)(side)])))
+            {
+                return true;
+            }
+            if ((magicBishopAttacks(occupied[0] | occupied[1], kingPos) & (1ull << startSquare)) &&
+                (magicBishopAttacks((occupied[0] | occupied[1]) ^ (1ull << startSquare), kingPos) & (pieces[_nBishops+(int)(side)] | pieces[_nQueens+(int)(side)])))
+            {
+                return true;
+            }
+
+            //enpassant discovered check.
+            if (chessMove & MOVEINFO_ENPASSANT_MASK)
+            {
+                U32 enPassantSquare = finishSquare - 8 + 16*side;
+                U64 after = (occupied[0] | occupied[1]) ^ (1ull << startSquare) ^ (1ull << finishSquare) ^ (1ull << enPassantSquare);
+                if ((magicRookAttacks(occupied[0] | occupied[1], kingPos) & (1ull << startSquare)) &&
+                    (magicRookAttacks(after, kingPos) & (pieces[_nRooks+(int)(side)] | pieces[_nQueens+(int)(side)])))
+                {
+                    return true;
+                }
+                if ((magicBishopAttacks(occupied[0] | occupied[1], kingPos) & (1ull << startSquare)) &&
+                    (magicBishopAttacks(after, kingPos) & (pieces[_nBishops+(int)(side)] | pieces[_nQueens+(int)(side)])))
+                {
+                    return true;
+                }
+            }
+
+            //castles discovered check.
+            if (pieceType >> 1 == _nKing >> 1 && abs((int)(finishSquare) - (int)(startSquare)) == 2)
+            {
+                if (finishSquare > startSquare)
+                {
+                    if (magicRookAttacks((occupied[0] | occupied[1]) ^ startSquare, KING_ROOK_SQUARE[side]-2) & pieces[_nKing+(int)(!side)]) {return true;}
+                }
+                else
+                {
+                    if (magicRookAttacks((occupied[0] | occupied[1]) ^ startSquare, QUEEN_ROOK_SQUARE[side]+3) & pieces[_nKing+(int)(!side)]) {return true;}
+                }
+            }
+
+            return false;
+        }
+
         void appendPawnCapture(U32 pieceType, U32 startSquare, U32 finishSquare, bool enPassant, bool shouldCheck)
         {
             //pawn captures, promotion and enPassant.
