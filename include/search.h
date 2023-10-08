@@ -218,7 +218,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             }
 
             //update transposition table.
-            if (bestScore != MATE_SCORE) {ttSave(bHash, depth, hashMove, bestScore, false, true);}
+            if (!isSearchAborted && bestScore != MATE_SCORE) {ttSave(bHash, depth, hashMove, bestScore, false, true);}
             return bestScore;
         }
         if (bestScore > alpha) {alpha = bestScore; isExact = true;}
@@ -269,7 +269,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             {
                 //beta cutoff.
                 //update transposition table.
-                if (score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
+                if (!isSearchAborted && score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -359,7 +359,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
                 }
 
                 //update transposition table.
-                if (score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
+                if (!isSearchAborted && score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -396,7 +396,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             {
                 //beta cutoff.
                 //update transposition table.
-                if (score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
+                if (!isSearchAborted && score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -496,7 +496,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
                 }
 
                 //update transposition table.
-                if (score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
+                if (!isSearchAborted && score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -509,7 +509,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     if (numMoves == 0) {return inCheck ? -MATE_SCORE : 0;}
 
     //update transposition table.
-    if (bestScore != -MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, isExact, false);}
+    if (!isSearchAborted && bestScore != -MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, isExact, false);}
     return bestScore;
 }
 
