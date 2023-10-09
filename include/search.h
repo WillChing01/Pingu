@@ -418,7 +418,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     bool canFutilityPrune = depth <= futilityDepthLimit &&
                             alpha == (beta - 1) &&
                             !inCheck &&
-                            b.regularEval() + futilityMargins[depth-1] < alpha;
+                            b.regularEval() + futilityMargins[depth-1] <= alpha;
 
     for (int i=0;i<(int)(moveCache.size());i++)
     {
