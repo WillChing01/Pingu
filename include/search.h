@@ -15,6 +15,9 @@
 const int nullMoveR = 2;
 const int nullMoveDepthLimit = 3;
 
+static const int futilityDepthLimit = 2;
+const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
+
 U32 storedBestMove = 0;
 int storedBestScore = 0;
 std::vector<U32> pvMoves;
@@ -412,9 +415,23 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     b.generateQuiets(side, numChecks);
     moveCache = b.orderQuiets();
 
+    bool canFutilityPrune = depth <= futilityDepthLimit &&
+                            alpha == (beta - 1) &&
+                            !inCheck &&
+                            b.regularEval() + futilityMargins[depth-1] < alpha;
+
     for (int i=0;i<(int)(moveCache.size());i++)
     {
         move = moveCache[i].first;
+
+        //futility pruning.
+        if (canFutilityPrune && numMoves > 0 &&
+            abs(alpha) != MATE_SCORE && abs(beta) != MATE_SCORE &&
+            !b.isCheckingMove(move))
+        {
+            continue;
+        }
+
         if (hashHit && (move == hashMove)) {continue;}
         if ((move == killers[0]) || (move == killers[1])) {continue;}
         
