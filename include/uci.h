@@ -29,7 +29,7 @@ void searchThread(Board &b, int depth, double moveTime)
 void uciCommand()
 {
     //id engine.
-    std::cout << "id name Pingu 1.0.0" << std::endl;
+    std::cout << "id name Pingu 2.0.0" << std::endl;
     std::cout << "id author William Ching" << std::endl;
 
     //tell GUI which options can be changed.
