@@ -61,6 +61,7 @@ More information on [CCRL Blitz](http://ccrl.chessdom.com/ccrl/404/).
   - Null move pruning
   - Internal iterative reduction
   - Late move reductions
+  - Futility pruning
   - Repetition detection
   - Transposition tables
     1. Always replace
@@ -75,7 +76,7 @@ More information on [CCRL Blitz](http://ccrl.chessdom.com/ccrl/404/).
 - Tapered evaluation
 - Material
 - Piece square tables
-- Mobility (bishop/rook)
+- Mobility
 
 Evaluation features are tuned via Texel's method - logistic regression via gradient descent.
 
