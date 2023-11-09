@@ -21,8 +21,9 @@ Pingu accepts many of the usual UCI commands (go/stop/position etc.) and it has 
 | Version | CCRL Blitz |
 | ------: | ---------: |
 | 1.0.0   | 2250       |
+| 2.0.0   | 2560       |
 
-More information on [CCRL Blitz](http://ccrl.chessdom.com/ccrl/404/).
+More information on [CCRL Blitz](https://www.computerchess.org.uk/ccrl/404/).
 
 # Features
 
