@@ -10,6 +10,7 @@
 const std::string promotionLetters = "_qrbn";
 const std::string fileSymbols = "abcdefgh";
 const std::string rankSymbols = "12345678";
+const std::string pieceTypes = "KkQqRrBbNnPp";
 
 bool isNumber(const std::string &input)
 {
@@ -100,6 +101,59 @@ inline U32 stringToMove(Board &b, const std::string &input)
     }
 
     return 0;
+}
+
+inline std::string positionToFen(Board &b)
+{
+    std::string fen = "";
+
+    //piece placement.
+    for (int i=7;i>=0;i--)
+    {
+        int c = 0;
+        for (int j=0;j<8;j++)
+        {
+            U64 square = 1ull << (8*i + j);
+            bool occ = false;
+            for (int k=0;k<12;k++)
+            {
+                //check if occupied by piece.
+                if (b.pieces[k] & square)
+                {
+                    if (c > 0) {fen += std::to_string(c);}
+                    fen += pieceTypes[k];
+                    c = 0;
+                    occ = true;
+                }
+            }
+            if (!occ) {c++;}
+        }
+        if (c > 0) {fen += std::to_string(c);}
+        if (i > 0) {fen += '/';}
+    }
+
+    //side to move.
+    fen += b.moveHistory.size() & 1 ? " b" : " w";
+
+    //castling rights.
+    if (b.current.canKingCastle[0] || b.current.canKingCastle[1] ||
+        b.current.canQueenCastle[0] || b.current.canQueenCastle[1])
+    {
+        fen += ' ';
+        if (b.current.canKingCastle[0]) {fen += 'K';}
+        if (b.current.canQueenCastle[0]) {fen += 'Q';}
+        if (b.current.canKingCastle[1]) {fen += 'k';}
+        if (b.current.canQueenCastle[1]) {fen += 'q';}
+    }
+
+    //en passant square.
+    fen += ' ';
+    fen += b.current.enPassantSquare != -1 ? toCoord(b.current.enPassantSquare) : "-";
+
+    //move numbers.
+    fen += " 0 1";
+
+    return fen;
 }
 
 #endif // FORMAT_H_INCLUDED

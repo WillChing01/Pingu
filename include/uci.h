@@ -264,7 +264,7 @@ void uciLoop()
         else if (commands[0] == "go") {goCommand(b, commands);}
         else if (commands[0] == "see") {seeCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
-        else if (commands[0] == "display") {b.display();}
+        else if (commands[0] == "display") {b.display(); std::cout << positionToFen(b) << std::endl;}
         else if (commands[0] == "test") {testCommand(b, commands);}
         else if (commands[0] == "help") {helpCommand(commands);}
     }
