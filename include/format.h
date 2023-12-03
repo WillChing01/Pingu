@@ -136,15 +136,16 @@ inline std::string positionToFen(Board &b)
     fen += b.moveHistory.size() & 1 ? " b" : " w";
 
     //castling rights.
+    fen += ' ';
     if (b.current.canKingCastle[0] || b.current.canKingCastle[1] ||
         b.current.canQueenCastle[0] || b.current.canQueenCastle[1])
     {
-        fen += ' ';
         if (b.current.canKingCastle[0]) {fen += 'K';}
         if (b.current.canQueenCastle[0]) {fen += 'Q';}
         if (b.current.canKingCastle[1]) {fen += 'k';}
         if (b.current.canQueenCastle[1]) {fen += 'q';}
     }
+    else {fen += '-';}
 
     //en passant square.
     fen += ' ';
