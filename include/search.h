@@ -29,6 +29,8 @@ auto currentTime = std::chrono::high_resolution_clock::now();
 std::atomic_bool isSearchAborted(false);
 U32 totalNodes = 0;
 
+bool isGameOver = false;
+
 void collectPVChild(Board &b, int depth)
 {
     U64 bHash = b.zHashPieces ^ b.zHashState;
@@ -532,7 +534,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     return bestScore;
 }
 
-int alphaBetaRoot(Board &b, int depth)
+int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
 {
     //track start-time of search.
     startTime = std::chrono::high_resolution_clock::now();
@@ -541,18 +543,21 @@ int alphaBetaRoot(Board &b, int depth)
     rootCounter++;
     totalNodes = 0;
 
+    //reset gameover state.
+    isGameOver = false;
+
     //generate moves.
     bool side = b.moveHistory.size() & 1;
     bool inCheck = b.generatePseudoMoves(side);
 
     //checkmate or stalemate.
-    if (b.moveBuffer.size() == 0) {storedBestMove = 0; return inCheck ? -MATE_SCORE : 0;}
+    if (b.moveBuffer.size() == 0) {storedBestMove = 0; isGameOver = true; return inCheck ? -MATE_SCORE : 0;}
 
     //if only one move, return immediately.
-    if (b.moveBuffer.size() == 1) {storedBestMove = b.moveBuffer[0]; return 0;}
+    if (b.moveBuffer.size() == 1 && !gensfen) {storedBestMove = b.moveBuffer[0]; return 0;}
 
     //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {storedBestMove = b.moveBuffer[0]; return 0;}
+    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {storedBestMove = b.moveBuffer[0]; isGameOver = true; return 0;}
 
     //create move cache.
     std::vector<std::pair<U32,int> > moveCache;
@@ -645,18 +650,21 @@ int alphaBetaRoot(Board &b, int depth)
         double realTimeLeft = std::max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
 
         //display info.
-        std::cout << "info" <<
-            " depth " << itDepth <<
-            " score cp " << storedBestScore <<
-            " time " << (U32)(iterationTime) <<
-            " nodes " << totalNodes - startNodes <<
-            " nps " << (U32)((double)(totalNodes - startNodes) / (iterationTime / 1000.)) <<
-            " pv";
-        collectPVRoot(b, storedBestMove, itDepth);
-        for (const auto pvMove: pvMoves)
+        if (!gensfen)
         {
-            std::cout << " " << moveToString(pvMove);
-        } std::cout << std::endl;
+            std::cout << "info" <<
+                " depth " << itDepth <<
+                " score cp " << storedBestScore <<
+                " time " << (U32)(iterationTime) <<
+                " nodes " << totalNodes - startNodes <<
+                " nps " << (U32)((double)(totalNodes - startNodes) / (iterationTime / 1000.)) <<
+                " pv";
+            collectPVRoot(b, storedBestMove, itDepth);
+            for (const auto pvMove: pvMoves)
+            {
+                std::cout << " " << moveToString(pvMove);
+            } std::cout << std::endl;
+        }
 
         //break if checkmate is reached.
         if (storedBestScore == MATE_SCORE) {break;}
