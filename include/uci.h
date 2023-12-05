@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <chrono>
+#include <format>
 #include <fstream>
 #include <limits>
 #include <random>
@@ -264,6 +266,13 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
         return;
     }
 
+    std::string dateTime = std::format("{:%F_%H-%M-%S_%Z}",
+        std::chrono::zoned_time{
+            std::chrono::current_zone(),
+            std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now())
+        }
+    );
+
     int depth = std::stoi(words[2]);
     int positions = std::stoi(words[4]);
     int randomply = std::stoi(words[6]);
@@ -354,7 +363,9 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
                            "_n" + std::to_string(positions) +
                            "_d" + std::to_string(depth) +
                            "_r" + std::to_string(randomply) +
+                           "_m" + std::to_string(maxply) +
                            "_b" + std::to_string(evalbound) +
+                           "_" + dateTime +
                            ".txt";
 
     std::ofstream file;
@@ -366,6 +377,8 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
     }
 
     file.close();
+
+    std::cout << "Finished generating positions." << std::endl;
 
     return;
 }
