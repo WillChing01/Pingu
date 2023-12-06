@@ -93,8 +93,8 @@ def training_loop(dataloader, model, loss_fn, optimizer, device):
 
     model.train()
     for batch, (x, y) in enumerate(dataloader):
-        output = model(x.to(device))
-        loss = loss_fn(output, y.to(device))
+        output = model(x.to(device, non_blocking = True))
+        loss = loss_fn(output, y.to(device, non_blocking = True))
 
         loss.backward()
         optimizer.step()
@@ -115,8 +115,8 @@ def validation_loop(dataloader, model, loss_fn, device):
 
     with torch.no_grad():
         for x, y in dataloader:
-            output = model(x.to(device))
-            validation_loss += loss_fn(output, y.to(device)).item()
+            output = model(x.to(device, non_blocking = True))
+            validation_loss += loss_fn(output, y.to(device, non_blocking = True)).item()
 
     validation_loss /= num_batches
     print(f"Validation Loss: {validation_loss:>8f}")
@@ -128,7 +128,7 @@ def main():
     EPOCHS = 10000
 
     BATCH_SIZE = 1024
-    NUM_WORKERS = 6
+    NUM_WORKERS = 4
 
     SAVED_MODEL_FILE = "saved_model.pth"
 
@@ -150,8 +150,8 @@ def main():
     training_data = ChessDataset(training_file, INPUT_COUNT)
     validation_data = ChessDataset(validation_file, INPUT_COUNT)
 
-    training_dataloader = DataLoader(training_data, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS)
-    validation_dataloader = DataLoader(validation_data, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS)
+    training_dataloader = DataLoader(training_data, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS, pin_memory = True)
+    validation_dataloader = DataLoader(validation_data, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS, pin_memory = True)
 
     model = NeuralNetwork(INPUT_COUNT, L1_COUNT, L2_COUNT, OUTPUT_COUNT).to(device)
 
