@@ -52,7 +52,7 @@ def main():
     validationName = "validation_data.pickle"
     trainingName = "training_data.pickle"
 
-    validation_ratio = 0.1
+    validation_ratio = 0.05
     num_validation = round(len(data) * validation_ratio)
 
     print("Creating", num_validation, "validation samples...")
