@@ -36,6 +36,7 @@ set(HEADER_FILES
     ${INCLUDE_DIR}/transposition.h
     ${INCLUDE_DIR}/tuning.h
     ${INCLUDE_DIR}/uci.h
+    ${INCLUDE_DIR}/weights.h
 )
 
 # create the project
