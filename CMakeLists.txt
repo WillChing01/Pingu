@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_COMPILER "gcc")
 set(CMAKE_CXX_COMPILER "g++")
 
-set(GCC_COMPILE_DEBUG_OPTIONS "-Wall;-std=gnu++20;-fexceptions;-pg")
-set(GCC_COMPILE_RELEASE_OPTIONS "-Wall;-std=gnu++20;-fexceptions;-funroll-loops;-O3")
+set(GCC_COMPILE_DEBUG_OPTIONS "-Wall;-std=gnu++20;-fexceptions;-pg;-mavx;-mavx2")
+set(GCC_COMPILE_RELEASE_OPTIONS "-Wall;-std=gnu++20;-fexceptions;-funroll-loops;-O3;-mavx;-mavx2")
 
 set(GCC_LINK_DEBUG_OPTIONS "-static-libstdc++;-static-libgcc;-static;-lgmon;-no-pie;-pg")
 set(GCC_LINK_RELEASE_OPTIONS "-static-libstdc++;-static-libgcc;-static;-s")
@@ -29,6 +29,7 @@ set(HEADER_FILES
     ${INCLUDE_DIR}/king.h
     ${INCLUDE_DIR}/knight.h
     ${INCLUDE_DIR}/magic.h
+    ${INCLUDE_DIR}/nnue.h
     ${INCLUDE_DIR}/pawn.h
     ${INCLUDE_DIR}/search.h
     ${INCLUDE_DIR}/slider.h
