@@ -29,10 +29,18 @@ auto currentTime = std::chrono::high_resolution_clock::now();
 std::atomic_bool isSearchAborted(false);
 U32 totalNodes = 0;
 
+inline int formatScore(int score)
+{
+    return
+        score > MATE_BOUND ? (MATE_SCORE - score + 1) / 2 :
+        score < -MATE_BOUND ? (-MATE_SCORE - score) / 2 :
+        score;
+}
+
 void collectPVChild(Board &b, int depth)
 {
     U64 bHash = b.zHashPieces ^ b.zHashState;
-    if (ttProbe(bHash) == true && depth > 0)
+    if (ttProbe(bHash, 0) == true && depth > 0)
     {
         pvMoves.push_back(tableEntry.bestMove);
         b.makeMove(tableEntry.bestMove);
@@ -77,7 +85,7 @@ inline bool checkTime()
     else {return true;}
 }
 
-int alphaBetaQuiescence(Board &b, int alpha, int beta)
+int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
 {
     //check time.
     totalNodes++;
@@ -91,7 +99,7 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
     bool side = b.moveHistory.size() & 1;
     bool inCheck = b.isInCheck(side);
 
-    int bestScore = -MATE_SCORE;
+    int bestScore = -MATE_SCORE + ply;
 
     if (!inCheck)
     {
@@ -121,7 +129,7 @@ int alphaBetaQuiescence(Board &b, int alpha, int beta)
     for (const auto &[move,moveScore]: moveCache)
     {
         b.makeMove(move);
-        int score = -alphaBetaQuiescence(b, -beta, -alpha);
+        int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
         b.unmakeMove();
 
         if (score > bestScore)
@@ -152,7 +160,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
 
     //qSearch at horizon.
-    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, alpha, beta);}
+    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
 
     //main search.
     bool side = b.moveHistory.size() & 1;
@@ -161,7 +169,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
 
     //probe hash table.
     U64 bHash = b.zHashPieces ^ b.zHashState;
-    bool hashHit = ttProbe(bHash);
+    bool hashHit = ttProbe(bHash, ply);
     U32 hashMove = hashHit ? tableEntry.bestMove : 0;
 
     //check for early TT cutoff.
@@ -223,7 +231,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             }
 
             //update transposition table.
-            if (!isSearchAborted && bestScore != MATE_SCORE) {ttSave(bHash, depth, hashMove, bestScore, false, true);}
+            if (!isSearchAborted) {ttSave(bHash, ply, depth, hashMove, bestScore, false, true);}
             return bestScore;
         }
         if (bestScore > alpha) {alpha = bestScore; isExact = true;}
@@ -274,7 +282,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             {
                 //beta cutoff.
                 //update transposition table.
-                if (!isSearchAborted && score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -364,7 +372,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
                 }
 
                 //update transposition table.
-                if (!isSearchAborted && score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -401,7 +409,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             {
                 //beta cutoff.
                 //update transposition table.
-                if (!isSearchAborted && score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -515,7 +523,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
                 }
 
                 //update transposition table.
-                if (!isSearchAborted && score != MATE_SCORE) {ttSave(bHash, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -525,10 +533,10 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     }
 
     //stalemate or checkmate.
-    if (numMoves == 0) {return inCheck ? -MATE_SCORE : 0;}
+    if (numMoves == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
 
     //update transposition table.
-    if (!isSearchAborted && bestScore != -MATE_SCORE) {ttSave(bHash, depth, bestMove, bestScore, isExact, false);}
+    if (!isSearchAborted) {ttSave(bHash, ply, depth, bestMove, bestScore, isExact, false);}
     return bestScore;
 }
 
@@ -569,7 +577,7 @@ int alphaBetaRoot(Board &b, int depth)
     int pvIndex = 0;
 
     //iterative deepening.
-    for (int itDepth = 1; itDepth <= depth; itDepth++)
+    for (int itDepth = 1; itDepth <= std::min(depth, MAXDEPTH); itDepth++)
     {
         auto iterationStartTime = std::chrono::high_resolution_clock::now();
 
@@ -647,7 +655,7 @@ int alphaBetaRoot(Board &b, int depth)
         //display info.
         std::cout << "info" <<
             " depth " << itDepth <<
-            " score cp " << storedBestScore <<
+            " score " << (abs(storedBestScore) > MATE_BOUND ? "mate " : "cp ") << formatScore(storedBestScore) <<
             " time " << (U32)(iterationTime) <<
             " nodes " << totalNodes - startNodes <<
             " nps " << (U32)((double)(totalNodes - startNodes) / (iterationTime / 1000.)) <<
@@ -659,7 +667,7 @@ int alphaBetaRoot(Board &b, int depth)
         } std::cout << std::endl;
 
         //break if checkmate is reached.
-        if (storedBestScore == MATE_SCORE) {break;}
+        if (storedBestScore > MATE_BOUND) {break;}
 
         //early exit if insufficient time for next iteration.
         //assume a branching factor of 2.
