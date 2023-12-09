@@ -235,10 +235,6 @@ class Board {
 
             updateOccupied();
 
-            //side to move.
-            moveHistory.clear();
-            if (temp[1] == "b") {moveHistory.push_back(0);}
-
             current = {
                 .canKingCastle = {false,false},
                 .canQueenCastle = {false,false},
@@ -260,6 +256,15 @@ class Board {
             zHashHardUpdate();
             phaseHardUpdate();
             evalHardUpdate();
+
+            //side to move.
+            moveHistory.push_back(0);
+            hashHistory.push_back(zHashPieces ^ zHashState);
+            if (temp[1] == "w")
+            {
+                moveHistory.push_back(0);
+                hashHistory.push_back(zHashPieces ^ zHashState);
+            }
         }
 
         bool isValidPawnMove(bool inCheck)
