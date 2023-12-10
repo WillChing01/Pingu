@@ -235,6 +235,10 @@ class Board {
 
             updateOccupied();
 
+            //side to move.
+            moveHistory.push_back(0);
+            if (temp[1] == "w") {moveHistory.push_back(0);}
+
             current = {
                 .canKingCastle = {false,false},
                 .canQueenCastle = {false,false},
@@ -257,12 +261,12 @@ class Board {
             phaseHardUpdate();
             evalHardUpdate();
 
-            //side to move.
-            moveHistory.push_back(0);
+            //hash and state history.
+            stateHistory.push_back(current);
             hashHistory.push_back(zHashPieces ^ zHashState);
             if (temp[1] == "w")
             {
-                moveHistory.push_back(0);
+                stateHistory.push_back(current);
                 hashHistory.push_back(zHashPieces ^ zHashState);
             }
         }
