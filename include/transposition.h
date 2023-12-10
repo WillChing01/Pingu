@@ -6,6 +6,12 @@
 
 #include "constants.h"
 
+//search parameters.
+const int MATE_SCORE = 32767;
+const int MAXDEPTH = 63;
+
+const int MATE_BOUND = MATE_SCORE - 100;
+
 //define hash info compression.
 const U64 BESTMOVEMASK = 4294967295ull;
 const U64 EXACTFLAGMASK = 4294967296ull;
@@ -79,7 +85,23 @@ void resizeTT(U64 memory)
     hashTable.resize(hashTableMask + 1, std::pair<hashStore, hashStore>(emptyStore, emptyStore));
 }
 
-inline void unpackInfo(U64 info)
+inline int ttProbeScore(int score, int ply)
+{
+    return 
+        score > MATE_BOUND ? score - ply :
+        score < -MATE_BOUND ? score + ply :
+        score;
+}
+
+inline int ttSaveScore(int score, int ply)
+{
+    return
+        score > MATE_BOUND ? score + ply :
+        score < -MATE_BOUND ? score - ply :
+        score;
+}
+
+inline void unpackInfo(U64 info, int ply)
 {
     tableEntry.bestMove = (info & BESTMOVEMASK);
     tableEntry.isExact = (info & EXACTFLAGMASK);
@@ -87,10 +109,12 @@ inline void unpackInfo(U64 info)
     tableEntry.depth = (info & DEPTHMASK) >> DEPTHSHIFT;
     tableEntry.evaluation = (info & EVALMASK) >> EVALSHIFT;
     if (!(info & EVALSIGNMASK)) {tableEntry.evaluation *= -1;}
+    tableEntry.evaluation = ttProbeScore(tableEntry.evaluation, ply);
 }
 
-inline void ttSave(U64 zHash, int depth, U32 bestMove, int evaluation, bool isExact, bool isBeta)
+inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, bool isExact, bool isBeta)
 {
+    evaluation = ttSaveScore(evaluation, ply);
     tableStore.zHash = zHash;
     tableStore.info = bestMove;
     tableStore.info += ((U64)(depth) << DEPTHSHIFT) & DEPTHMASK;
@@ -113,16 +137,16 @@ inline void ttSave(U64 zHash, int depth, U32 bestMove, int evaluation, bool isEx
     }
 }
 
-inline bool ttProbe(U64 zHash)
+inline bool ttProbe(U64 zHash, int ply)
 {
     if (hashTable[zHash & hashTableMask].first.zHash == zHash)
     {
-        unpackInfo(hashTable[zHash & hashTableMask].first.info);
+        unpackInfo(hashTable[zHash & hashTableMask].first.info, ply);
         return true;
     }
     if (hashTable[zHash & hashTableMask].second.zHash == zHash)
     {
-        unpackInfo(hashTable[zHash & hashTableMask].second.info);
+        unpackInfo(hashTable[zHash & hashTableMask].second.info, ply);
         return true;
     }
 
