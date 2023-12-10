@@ -5,8 +5,6 @@
 
 //units are in centipawns.
 
-const int MATE_SCORE = 1000000;
-
 //mobility.
 
 const int MOB_BISHOP_START = 5;
