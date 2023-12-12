@@ -24,10 +24,10 @@ const U32 L1_COUNT = 256;
 const U32 L2_COUNT = 32;
 const U32 OUTPUT_COUNT = 1;
 
-const U32 L1_SCALING = 64;
-const U32 L2_SCALING = 64;
-const U32 OUTPUT_SCALING = 64;
-const U32 SCALING_FACTOR = L1_SCALING * L2_SCALING * OUTPUT_SCALING;
+const int L1_SCALING = 64;
+const int L2_SCALING = 64;
+const int OUTPUT_SCALING = 32;
+const int SCALING_FACTOR = L1_SCALING * L2_SCALING * OUTPUT_SCALING;
 
 const __m256i _MASK = _mm256_set1_epi64x(-1);
 const __m256i _ZERO = _mm256_setzero_si256();
@@ -93,7 +93,7 @@ class NNUE
                 {
                     l1_weights[i][j] = std::lround(L2_SCALING * weights_32_256[i][j]);
                 }
-                l1_bias[i] = std::lround(L2_SCALING * bias_32[i]);
+                l1_bias[i] = std::lround(L2_SCALING * L1_SCALING * bias_32[i]);
             }
 
             //L2 -> Output
@@ -103,7 +103,7 @@ class NNUE
                 {
                     l2_weights[i][j] = std::lround(OUTPUT_SCALING * weights_1_32[i][j]);
                 }
-                l2_bias[i] = std::lround(OUTPUT_SCALING * bias_1[i]);
+                l2_bias[i] = std::lround(SCALING_FACTOR * bias_1[i]);
             }
         }
 
@@ -158,19 +158,18 @@ class NNUE
         void zeroInput(int idx)
         {
             //update first hidden layer, assuming input bit set to zero.
-
             __m256i x, y;
             for (int i=0;i<(int)L1_COUNT;i+=8)
             {
                 x = _mm256_set_epi32(
-                    input_weights[i][idx],
-                    input_weights[i+1][idx],
-                    input_weights[i+2][idx],
-                    input_weights[i+3][idx],
-                    input_weights[i+4][idx],
-                    input_weights[i+5][idx],
+                    input_weights[i+7][idx],
                     input_weights[i+6][idx],
-                    input_weights[i+7][idx]
+                    input_weights[i+5][idx],
+                    input_weights[i+4][idx],
+                    input_weights[i+3][idx],
+                    input_weights[i+2][idx],
+                    input_weights[i+1][idx],
+                    input_weights[i+0][idx]
                 );
                 y = _mm256_sub_epi32(_mm256_maskload_epi32(&l1_layer[i], _MASK), x);
                 _mm256_maskstore_epi32(&l1_layer[i], _MASK, y);
@@ -180,68 +179,22 @@ class NNUE
         void oneInput(int idx)
         {
             //update first hidden layer, assuming input bit set to one.
-
             __m256i x, y;
             for (int i=0;i<(int)L1_COUNT;i+=8)
             {
                 x = _mm256_set_epi32(
-                    input_weights[i][idx],
-                    input_weights[i+1][idx],
-                    input_weights[i+2][idx],
-                    input_weights[i+3][idx],
-                    input_weights[i+4][idx],
-                    input_weights[i+5][idx],
+                    input_weights[i+7][idx],
                     input_weights[i+6][idx],
-                    input_weights[i+7][idx]
+                    input_weights[i+5][idx],
+                    input_weights[i+4][idx],
+                    input_weights[i+3][idx],
+                    input_weights[i+2][idx],
+                    input_weights[i+1][idx],
+                    input_weights[i+0][idx]
                 );
                 y = _mm256_add_epi32(_mm256_maskload_epi32(&l1_layer[i], _MASK), x);
                 _mm256_maskstore_epi32(&l1_layer[i], _MASK, y);
             }
-        }
-
-        void flipInput(int idx)
-        {
-            //flips the input bit at specified index.
-            //updates first hidden layer with AVX2.
-
-            __m256i x, y;
-            __m256i factor = _mm256_set1_epi32(1 - 2 * input_layer[idx]);
-            for (int i=0;i<(int)L1_COUNT;i+=8)
-            {
-                x = _mm256_set_epi32(
-                    input_weights[i][idx],
-                    input_weights[i+1][idx],
-                    input_weights[i+2][idx],
-                    input_weights[i+3][idx],
-                    input_weights[i+4][idx],
-                    input_weights[i+5][idx],
-                    input_weights[i+6][idx],
-                    input_weights[i+7][idx]
-                );
-                x = _mm256_mullo_epi32(x, factor);
-                y = _mm256_maskload_epi32(&l1_layer[i], _MASK);
-                y = _mm256_add_epi32(y, x);
-                _mm256_maskstore_epi32(&l1_layer[i], _MASK, y);
-            }
-
-            //flip input layer at the end.
-            input_layer[idx] = 1 - input_layer[idx];
-        }
-
-        void flipInput_naive(int idx)
-        {
-            //flips the input bit at specified index.
-            //then updates the first hidden layer.
-
-            //bias doesn't change.
-            int factor = 1 - 2 * input_layer[idx];
-            for (int i=0;i<(int)L1_COUNT;i++)
-            {
-                l1_layer[i] += input_weights[i][idx] * factor;
-            }
-
-            //flip input layer at the end.
-            input_layer[idx] = 1 - input_layer[idx];
         }
 
         int forward()
