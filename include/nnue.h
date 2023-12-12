@@ -7,22 +7,14 @@
 #include <immintrin.h>
 #include <string>
 
-#include "constants.h"
 #include "weights.h"
 
 //activation is implicitly ReLU, except for L2 -> Out which is linear.
 
-const std::string INPUT_WEIGHTS_FILE = "_nnue_weight_(256,768).txt";
-const std::string INPUT_BIAS_FILE = "_nnue_bias_(256,).txt";
-const std::string L1_WEIGHTS_FILE = "_nnue_weight_(32,256).txt";
-const std::string L1_BIAS_FILE = "_nnue_bias_(32,).txt";
-const std::string L2_WEIGHTS_FILE = "_nnue_weight_(1,32).txt";
-const std::string L2_BIAS_FILE = "_nnue_bias_(1,).txt";
-
-const U32 INPUT_COUNT = 768;
-const U32 L1_COUNT = 256;
-const U32 L2_COUNT = 32;
-const U32 OUTPUT_COUNT = 1;
+const int INPUT_COUNT = 768;
+const int L1_COUNT = 256;
+const int L2_COUNT = 32;
+const int OUTPUT_COUNT = 1;
 
 const int L1_SCALING = 64;
 const int L2_SCALING = 64;
@@ -77,9 +69,9 @@ class NNUE
             //read weights and biases.
 
             //Input -> L1
-            for (int i=0;i<(int)L1_COUNT;i++)
+            for (int i=0;i<L1_COUNT;i++)
             {
-                for (int j=0;j<(int)INPUT_COUNT;j++)
+                for (int j=0;j<INPUT_COUNT;j++)
                 {
                     input_weights[i][j] = std::lround(L1_SCALING * weights_256_768[i][j]);
                 }
@@ -87,9 +79,9 @@ class NNUE
             }
 
             //L1 -> L2
-            for (int i=0;i<(int)L2_COUNT;i++)
+            for (int i=0;i<L2_COUNT;i++)
             {
-                for (int j=0;j<(int)L1_COUNT;j++)
+                for (int j=0;j<L1_COUNT;j++)
                 {
                     l1_weights[i][j] = std::lround(L2_SCALING * weights_32_256[i][j]);
                 }
@@ -97,9 +89,9 @@ class NNUE
             }
 
             //L2 -> Output
-            for (int i=0;i<(int)OUTPUT_COUNT;i++)
+            for (int i=0;i<OUTPUT_COUNT;i++)
             {
-                for (int j=0;j<(int)L2_COUNT;j++)
+                for (int j=0;j<L2_COUNT;j++)
                 {
                     l2_weights[i][j] = std::lround(OUTPUT_SCALING * weights_1_32[i][j]);
                 }
@@ -112,7 +104,7 @@ class NNUE
             //fully refresh input layer with fen string.
             input_layer.fill(0);
 
-            U32 square = 56;
+            int square = 56;
             std::string pieceTypes = "KkQqRrBbNnPp";
 
             for (int i=0;i<(int)fen.length();i++)
@@ -122,17 +114,14 @@ class NNUE
                 else if ((int)(fen[i] - '0') < 9) {square += (int)(fen[i] - '0');}
                 else {input_layer[64*pieceTypes.find(fen[i]) + square++] = 1;}
             }
-        }
 
-        void refreshL1()
-        {
             //fully refresh L1 layer with AVX2.
             __m256i x,y,z;
 
-            for (int i=0;i<(int)L1_COUNT;i++)
+            for (int i=0;i<L1_COUNT;i++)
             {
                 z = _mm256_setzero_si256();
-                for (int j=0;j<(int)INPUT_COUNT;j+=8)
+                for (int j=0;j<INPUT_COUNT;j+=8)
                 {
                     x = _mm256_maskload_epi32(&input_weights[i][j], _MASK);
                     y = _mm256_maskload_epi32(&input_layer[j], _MASK);
@@ -142,24 +131,11 @@ class NNUE
             }
         }
 
-        void refreshL1_naive()
-        {
-            //fully refresh L1 layer.
-            for (int i=0;i<(int)L1_COUNT;i++)
-            {
-                l1_layer[i] = input_bias[i];
-                for (int j=0;j<(int)INPUT_COUNT;j++)
-                {
-                    l1_layer[i] += input_weights[i][j] * input_layer[j];
-                }
-            }
-        }
-
         void zeroInput(int idx)
         {
             //update first hidden layer, assuming input bit set to zero.
             __m256i x, y;
-            for (int i=0;i<(int)L1_COUNT;i+=8)
+            for (int i=0;i<L1_COUNT;i+=8)
             {
                 x = _mm256_set_epi32(
                     input_weights[i+7][idx],
@@ -180,7 +156,7 @@ class NNUE
         {
             //update first hidden layer, assuming input bit set to one.
             __m256i x, y;
-            for (int i=0;i<(int)L1_COUNT;i+=8)
+            for (int i=0;i<L1_COUNT;i+=8)
             {
                 x = _mm256_set_epi32(
                     input_weights[i+7][idx],
@@ -204,10 +180,10 @@ class NNUE
             __m256i x, y, z;
 
             //ReLU(L1) -> L2
-            for (int i=0;i<(int)L2_COUNT;i++)
+            for (int i=0;i<L2_COUNT;i++)
             {
                 z = _mm256_setzero_si256();
-                for (int j=0;j<(int)L1_COUNT;j+=8)
+                for (int j=0;j<L1_COUNT;j+=8)
                 {
                     x = _mm256_maskload_epi32(&l1_weights[i][j], _MASK);
                     y = _mm256_max_epi32(_ZERO, _mm256_maskload_epi32(&l1_layer[j], _MASK));
@@ -218,42 +194,14 @@ class NNUE
 
             //ReLU(L2) -> Output
             z = _mm256_setzero_si256();
-            for (int i=0;i<(int)L2_COUNT;i+=8)
+            for (int i=0;i<L2_COUNT;i+=8)
             {
                 x = _mm256_maskload_epi32(&l2_weights[0][i], _MASK);
                 y = _mm256_max_epi32(_ZERO, _mm256_maskload_epi32(&l2_layer[i], _MASK));
                 z = _mm256_add_epi32(z, _mm256_mullo_epi32(x, y));
             }
-            output_layer[0] = hsum_8x32(z) + l2_bias[0];
+            output_layer[0] = (hsum_8x32(z) + l2_bias[0]) / SCALING_FACTOR;
 
-            //divide result by scaling factor.
-            output_layer[0] /= SCALING_FACTOR;
-            return output_layer[0];
-        }
-
-        int forward_naive()
-        {
-            //propagate from first hidden layer to output.
-
-            //ReLU(L1) -> L2
-            for (int i=0;i<(int)L2_COUNT;i++)
-            {
-                l2_layer[i] = l1_bias[i];
-                for (int j=0;j<(int)L1_COUNT;j++)
-                {
-                    l2_layer[i] += l1_weights[i][j] * std::max(0, l1_layer[j]);
-                }
-            }
-
-            //ReLU(L2) -> Output
-            output_layer[0] = l2_bias[0];
-            for (int i=0;i<(int)L2_COUNT;i++)
-            {
-                output_layer[0] += l2_weights[0][i] * std::max(0, l2_layer[i]);
-            }
-
-            //divide result by scaling factor.
-            output_layer[0] /= SCALING_FACTOR;
             return output_layer[0];
         }
 };

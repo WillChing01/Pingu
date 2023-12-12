@@ -206,7 +206,6 @@ class Board {
             zHashHardUpdate();
             phaseHardUpdate();
             nnue.refreshInput(fen);
-            nnue.refreshL1();
 
             //hash and state history.
             stateHistory.push_back(current);
