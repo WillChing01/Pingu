@@ -75,6 +75,11 @@ void positionCommand(Board &b, const std::vector<std::string> &words)
         if (chessMove == 0) {break;}
         b.makeMove(chessMove);
     }
+    if (ind < (int)words.size())
+    {
+        //refresh nnue accumulator.
+        b.nnue.refreshInput(positionToFen(b));
+    }
 }
 
 void perftCommand(Board &b, const std::vector<std::string> &words)
@@ -104,6 +109,12 @@ void testCommand(Board &b, const std::vector<std::string> &words)
         bool res = incrementalTest(b, depth);
         std::cout << "info success " << res << std::endl;
     }
+}
+
+void evalCommand(Board &b, const std::vector<std::string> &words)
+{
+    if (words.size() != 1) {return;}
+    std::cout << "info score " << b.nnue.forward() << std::endl;
 }
 
 void seeCommand(Board &b, const std::vector<std::string> &words)
@@ -389,6 +400,9 @@ void uciLoop()
     std::string input;
     std::vector<std::string> commands;
 
+    std::cout << "id name " << ENGINE_NAME << std::endl;
+    std::cout << "id author " << ENGINE_AUTHOR << std::endl;
+
     while (true)
     {
         std::getline(std::cin,input);
@@ -405,6 +419,7 @@ void uciLoop()
         else if (commands[0] == "ucinewgame") {prepareForNewGame(b);}
         else if (commands[0] == "position") {positionCommand(b, commands);}
         else if (commands[0] == "go") {goCommand(b, commands);}
+        else if (commands[0] == "eval") {evalCommand(b, commands);}
         else if (commands[0] == "see") {seeCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display(); std::cout << positionToFen(b) << std::endl;}
