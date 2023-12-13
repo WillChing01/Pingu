@@ -25,11 +25,8 @@ jobs:
           static: 0
 
       - name: Compile program
-        env:
-          CC: C:\mingw64\bin\x86_64-w64-mingw32-gcc.exe
-          CXX: C:\mingw64\bin\x86_64-w64-mingw32-g++.exe
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release 
+          cmake -S . -B build -D CMAKE_C_COMPILER=C:/mingw64/bin/x86_64-w64-mingw32-gcc.exe -D CMAKE_CXX_COMPILER=C:/mingw64/bin/x86_64-w64-mingw32-g++.exe -DCMAKE_BUILD_TYPE=Release 
           cmake --build build --target Pingu --config Release --
 
       - name: Run tests
