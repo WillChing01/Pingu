@@ -20,7 +20,7 @@ jobs:
 
       - name: Compile program
         run: |
-          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
 
       - name: Run tests
