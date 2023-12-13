@@ -202,6 +202,61 @@ class Board {
             return fen;
         }
 
+        std::string positionToFen()
+        {
+            const std::string pieceTypes = "KkQqRrBbNnPp";
+            std::string fen = "";
+
+            //piece placement.
+            for (int i=7;i>=0;i--)
+            {
+                int c = 0;
+                for (int j=0;j<8;j++)
+                {
+                    U64 square = 1ull << (8*i + j);
+                    bool occ = false;
+                    for (int k=0;k<12;k++)
+                    {
+                        //check if occupied by piece.
+                        if (pieces[k] & square)
+                        {
+                            if (c > 0) {fen += std::to_string(c);}
+                            fen += pieceTypes[k];
+                            c = 0;
+                            occ = true;
+                        }
+                    }
+                    if (!occ) {c++;}
+                }
+                if (c > 0) {fen += std::to_string(c);}
+                if (i > 0) {fen += '/';}
+            }
+
+            //side to move.
+            fen += moveHistory.size() & 1 ? " b" : " w";
+
+            //castling rights.
+            fen += ' ';
+            if (current.canKingCastle[0] || current.canKingCastle[1] ||
+                current.canQueenCastle[0] || current.canQueenCastle[1])
+            {
+                if (current.canKingCastle[0]) {fen += 'K';}
+                if (current.canQueenCastle[0]) {fen += 'Q';}
+                if (current.canKingCastle[1]) {fen += 'k';}
+                if (current.canQueenCastle[1]) {fen += 'q';}
+            }
+            else {fen += '-';}
+
+            //en passant square.
+            fen += ' ';
+            fen += current.enPassantSquare != -1 ? toCoord(current.enPassantSquare) : "-";
+
+            //move numbers.
+            fen += " 0 1";
+
+            return fen;
+        }
+
         void setPositionFen(const std::string &fen)
         {
             //reset history.
