@@ -26,8 +26,8 @@ jobs:
 
       - name: Compile program
         env:
-          CC: C:/mingw64/bin/gcc.exe
-          CXX: C:/mingw64/bin/g++.exe
+          CC: C:\mingw64\bin\x86_64-w64-mingw32-gcc.exe
+          CXX: C:\mingw64\bin\x86_64-w64-mingw32-g++.exe
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release 
           cmake --build build --target Pingu --config Release --
@@ -53,8 +53,8 @@ jobs:
 
       - name: Compile program
         env:
-          CC: gcc
-          CXX: g++
+          CC: C:\mingw64\bin\x86_64-w64-mingw32-gcc.exe
+          CXX: C:\mingw64\bin\x86_64-w64-mingw32-g++.exe
         run: |
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
@@ -80,8 +80,8 @@ jobs:
 
       - name: Compile program
         env:
-          CC: gcc
-          CXX: g++
+          CC: C:\mingw64\bin\x86_64-w64-mingw32-gcc.exe
+          CXX: C:\mingw64\bin\x86_64-w64-mingw32-g++.exe
         run: |
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
@@ -107,8 +107,8 @@ jobs:
 
       - name: Compile program
         env:
-          CC: gcc
-          CXX: g++
+          CC: C:\mingw64\bin\x86_64-w64-mingw32-gcc.exe
+          CXX: C:\mingw64\bin\x86_64-w64-mingw32-g++.exe
         run: |
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
