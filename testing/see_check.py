@@ -1,4 +1,3 @@
-import os
 import sys
 import engine
 
@@ -8,7 +7,7 @@ def main():
     errors = 0
     i = 0
 
-    with open(os.getcwd() + "\\testing\\" + "see_positions.txt", "r") as file:
+    with open("see_positions.txt", "r") as file:
         for line in file.readlines():
             fen, move, score = line.rstrip().split("; ")
 
