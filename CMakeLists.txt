@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 set(CMAKE_CXX_STANDARD 20)
 
 # gcc compiler options
-set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_C_COMPIILER "gcc")
 set(CMAKE_CXX_COMPILER "g++")
 
 set(GCC_COMPILE_DEBUG_OPTIONS "-Wall;-std=gnu++20;-fexceptions;-pg")

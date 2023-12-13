@@ -3,7 +3,12 @@
 
 #include <iostream>
 #include <iomanip>
+#include <chrono>
+#include <format>
+#include <fstream>
 #include <limits>
+#include <random>
+#include <set>
 #include <thread>
 
 #include "constants.h"
@@ -12,6 +17,10 @@
 #include "format.h"
 #include "search.h"
 #include "board.h"
+
+const std::string ENGINE_NAME = "Pingu 2.0.0";
+const std::string ENGINE_AUTHOR = "William Ching";
+const std::string ENGINE_NAME_NO_SPACE = "Pingu_2.0.0";
 
 std::atomic_bool isSearching(false);
 
@@ -29,8 +38,8 @@ void searchThread(Board &b, int depth, double moveTime)
 void uciCommand()
 {
     //id engine.
-    std::cout << "id name Pingu 2.0.0" << std::endl;
-    std::cout << "id author William Ching" << std::endl;
+    std::cout << "id name " << ENGINE_NAME << std::endl;
+    std::cout << "id author " << ENGINE_AUTHOR << std::endl;
 
     //tell GUI which options can be changed.
     std::cout << "option name Hash type spin default 1 min 1 max 8192" << std::endl;
@@ -240,11 +249,148 @@ void prepareForNewGame(Board &b)
     rootCounter = 0;
 }
 
+void gensfenCommand(Board &b, const std::vector<std::string> &words)
+{
+    //generate self-play data.
+    if (words.size() != 11) {return;}
+    if (words[1] != "depth" || words[3] != "positions" ||
+        words[5] != "randomply" || words[7] != "maxply" ||
+        words[9] != "evalbound")
+    {
+        return;
+    }
+    if (!isNumber(words[2]) || !isNumber(words[4]) ||
+        !isNumber(words[6]) || !isNumber(words[8]) ||
+        !isNumber(words[10]))
+    {
+        return;
+    }
+
+    std::string dateTime = std::format("{:%F_%H-%M-%S_%Z}",
+        std::chrono::zoned_time{
+            std::chrono::current_zone(),
+            std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now())
+        }
+    );
+
+    int depth = std::stoi(words[2]);
+    int positions = std::stoi(words[4]);
+    int randomply = std::stoi(words[6]);
+    int maxply = std::stoi(words[8]);
+    int evalbound = std::stoi(words[10]);
+
+    std::vector<std::pair<std::string, int> > output = {};
+
+    //set up random device.
+    std::random_device _rd;
+    std::size_t seed;
+
+    if (_rd.entropy()) {seed = _rd();}
+    else {seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();}
+
+    std::mt19937 _mt(seed);
+
+    //set up search params.
+    timeLeft = INT_MAX;
+    isSearchAborted = false;
+
+    int numGames = 1;
+
+    std::cout << "Generating " << positions << " positions..." << std::endl;
+
+    while ((int)output.size() < positions)
+    {
+        //start a new game.
+        bool gameover = false;
+        prepareForNewGame(b);
+        b.setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+        //track zHash for draw by repetition.
+        std::set<U64> zHash;
+
+        //play random moves up to randomply.
+        for (int i=0;i<randomply;i++)
+        {
+            b.moveBuffer.clear();
+            b.updateOccupied();
+            b.generatePseudoMoves(b.moveHistory.size() & 1);
+
+            //if no moves left we abort the game.
+            if (b.moveBuffer.size() == 0) {gameover = true; break;}
+
+            std::uniform_int_distribution<int> _dist(0, (int)b.moveBuffer.size() - 1);
+            U32 move = b.moveBuffer[_dist(_mt)];
+            b.makeMove(move);
+
+            //store zHash.
+            zHash.insert(b.zHashPieces ^ b.zHashState);
+        }
+
+        if (gameover) {continue;}
+        
+        //fixed-depth search.
+        while ((int)b.moveHistory.size() < maxply)
+        {
+            int score = alphaBetaRoot(b, depth, true);
+            if (isGameOver) {break;}
+
+            //check that score within bounds.
+            if (b.moveHistory.size() & 1) {score *= -1;}
+            if (abs(score) > evalbound) {break;}
+
+            //update output.
+            if (!b.isInCheck(b.moveHistory.size() & 1) &&
+                ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15)
+            {
+                output.push_back(std::pair<std::string, int>(b.positionToFen(), score));
+            }
+
+            b.makeMove(storedBestMove);
+            //check if position is repeated and remove last output if so.
+            if (zHash.find(b.zHashPieces ^ b.zHashState) != zHash.end()) {output.pop_back(); break;}
+            zHash.insert(b.zHashPieces ^ b.zHashState);
+        }
+
+        std::cout << "Finished game " << numGames << "; " << output.size() << " positions overall" << std::endl;
+        numGames++;
+    }
+
+    //trim size of output.
+    while ((int)output.size() > positions) {output.pop_back();}
+
+    //write output to file.
+    std::string fileName = "gensfen_"+ ENGINE_NAME_NO_SPACE +
+                           "_n" + std::to_string(positions) +
+                           "_d" + std::to_string(depth) +
+                           "_r" + std::to_string(randomply) +
+                           "_m" + std::to_string(maxply) +
+                           "_b" + std::to_string(evalbound) +
+                           "_" + dateTime +
+                           ".txt";
+
+    std::ofstream file;
+    file.open(fileName);
+
+    for (const auto &x: output)
+    {
+        file << x.first << "; " << x.second << std::endl;
+    }
+
+    file.close();
+
+    std::cout << "Finished generating positions." << std::endl;
+
+    return;
+}
+
 void uciLoop()
 {
     Board b;
     std::string input;
     std::vector<std::string> commands;
+
+    std::cout << "id name " << ENGINE_NAME << std::endl;
+    std::cout << "id author " << ENGINE_AUTHOR << std::endl;
 
     while (true)
     {
@@ -264,7 +410,8 @@ void uciLoop()
         else if (commands[0] == "go") {goCommand(b, commands);}
         else if (commands[0] == "see") {seeCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
-        else if (commands[0] == "display") {b.display();}
+        else if (commands[0] == "display") {b.display(); std::cout << b.positionToFen() << std::endl;}
+        else if (commands[0] == "gensfen") {gensfenCommand(b, commands);}
         else if (commands[0] == "test") {testCommand(b, commands);}
         else if (commands[0] == "help") {helpCommand(commands);}
     }

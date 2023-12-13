@@ -133,6 +133,21 @@ const std::vector<engineCommand> COMMANDS = {
         }
     ),
     engineCommand(
+        "gensfen",
+        "generate quiet positions via fixed-depth self-play",
+        {
+            "gensfen depth <n> positions <n> randomply <n> maxply <n> evalbound <n>",
+            "e.g. gensfen depth 12 positions 10000 randomply 4 maxply 200 evalbound 2500"
+        },
+        {
+            {"depth <n>", "positive integer depth in units of ply"},
+            {"positions <n>", "number of positions to generate"},
+            {"randomply <n>", "number of random moves at start of each game"},
+            {"maxply <n>", "maximum ply per game"},
+            {"evalbound <n>", "maximum eval score in cp to save in file"}
+        }
+    ),
+    engineCommand(
         "display",
         "display the position of the internal board",
         {},
