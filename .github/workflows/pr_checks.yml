@@ -10,7 +10,7 @@ defaults:
 jobs:
   perft_check:
     name: Perft check
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -18,10 +18,16 @@ jobs:
       - name: Create build directory
         run: mkdir build
 
+      - name: Set up MinGW
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+          static: 0
+
       - name: Compile program
         env:
-          CC: gcc-13
-          CXX: g++-13
+          CC: gcc
+          CXX: g++
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release 
           cmake --build build --target Pingu --config Release --
@@ -46,12 +52,12 @@ jobs:
         run: mkdir build
 
       - name: Compile program
+        env:
+          CC: gcc
+          CXX: g++
         run: |
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
-        env:
-          CC: gcc-13
-          CXX: g++-13
 
       - name: Run tests
         run: python testing/move_validation_check.py
@@ -73,6 +79,9 @@ jobs:
         run: mkdir build
 
       - name: Compile program
+        env:
+          CC: gcc
+          CXX: g++
         run: |
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
@@ -97,6 +106,9 @@ jobs:
         run: mkdir build
 
       - name: Compile program
+        env:
+          CC: gcc
+          CXX: g++
         run: |
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
