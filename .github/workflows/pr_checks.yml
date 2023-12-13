@@ -17,8 +17,9 @@ jobs:
 
       - name: Set gcc version
         run: |
-          sudo update-alternatives --set gcc /usr/bin/gcc-13
-          sudo update-alternatives --set g++ /usr/bin/g++-13
+          sudo apt install gcc-13 g++-13
+          echo "CC=gcc-13" >> $GITHUB_ENV
+          echo "CXX=g++-13" >> $GITHUB_ENV
 
       - name: Create build directory
         run: mkdir build
