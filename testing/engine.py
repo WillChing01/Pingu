@@ -7,7 +7,7 @@ import os
 from subprocess import Popen, PIPE
 
 ENGINE_EXE = "Pingu.exe"
-REL_PATH = "\\build\\"
+REL_PATH = "\\..\\build\\"
 
 class Engine:
 

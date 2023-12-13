@@ -1,4 +1,3 @@
-import os
 import sys
 import time
 import engine
@@ -12,7 +11,7 @@ def main():
     errors = 0
     i = 0
 
-    with open(os.getcwd() + "\\testing\\" + "nps_positions.txt", "r") as file:
+    with open("nps_positions.txt", "r") as file:
         for line in file.readlines():
             i += 1
 
