@@ -15,12 +15,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Set gcc version
-        run: |
-          sudo apt install gcc-13 g++-13
-          echo "CC=gcc-13" >> $GITHUB_ENV
-          echo "CXX=g++-13" >> $GITHUB_ENV
-
       - name: Create build directory
         run: mkdir build
 
@@ -28,6 +22,9 @@ jobs:
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
+        env:
+          CC: gcc-13
+          CXX: g++-13
 
       - name: Run tests
         run: python testing/perft_check.py
@@ -52,6 +49,9 @@ jobs:
         run: |
           cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target Pingu --config Release --
+        env:
+          CC: gcc-13
+          CXX: g++-13
 
       - name: Run tests
         run: python testing/move_validation_check.py
