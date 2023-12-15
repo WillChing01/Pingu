@@ -1,4 +1,3 @@
-import pickle
 import numpy as np
 import torch
 from torch import nn
@@ -11,30 +10,19 @@ Dataset and dataloader
 """
 
 class ChessDataset(Dataset):
-    def __init__(self, file, input_count):
+    def __init__(self, inputs_file, labels_file, dataset_size, input_count):
+        self.inputs_file = inputs_file
+        self.labels_file = labels_file
+        self.len = dataset_size
         self.input_count = input_count
-        raw_data = []
-        with open(file, "rb") as f:
-            raw_data = pickle.load(f)
-        self.indices = np.zeros((len(raw_data), 32), dtype = np.ushort)
-        self.eval = np.zeros((len(raw_data), 1), dtype = np.short)
-
-        for i in range(len(raw_data)):
-            for j in range(len(raw_data[i][0])):
-                self.indices[i][j] = raw_data[i][0][j]
-            for j in range(len(raw_data[i][0]), 32):
-                self.indices[i][j] = self.indices[i][0]
-            self.eval[i][0] = raw_data[i][1]
-
-        del raw_data
 
     def __len__(self):
-        return len(self.eval)
+        return self.len
 
     def __getitem__(self, idx):
-        features = np.zeros(self.input_count, dtype = np.ubyte)
-        features[self.indices[idx]] = 1
-        return torch.Tensor(features), torch.Tensor(self.eval[idx])
+        inputs = np.memmap(self.inputs_file, mode = "r", dtype = np.short, shape = (self.len, 32))
+        labels = np.memmap(self.labels_file, mode = "r", dtype = np.short, shape = (self.len, 1))
+        return torch.LongTensor(inputs[idx]), torch.Tensor(labels[idx])
 
 """
 
@@ -48,16 +36,30 @@ Structure: fully connected layers
 
 """
 
+class ClippedReLU(nn.Module):
+    def __init__(self):
+        super().__init__()
+    def forward(self, x):
+        return torch.clamp(x, 0.0, 1.0)
+    
+class Scale(nn.Module):
+    def __init__(self, factor):
+        super().__init__()
+        self.factor = factor
+    def forward(self, x):
+        return torch.mul(x, self.factor)
+
 class NeuralNetwork(nn.Module):
     def __init__(self, input_count, l1_count, l2_count, output_count):
         super().__init__()
 
         self.net = nn.Sequential(
             nn.Linear(input_count, l1_count),
-            nn.ReLU(),
+            ClippedReLU(),
             nn.Linear(l1_count, l2_count),
-            nn.ReLU(),
+            ClippedReLU(),
             nn.Linear(l2_count, output_count),
+            Scale(512)
         )
         print("Created network.")
 
@@ -84,27 +86,41 @@ def custom_loss(output, target):
     target_scaled = torch.sigmoid(K*target)
     return torch.mean((output_scaled - target_scaled)**2)
 
-def training_loop(dataloader, model, loss_fn, optimizer, device):
+def training_loop(dataloader, model, loss_fn, optimizer, device, input_count):
     """
         Optimize model parameters.
     """
 
-    size = len(dataloader.dataset)
-
     model.train()
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    training_loss = 0
+
     for batch, (x, y) in enumerate(dataloader):
-        output = model(x.to(device, non_blocking = True))
+        optimizer.zero_grad()
+
+        x = x.to(device, non_blocking = True)
+        inputs = torch.zeros(x.size(0), input_count, device = device)
+        inputs = inputs.scatter_(dim = -1, index = x, value = 1)
+
+        # output = model(x.to(device, non_blocking = True))
+
+        output = model(inputs)
         loss = loss_fn(output, y.to(device, non_blocking = True))
+
+        training_loss += loss.item()
 
         loss.backward()
         optimizer.step()
-        optimizer.zero_grad()
 
         if batch % 100 == 0:
             loss, current = loss.item(), (batch + 1) * len(x)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-def validation_loop(dataloader, model, loss_fn, device):
+    training_loss /= num_batches
+    return training_loss
+
+def validation_loop(dataloader, model, loss_fn, device, input_count):
     """
         Run model with validation data.
     """
@@ -115,7 +131,13 @@ def validation_loop(dataloader, model, loss_fn, device):
 
     with torch.no_grad():
         for x, y in dataloader:
-            output = model(x.to(device, non_blocking = True))
+            x = x.to(device, non_blocking = True)
+            inputs = torch.zeros(x.size(0), input_count, device = device)
+            inputs = inputs.scatter_(dim = -1, index = x, value = 1)
+
+            # output = model(x.to(device, non_blocking = True))
+
+            output = model(inputs)
             validation_loss += loss_fn(output, y.to(device, non_blocking = True)).item()
 
     validation_loss /= num_batches
@@ -144,11 +166,14 @@ def main():
 
     print("Using device", device)
 
-    training_file = "training_data.pickle"
-    validation_file = "validation_data.pickle"
+    training_inputs = "training_input_88882000_32.dat"
+    training_labels = "training_labels_88882000_1.dat"
 
-    training_data = ChessDataset(training_file, INPUT_COUNT)
-    validation_data = ChessDataset(validation_file, INPUT_COUNT)
+    validation_inputs = "validation_input_4678000_32.dat"
+    validation_labels = "validation_labels_4678000_1.dat"
+
+    training_data = ChessDataset(training_inputs, training_labels, 88882000, INPUT_COUNT)
+    validation_data = ChessDataset(validation_inputs, validation_labels, 4678000, INPUT_COUNT)
 
     training_dataloader = DataLoader(training_data, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS, pin_memory = True)
     validation_dataloader = DataLoader(validation_data, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS, pin_memory = True)
@@ -165,10 +190,10 @@ def main():
 
     for epoch in range(EPOCHS):
         print(f"Epoch {epoch+1}\n-------------------------------")
-        training_loop(training_dataloader, model, custom_loss, optimizer, device)
-        validation_loss = validation_loop(validation_dataloader, model, custom_loss, device)
+        training_loss = training_loop(training_dataloader, model, custom_loss, optimizer, device, INPUT_COUNT)
+        validation_loss = validation_loop(validation_dataloader, model, custom_loss, device, INPUT_COUNT)
         print("Saving model...")
-        torch.save(model.state_dict(), 'epoch_'+str(epoch)+'_loss_'+str(round(validation_loss, 10)).replace('.',',')+'.pth')
+        torch.save(model.state_dict(), ('epoch_'+str(epoch+1)+'_tloss_'+str(round(training_loss, 6))+'_vloss_'+str(round(validation_loss, 6))).replace('.',',')+'.pth')
 
     print("Done!")
 
