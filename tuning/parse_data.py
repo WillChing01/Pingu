@@ -3,14 +3,14 @@ Parse and format data in book files.
 """
 
 import os
-import random
-import pickle
+import numpy as np
 
 def fenToSparse(fen):
     """
         Return non-zero indices of input matrix derived from FEN.
     """
 
+    fen = fen.split(' ')[0]
     indices = []
 
     square = 56
@@ -27,57 +27,85 @@ def fenToSparse(fen):
 
     return indices
 
+def sparseToArray(indices):
+    x = np.zeros(32, dtype = np.short)
+    for i in range(0, len(indices)):
+        x[i] = indices[i]
+    for i in range(len(indices), 32):
+        x[i] = x[0]
+    return x
+
 def main():
 
     directory = os.getcwd() + "/datasets/"
 
     files = [i for i in os.listdir(directory) if i.split(".")[-1] == "txt" and i[0:7] == "gensfen"]
 
-    data = []
+    print("Found", len(files), "files.")
 
+    print("Reading files...")
+
+    n = 0
     for file in files:
-        print("Reading", file, "...")
+        with open(directory+file, "r") as f:
+            lines = f.readlines()
+            n += len(lines)
+
+    print("Collected", n, "pieces of data.")
+
+    print("Storing data...")
+
+    sparse_input = np.memmap("sparse_input_"+str(n)+"_32.dat", mode = "w+", dtype = np.short, shape = (n, 32))
+    labels = np.memmap("labels_"+str(n)+"_1.dat", mode = "w+", dtype = np.short, shape = (n, 1))
+
+    file_count = 0
+    i = 0
+    for file in files:
+        file_count += 1
+        print("Reading file", file_count, ";", file)
         with open(directory+file, "r") as f:
             lines = f.readlines()
             for x in lines:
-                data.append(x)
-
-    print("Collected", len(data), "pieces of data")
-
-    print("Shuffling data...")
-    random.shuffle(data)
-
-    print("Merging data...")
-
-    validationName = "validation_data.pickle"
-    trainingName = "training_data.pickle"
+                fen, eval = x.rstrip().split("; ")
+                arr = sparseToArray(fenToSparse(fen))
+                for j in range(32):
+                    sparse_input[i][j] = arr[j]
+                labels[i][0] = int(eval)
+                i += 1
+    sparse_input.flush()
+    labels.flush()
 
     validation_ratio = 0.05
-    num_validation = round(len(data) * validation_ratio)
+    validation_num = int(round(validation_ratio * n))
 
-    print("Creating", num_validation, "validation samples...")
+    print("Generating", validation_num, "validation samples...")
 
-    validation_data = []
+    indices = np.array([i for i in range(n)])
+    np.random.shuffle(indices)
 
-    for i in range(num_validation):
-        fen, eval = data[i].rstrip().split("; ")
-        fen = fen.split(" ")[0]
-        validation_data.append([fenToSparse(fen), int(eval)])
+    validation_input = np.memmap("validation_input_"+str(validation_num)+"_32.dat", mode = "w+", dtype = np.short, shape = (validation_num, 32))
+    validation_labels = np.memmap("validation_labels_"+str(validation_num)+"_1.dat", mode = "w+", dtype = np.short, shape = (validation_num, 1))
+    
+    for i in range(0, validation_num):
+        for j in range(32):
+            validation_input[i][j] = sparse_input[indices[i]][j]
+        validation_labels[i][0] = labels[indices[i]][0]
+    validation_input.flush()
+    validation_labels.flush()
 
-    with open(validationName, "wb") as f:
-        pickle.dump(validation_data, f)
+    print("Generating", n - validation_num, "training samples...")
 
-    print("Creating", len(data) - num_validation, "training samples...")
+    training_input = np.memmap("training_input_"+str(n - validation_num)+"_32.dat", mode = "w+", dtype = np.short, shape = (n - validation_num, 32))
+    training_labels = np.memmap("training_labels_"+str(n - validation_num)+"_1.dat", mode = "w+", dtype = np.short, shape = (n - validation_num, 1))
 
-    training_data = []
-
-    for i in range(num_validation, len(data)):
-        fen, eval = data[i].rstrip().split("; ")
-        fen = fen.split(" ")[0]
-        training_data.append([fenToSparse(fen), int(eval)])
-
-    with open(trainingName, "wb") as f:
-        pickle.dump(training_data, f)
+    for i in range(validation_num, n):
+        if (i - validation_num) % 1000000 == 0:
+            print("Progress", i - validation_num)
+        for j in range(32):
+            training_input[i-validation_num][j] = sparse_input[indices[i]][j]
+        training_labels[i-validation_num][0] = labels[indices[i]][0]
+    training_input.flush()
+    training_labels.flush()
 
     print("Process complete.")
 
