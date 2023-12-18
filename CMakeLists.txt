@@ -35,7 +35,6 @@ set(HEADER_FILES
     ${INCLUDE_DIR}/slider.h
     ${INCLUDE_DIR}/testing.h
     ${INCLUDE_DIR}/transposition.h
-    ${INCLUDE_DIR}/tuning.h
     ${INCLUDE_DIR}/uci.h
     ${INCLUDE_DIR}/weights.h
 )
@@ -45,15 +44,6 @@ set(HEADER_FILES
 project(Pingu)
 
 add_executable(Pingu ${SOURCE_FILES} ${HEADER_FILES})
-target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_COMPILE_DEBUG_OPTIONS}>")
-target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_COMPILE_RELEASE_OPTIONS}>")
-target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_LINK_DEBUG_OPTIONS}>")
-target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_LINK_RELEASE_OPTIONS}>")
-
-project(tuning)
-
-add_executable(tuning ${SOURCE_FILES} ${HEADER_FILES})
-target_compile_definitions(${PROJECT_NAME} PUBLIC TUNING=1)
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_COMPILE_DEBUG_OPTIONS}>")
 target_compile_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Release>:${GCC_COMPILE_RELEASE_OPTIONS}>")
 target_link_options(${PROJECT_NAME} PUBLIC "$<$<CONFIG:Debug>:${GCC_LINK_DEBUG_OPTIONS}>")
