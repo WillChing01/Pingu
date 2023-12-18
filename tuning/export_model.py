@@ -3,8 +3,8 @@ import torch
 from nnue_trainer import NeuralNetwork
 
 INPUT_COUNT = 768
-L1_COUNT = 256
-L2_COUNT = 32
+L1_COUNT = 64
+L2_COUNT = 8
 OUTPUT_COUNT = 1
 
 model_file = "saved_model.pth"

@@ -12,16 +12,16 @@
 //activation is implicitly ReLU, except for L2 -> Out which is linear.
 
 const int INPUT_COUNT = 768;
-const int L1_COUNT = 256;
-const int L2_COUNT = 32;
+const int L1_COUNT = 64;
+const int L2_COUNT = 8;
 const int OUTPUT_COUNT = 1;
 
-const int INPUT_SCALING = 128;
-const int WEIGHT_SCALING = 64;
+const int INPUT_SCALING = 256;
+const int WEIGHT_SCALING = 128;
 const int OUTPUT_SCALING = 512;
 const int CRELU1_LSHIFT = 1; // INPUT_SCALING / WEIGHT_SCALING
-const int CRELU2_RSHIFT = 6; // INPUT_SCALING / (INPUT_SCALING * WEIGHT_SCALING)
-const int OUTPUT_RSHIFT = 4; // OUTPUT_SCALING / (INPUT_SCALING * WEIGHT_SCALING)
+const int CRELU2_RSHIFT = 7; // INPUT_SCALING / (INPUT_SCALING * WEIGHT_SCALING)
+const int OUTPUT_RSHIFT = 6; // OUTPUT_SCALING / (INPUT_SCALING * WEIGHT_SCALING)
 
 const __m256i _ZERO = _mm256_setzero_si256();
 const __m256i _CRELU1 = _mm256_set1_epi32(WEIGHT_SCALING);
@@ -77,9 +77,9 @@ class NNUE
             {
                 for (int j=0;j<INPUT_COUNT;j++)
                 {
-                    input_weights[i][j] = std::lround(WEIGHT_SCALING * weights_256_768[i][j]);
+                    input_weights[i][j] = std::lround(WEIGHT_SCALING * weights_64_768[i][j]);
                 }
-                input_bias[i] = std::lround(WEIGHT_SCALING * bias_256[i]);
+                input_bias[i] = std::lround(WEIGHT_SCALING * bias_64[i]);
             }
 
             //L1 -> L2
@@ -87,9 +87,9 @@ class NNUE
             {
                 for (int j=0;j<L1_COUNT;j++)
                 {
-                    l1_weights[i][j] = std::lround(WEIGHT_SCALING * weights_32_256[i][j]);
+                    l1_weights[i][j] = std::lround(WEIGHT_SCALING * weights_8_64[i][j]);
                 }
-                l1_bias[i] = std::lround(INPUT_SCALING * WEIGHT_SCALING * bias_32[i]);
+                l1_bias[i] = std::lround(INPUT_SCALING * WEIGHT_SCALING * bias_8[i]);
             }
 
             //L2 -> Output
@@ -97,7 +97,7 @@ class NNUE
             {
                 for (int j=0;j<L2_COUNT;j++)
                 {
-                    l2_weights[i][j] = std::lround(WEIGHT_SCALING * weights_1_32[i][j]);
+                    l2_weights[i][j] = std::lround(WEIGHT_SCALING * weights_1_8[i][j]);
                 }
                 l2_bias[i] = std::lround(INPUT_SCALING * WEIGHT_SCALING * bias_1[i]);
             }

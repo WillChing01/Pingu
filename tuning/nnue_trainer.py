@@ -167,8 +167,8 @@ def main():
     SAVED_MODEL_FILE = "saved_model.pth"
 
     INPUT_COUNT = 768
-    L1_COUNT = 256
-    L2_COUNT = 32
+    L1_COUNT = 64
+    L2_COUNT = 8
     OUTPUT_COUNT = 1
 
     device = (

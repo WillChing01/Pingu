@@ -6,7 +6,7 @@ from parse_data import fenToSparse
 model_file = "saved_model.pth"
 
 def main():
-    model = nnue_trainer.NeuralNetwork(768, 256, 32, 1)
+    model = nnue_trainer.NeuralNetwork(768, 64, 8, 1)
     model.load_state_dict(torch.load(model_file))
     model.eval()
 
