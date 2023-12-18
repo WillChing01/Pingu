@@ -29,10 +29,8 @@ def fenToSparse(fen):
 
 def sparseToArray(indices):
     x = np.zeros(32, dtype = np.short)
-    for i in range(0, len(indices)):
-        x[i] = indices[i]
-    for i in range(len(indices), 32):
-        x[i] = x[0]
+    x[0:len(indices)] = np.array(indices, copy=True)
+    x[len(indices):].fill(indices[0])
     return x
 
 def main():
@@ -66,12 +64,13 @@ def main():
         with open(directory+file, "r") as f:
             lines = f.readlines()
             for x in lines:
-                fen, eval = x.rstrip().split("; ")
+                fen, eval_ = x.rstrip().split("; ")
                 arr = sparseToArray(fenToSparse(fen))
-                for j in range(32):
-                    sparse_input[i][j] = arr[j]
-                labels[i][0] = int(eval)
+                sparse_input[i] = np.array(arr, copy=True)
+                labels[i][0] = int(eval_)
                 i += 1
+                if i % 1000000 == 0:
+                    print(i)
     sparse_input.flush()
     labels.flush()
 
@@ -87,8 +86,7 @@ def main():
     validation_labels = np.memmap("validation_labels_"+str(validation_num)+"_1.dat", mode = "w+", dtype = np.short, shape = (validation_num, 1))
     
     for i in range(0, validation_num):
-        for j in range(32):
-            validation_input[i][j] = sparse_input[indices[i]][j]
+        validation_input[i] = np.array(sparse_input[indices[i]], copy=True)
         validation_labels[i][0] = labels[indices[i]][0]
     validation_input.flush()
     validation_labels.flush()
@@ -101,8 +99,7 @@ def main():
     for i in range(validation_num, n):
         if (i - validation_num) % 1000000 == 0:
             print("Progress", i - validation_num)
-        for j in range(32):
-            training_input[i-validation_num][j] = sparse_input[indices[i]][j]
+        training_input[i-validation_num] = np.array(sparse_input[indices[i]], copy=True)
         training_labels[i-validation_num][0] = labels[indices[i]][0]
     training_input.flush()
     training_labels.flush()
