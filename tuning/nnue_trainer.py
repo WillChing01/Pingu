@@ -45,8 +45,8 @@ Model definition
 Structure: fully connected layers
 
 (Input)    (Hidden)    (Hidden)    (Output)
-  768   ->   256    ->    32    ->    1
-       ReLu        ReLu       Linear
+  768   ->    64    ->     8    ->    1
+       cReLu       cReLu      Linear
 
 """
 
