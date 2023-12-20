@@ -82,7 +82,6 @@ class Board {
         const int piecePhases[6] = {0,4,2,1,1,0};
 
         int phase = 24;
-        int shiftedPhase = (64 * phase + 3)/6;
 
         //overall zHash is XOR of these two.
         U64 zHashPieces = 0;
@@ -139,7 +138,6 @@ class Board {
                     popLSB(temp);
                 }
             }
-            shiftedPhase = (64 * phase + 3)/6;
         }
 
         void nnueHardUpdate()
@@ -1572,7 +1570,6 @@ class Board {
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
                 phase += piecePhases[currentMove.finishPieceType >> 1];
-                shiftedPhase = (64 * phase + 3) / 6;
             }
 
             //remove any captured pieces.
@@ -1584,7 +1581,6 @@ class Board {
 
                 //update the game phase.
                 phase -= piecePhases[currentMove.capturedPieceType >> 1];
-                shiftedPhase = (64 * phase + 3) / 6;
 
                 //update nnue.
                 nnue.zeroInput(64 * currentMove.capturedPieceType + capturedSquare);
@@ -1640,7 +1636,6 @@ class Board {
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
                 phase -= piecePhases[currentMove.finishPieceType >> 1];
-                shiftedPhase = (64 * phase + 3) / 6;
             }
 
             //add back captured pieces.
@@ -1652,7 +1647,6 @@ class Board {
 
                 //update the game phase.
                 phase += piecePhases[currentMove.capturedPieceType >> 1];
-                shiftedPhase = (64 * phase + 3) / 6;
 
                 //update nnue.
                 nnue.oneInput(64 * currentMove.capturedPieceType + capturedSquare);

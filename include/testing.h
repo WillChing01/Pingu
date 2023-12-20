@@ -166,7 +166,6 @@ bool incrementalTest(Board &b, int depth)
 
     //phase.
     res &= testIncrementalUpdate(b, depth, &Board::phase, &Board::phaseHardUpdate);
-    res &= testIncrementalUpdate(b, depth, &Board::shiftedPhase, &Board::phaseHardUpdate);
 
     //zobrist.
     res &= testIncrementalUpdate(b, depth, &Board::zHashPieces, &Board::zHashHardUpdate);
