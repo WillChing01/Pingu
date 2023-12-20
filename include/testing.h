@@ -141,7 +141,7 @@ bool testIncrementalUpdateNNUE(Board &b, int depth, void (Board::* hardUpdate)()
     int oldEval = b.nnue.forward();
     (b.*hardUpdate)();
     int newEval = b.nnue.forward();
-    if ((depth ==0) || (oldEval != newEval)) {return (oldEval == newEval);}
+    if ((depth == 0) || (oldEval != newEval)) {return (oldEval == newEval);}
 
     //make moves recursively.
     b.generatePseudoMoves(b.moveHistory.size() & 1);
