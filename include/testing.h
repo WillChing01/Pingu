@@ -7,6 +7,7 @@
 #include "constants.h"
 #include "format.h"
 #include "board.h"
+#include "nnue.h"
 
 U64 perft(Board &b, int depth, bool verbose = true)
 {
@@ -134,23 +135,37 @@ bool testIncrementalUpdate(Board &b, int depth, auto Board::* param, void (Board
     return true;
 }
 
+bool testIncrementalUpdateNNUE(Board &b, int depth, void (Board::* hardUpdate)())
+{
+    //verify incremental updates of 'param' in NNUE.
+    int oldEval = b.nnue.forward();
+    (b.*hardUpdate)();
+    int newEval = b.nnue.forward();
+    if ((depth == 0) || (oldEval != newEval)) {return (oldEval == newEval);}
+
+    //make moves recursively.
+    b.generatePseudoMoves(b.moveHistory.size() & 1);
+    std::vector<U32> moveCache = b.moveBuffer;
+    for (const auto &move: moveCache)
+    {
+        b.makeMove(move);
+        if (!testIncrementalUpdateNNUE(b, depth-1, hardUpdate)) {return false;}
+        b.unmakeMove();
+    }
+    return true;
+}
+
 bool incrementalTest(Board &b, int depth)
 {
     //test all incrementally updated parameters.
 
     bool res = true;
 
-    //material.
-    res &= testIncrementalUpdate(b, depth, &Board::materialStart, &Board::evalHardUpdate);
-    res &= testIncrementalUpdate(b, depth, &Board::materialEnd, &Board::evalHardUpdate);
-
-    //pst.
-    res &= testIncrementalUpdate(b, depth, &Board::pstStart, &Board::evalHardUpdate);
-    res &= testIncrementalUpdate(b, depth, &Board::pstEnd, &Board::evalHardUpdate);
+    //nnue.
+    res &= testIncrementalUpdateNNUE(b, depth, &Board::nnueHardUpdate);
 
     //phase.
     res &= testIncrementalUpdate(b, depth, &Board::phase, &Board::phaseHardUpdate);
-    res &= testIncrementalUpdate(b, depth, &Board::shiftedPhase, &Board::phaseHardUpdate);
 
     //zobrist.
     res &= testIncrementalUpdate(b, depth, &Board::zHashPieces, &Board::zHashHardUpdate);

@@ -14,6 +14,7 @@
 #include "magic.h"
 
 #include "evaluation.h"
+#include "nnue.h"
 
 #include "transposition.h"
 
@@ -76,16 +77,11 @@ class Board {
         static const U32 _nKnights=8;
         static const U32 _nPawns=10;
 
+        NNUE nnue;
+
         const int piecePhases[6] = {0,4,2,1,1,0};
 
         int phase = 24;
-        int shiftedPhase = (64 * phase + 3)/6;
-
-        int materialStart = 0;
-        int materialEnd = 0;
-
-        int pstStart = 0;
-        int pstEnd = 0;
 
         //overall zHash is XOR of these two.
         U64 zHashPieces = 0;
@@ -102,31 +98,8 @@ class Board {
 
         Board()
         {
-            //default constructor for regular games.
-            pieces[_nKing]=WHITE_KING;
-            pieces[_nKing+1]=BLACK_KING;
-
-            pieces[_nQueens]=WHITE_QUEENS;
-            pieces[_nQueens+1]=BLACK_QUEENS;
-
-            pieces[_nRooks]=WHITE_ROOKS;
-            pieces[_nRooks+1]=BLACK_ROOKS;
-
-            pieces[_nBishops]=WHITE_BISHOPS;
-            pieces[_nBishops+1]=BLACK_BISHOPS;
-
-            pieces[_nKnights]=WHITE_KNIGHTS;
-            pieces[_nKnights+1]=BLACK_KNIGHTS;
-
-            pieces[_nPawns]=WHITE_PAWNS;
-            pieces[_nPawns+1]=BLACK_PAWNS;
-
-            updateOccupied();
-            updateAttacked(0); updateAttacked(1);
-
-            zHashHardUpdate();
-            phaseHardUpdate();
-            evalHardUpdate();
+            //start position default.
+            setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         };
 
         void zHashHardUpdate()
@@ -165,35 +138,11 @@ class Board {
                     popLSB(temp);
                 }
             }
-            shiftedPhase = (64 * phase + 3)/6;
         }
 
-        void evalHardUpdate()
+        void nnueHardUpdate()
         {
-            materialStart = 0;
-            materialEnd = 0;
-            pstStart = 0;
-            pstEnd = 0;
-            for (int i=0;i<12;i+=2)
-            {
-                materialStart += (__builtin_popcountll(pieces[i]) - __builtin_popcountll(pieces[i+1])) * PIECE_VALUES_START[i >> 1];
-                materialEnd += (__builtin_popcountll(pieces[i]) - __builtin_popcountll(pieces[i+1])) * PIECE_VALUES_END[i >> 1];
-                U64 white = pieces[i];
-                U64 black = pieces[i+1];
-                U64 x;
-                while (white)
-                {
-                    x = popLSB(white);
-                    pstStart += PIECE_TABLES_START[i >> 1][x ^ 56];
-                    pstEnd += PIECE_TABLES_END[i >> 1][x ^ 56];
-                }
-                while (black)
-                {
-                    x = popLSB(black);
-                    pstStart -= PIECE_TABLES_START[i >> 1][x];
-                    pstEnd -= PIECE_TABLES_END[i >> 1][x];
-                }
-            }
+            nnue.refreshInput(positionToFen());
         }
 
         std::string positionToFen()
@@ -314,7 +263,7 @@ class Board {
 
             zHashHardUpdate();
             phaseHardUpdate();
-            evalHardUpdate();
+            nnue.refreshInput(fen);
 
             //hash and state history.
             stateHistory.push_back(current);
@@ -1603,34 +1552,6 @@ class Board {
             }
         }
 
-        void updatePST(int pieceType, int finishPieceType, int fromSquare, int toSquare)
-        {
-            if (pieceType & 1)
-            {
-                pstStart -= PIECE_TABLES_START[finishPieceType >> 1][toSquare] - PIECE_TABLES_START[pieceType >> 1][fromSquare];
-                pstEnd -= PIECE_TABLES_END[finishPieceType >> 1][toSquare] - PIECE_TABLES_END[pieceType >> 1][fromSquare];
-            }
-            else
-            {
-                pstStart += PIECE_TABLES_START[finishPieceType >> 1][toSquare ^ 56] - PIECE_TABLES_START[pieceType >> 1][fromSquare ^ 56];
-                pstEnd += PIECE_TABLES_END[finishPieceType >> 1][toSquare ^ 56] - PIECE_TABLES_END[pieceType >> 1][fromSquare ^ 56];
-            }
-        }
-
-        void updateCapturePST(int capturedPieceType, int capturedSquare, bool reverse)
-        {
-            if (capturedPieceType & 1)
-            {
-                pstStart += PIECE_TABLES_START[capturedPieceType >> 1][capturedSquare] * (1-2*(int)(reverse));
-                pstEnd += PIECE_TABLES_END[capturedPieceType >> 1][capturedSquare] * (1-2*(int)(reverse));
-            }
-            else
-            {
-                pstStart -= PIECE_TABLES_START[capturedPieceType >> 1][capturedSquare ^ 56] * (1-2*(int)(reverse));
-                pstEnd -= PIECE_TABLES_END[capturedPieceType >> 1][capturedSquare ^ 56] * (1-2*(int)(reverse));
-            }
-        }
-
         void movePieces()
         {
             //remove piece from start square;
@@ -1641,17 +1562,14 @@ class Board {
             pieces[currentMove.finishPieceType] += 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
 
-            //update pst.
-            updatePST(currentMove.pieceType, currentMove.finishPieceType, currentMove.startSquare, currentMove.finishSquare);
+            //update nnue.
+            nnue.zeroInput(64 * currentMove.pieceType + currentMove.startSquare);
+            nnue.oneInput(64 * currentMove.finishPieceType + currentMove.finishSquare);
 
-            //update material+phase on promotion.
+            //update phase on promotion.
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
                 phase += piecePhases[currentMove.finishPieceType >> 1];
-                shiftedPhase = (64 * phase + 3) / 6;
-
-                materialStart += (PIECE_VALUES_START[currentMove.finishPieceType >> 1] - PIECE_VALUES_START[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
-                materialEnd += (PIECE_VALUES_END[currentMove.finishPieceType >> 1] - PIECE_VALUES_END[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
             }
 
             //remove any captured pieces.
@@ -1663,14 +1581,9 @@ class Board {
 
                 //update the game phase.
                 phase -= piecePhases[currentMove.capturedPieceType >> 1];
-                shiftedPhase = (64 * phase + 3) / 6;
 
-                //update material.
-                materialStart -= PIECE_VALUES_START[currentMove.capturedPieceType >> 1] * (1-2*(int)(currentMove.capturedPieceType & 1));
-                materialEnd -= PIECE_VALUES_END[currentMove.capturedPieceType >> 1] * (1-2*(int)(currentMove.capturedPieceType & 1));
-
-                //update pst.
-                updateCapturePST(currentMove.capturedPieceType, capturedSquare, false);
+                //update nnue.
+                nnue.zeroInput(64 * currentMove.capturedPieceType + capturedSquare);
             }
 
             //if castles, then move the rook too.
@@ -1685,8 +1598,9 @@ class Board {
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
 
-                    //update pst.
-                    updatePST(_nRooks+(currentMove.pieceType & 1), _nRooks+(currentMove.pieceType & 1), KING_ROOK_SQUARE[currentMove.pieceType & 1], KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2);
+                    //update nnue.
+                    nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]);
+                    nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2);
                 }
                 else
                 {
@@ -1697,8 +1611,9 @@ class Board {
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
 
-                    //update pst.
-                    updatePST(_nRooks+(currentMove.pieceType & 1), _nRooks+(currentMove.pieceType & 1), QUEEN_ROOK_SQUARE[currentMove.pieceType & 1], QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
+                    //update nnue.
+                    nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]);
+                    nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
                 }
             }
         }
@@ -1713,17 +1628,14 @@ class Board {
             pieces[currentMove.pieceType] += 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
 
-            //update pst.
-            updatePST(currentMove.finishPieceType, currentMove.pieceType, currentMove.finishSquare, currentMove.startSquare);
+            //update nnue.
+            nnue.oneInput(64 * currentMove.pieceType + currentMove.startSquare);
+            nnue.zeroInput(64 * currentMove.finishPieceType + currentMove.finishSquare);
 
-            //update material+phase on promotion.
+            //update phase on promotion.
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
                 phase -= piecePhases[currentMove.finishPieceType >> 1];
-                shiftedPhase = (64 * phase + 3) / 6;
-
-                materialStart -= (PIECE_VALUES_START[currentMove.finishPieceType >> 1] - PIECE_VALUES_START[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
-                materialEnd -= (PIECE_VALUES_END[currentMove.finishPieceType >> 1] - PIECE_VALUES_END[currentMove.pieceType >> 1]) * (1-2*(int)(currentMove.pieceType & 1));
             }
 
             //add back captured pieces.
@@ -1735,14 +1647,9 @@ class Board {
 
                 //update the game phase.
                 phase += piecePhases[currentMove.capturedPieceType >> 1];
-                shiftedPhase = (64 * phase + 3) / 6;
 
-                //update material.
-                materialStart += PIECE_VALUES_START[currentMove.capturedPieceType >> 1] * (1-2*(int)(currentMove.capturedPieceType & 1));
-                materialEnd += PIECE_VALUES_END[currentMove.capturedPieceType >> 1] * (1-2*(int)(currentMove.capturedPieceType & 1));
-
-                //update pst.
-                updateCapturePST(currentMove.capturedPieceType, capturedSquare, true);
+                //update nnue.
+                nnue.oneInput(64 * currentMove.capturedPieceType + capturedSquare);
             }
 
             //if castles move the rook back.
@@ -1757,8 +1664,9 @@ class Board {
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
 
-                    //update pst.
-                    updatePST(_nRooks+(currentMove.pieceType & 1), _nRooks+(currentMove.pieceType & 1), KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2, KING_ROOK_SQUARE[currentMove.pieceType & 1]);
+                    //update nnue.
+                    nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]);
+                    nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2);
                 }
                 else
                 {
@@ -1769,8 +1677,9 @@ class Board {
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
 
-                    //update pst.
-                    updatePST(_nRooks+(currentMove.pieceType & 1), _nRooks+(currentMove.pieceType & 1), QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3, QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]);
+                    //update nnue.
+                    nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]);
+                    nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
                 }
             }
         }
@@ -1990,46 +1899,7 @@ class Board {
 
         int regularEval()
         {
-            int startTotal = materialStart + pstStart;
-            int endTotal = materialEnd + pstEnd;
-
-            U64 x;
-            U64 b = occupied[0] | occupied[1];
-
-            //mobility.
-            x = pieces[_nRooks];
-            while (x)
-            {
-                int mob = magicRookMob(b, popLSB(x));
-                startTotal += MOB_ROOK_START * mob;
-                endTotal += MOB_ROOK_END * mob;
-            }
-
-            x = pieces[_nRooks + 1];
-            while (x)
-            {
-                int mob = magicRookMob(b, popLSB(x));
-                startTotal -= MOB_ROOK_START * mob;
-                endTotal -= MOB_ROOK_END * mob;
-            }
-
-            x = pieces[_nBishops];
-            while (x)
-            {
-                int mob = magicBishopMob(b, popLSB(x));
-                startTotal += MOB_BISHOP_START * mob;
-                endTotal += MOB_BISHOP_END * mob;
-            }
-
-            x = pieces[_nBishops + 1];
-            while (x)
-            {
-                int mob = magicBishopMob(b, popLSB(x));
-                startTotal -= MOB_BISHOP_START * mob;
-                endTotal -= MOB_BISHOP_END * mob;
-            }
-
-            return (((startTotal * shiftedPhase) + (endTotal * (256 - shiftedPhase))) / 256) * (1-2*(int)(moveHistory.size() & 1));
+            return nnue.forward() * (1-2*(int)(moveHistory.size() & 1));
         }
 
         int evaluateBoard()

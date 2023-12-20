@@ -98,6 +98,12 @@ const std::vector<engineCommand> COMMANDS = {
         {}
     ),
     engineCommand(
+        "eval",
+        "display static evaluation of current position",
+        {},
+        {}
+    ),
+    engineCommand(
         "see",
         "perform static exchange evaluation in current position",
         {

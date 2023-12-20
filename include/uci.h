@@ -106,6 +106,12 @@ void testCommand(Board &b, const std::vector<std::string> &words)
     }
 }
 
+void evalCommand(Board &b, const std::vector<std::string> &words)
+{
+    if (words.size() != 1) {return;}
+    std::cout << "info score " << b.nnue.forward() << std::endl;
+}
+
 void seeCommand(Board &b, const std::vector<std::string> &words)
 {
     if (words.size() != 3) {return;}
@@ -408,6 +414,7 @@ void uciLoop()
         else if (commands[0] == "ucinewgame") {prepareForNewGame(b);}
         else if (commands[0] == "position") {positionCommand(b, commands);}
         else if (commands[0] == "go") {goCommand(b, commands);}
+        else if (commands[0] == "eval") {evalCommand(b, commands);}
         else if (commands[0] == "see") {seeCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display(); std::cout << b.positionToFen() << std::endl;}
