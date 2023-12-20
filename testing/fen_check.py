@@ -1,4 +1,3 @@
-import os
 import sys
 import engine
 
@@ -8,7 +7,7 @@ def main():
     errors = 0
     i = 0
 
-    with open(os.getcwd() + "\\testing\\" + "perft_positions.txt", "r") as file:
+    with open("perft_positions.txt", "r") as file:
         for line in file.readlines():
             fen = line.rstrip().split("; ")[0]
 
