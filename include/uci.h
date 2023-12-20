@@ -75,11 +75,6 @@ void positionCommand(Board &b, const std::vector<std::string> &words)
         if (chessMove == 0) {break;}
         b.makeMove(chessMove);
     }
-    if (ind < (int)words.size())
-    {
-        //refresh nnue accumulator.
-        b.nnue.refreshInput(b.positionToFen());
-    }
 }
 
 void perftCommand(Board &b, const std::vector<std::string> &words)
