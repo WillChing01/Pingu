@@ -1,12 +1,16 @@
-# Pingu
+<div align="center">
 
-<img src="pingu.jpeg" alt="pingu" width="300"/>
+  <img src="pingu.jpeg" alt="pingu" width="300"/>
+
+  # Pingu
+
+  [![License][license-badge]][license-link]
+  [![Release][release-badge]][release-link]
+  [![Commits][commits-badge]][commits-link]
 
 Pingu is a chess engine built from scratch. It communicates via [UCI protocol](https://gist.github.com/DOBRO/2592c6dad754ba67e6dcaec8c90165bf).
 
-Play against Pingu on [Lichess](https://lichess.org/@/WilliamEngine)!
-
-Many thanks to the advice on [Chess Programming Wiki](https://www.chessprogramming.org).
+</div>
 
 # Usage
 
@@ -21,7 +25,7 @@ Pingu accepts many of the usual UCI commands (go/stop/position etc.) and it has 
 | Version | CCRL Blitz |
 | ------: | ---------: |
 | 1.0.0   | 2250       |
-| 2.0.0   | 2560       |
+| 2.0.0   | 2586       |
 
 More information on [CCRL Blitz](https://www.computerchess.org.uk/ccrl/404/).
 
@@ -74,45 +78,25 @@ More information on [CCRL Blitz](https://www.computerchess.org.uk/ccrl/404/).
 - Basic time management
 
 ### Evaluation
-- Tapered evaluation
-- Material
-- Piece square tables
-- Mobility
 
-Evaluation features are tuned via Texel's method - logistic regression via gradient descent.
+- NNUE
+  - Network structure
+    1. 768 -> 64 -> 8 -> 1
+    2. Fully connected layers
+    3. Clipped ReLU activation
+  - Quantized weights
+  - AVX2 instructions
 
-# Installation
+# Thanks
 
-### Github releases
+[Chess Programming Wiki](https://www.chessprogramming.org) for its useful resources.
 
-Check out [releases](https://github.com/WillChing01/Pingu/releases/) to download the .exe for master branch.
+[CCRL](https://www.computerchess.org.uk/ccrl/) for testing Pingu.
 
-The ```dev-build``` pre-release contains the most up-to-date executable for Pingu.
 
-### Compile with cmake
-
-__Requires cmake, g++ and mingw__
-
-Clone the repository, go to ```/Pingu``` directory and run these terminal commands:
-
-```
-mkdir build
-cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target Pingu --config Release --
-```
-
-Alternatively, you can skip downloading mingw and replace "MinGW Makefiles" with another generator that you already have.
-
-The executable will appear in ```/build``` directory.
-
-### Compile manually
-__Requires g++__
-
-Clone the repository, go to ```/Pingu``` directory and run these terminal commands:
-
-```
-g++ -Wall -std=gnu++17 -fexceptions -O3 -Iinclude -c main.cpp -o main.o
-g++ -o Pingu.exe main.o -static -static-libstdc++ -static-libgcc -s
-```
-
-You can delete the ```main.o``` file after compilation.
+[commits-badge]:https://img.shields.io/github/commits-since/WillChing01/Pingu/latest?style=for-the-badge
+[commits-link]:https://github.com/WillChing01/Pingu/commits/master
+[release-badge]:https://img.shields.io/github/v/release/WillChing01/Pingu?style=for-the-badge&label=official%20release
+[release-link]:https://github.com/WillChing01/Pingu/releases/latest
+[license-badge]:https://img.shields.io/github/license/WillChing01/Pingu?style=for-the-badge&label=license&color=success
+[license-link]:https://github.com/WillChing01/Pingu/blob/master/LICENSE
