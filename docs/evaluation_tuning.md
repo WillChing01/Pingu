@@ -7,20 +7,20 @@ Full credit goes to Andrew Grant's [tuning guide](https://github.com/AndyGrant/E
 Static evaluation of a position can be expressed as
 
 $$
-E = \rho_{mg} \underline{L}_{mg} \cdot \left( \underline{C}_w - \underline{C}_b \right)
-  + \rho_{eg} \underline{L}_{eg} \cdot \left( \underline{C}_w - \underline{C}_b \right)
+E = \rho_{mg} \underline{L}_{mg} \cdot \left( \underline{C}_{w} - \underline{C}_{b} \right)
+  + \rho_{eg} \underline{L}_{eg} \cdot \left( \underline{C}_{w} - \underline{C}_{b} \right)
 $$
 
 We define the error $\epsilon$ when evaluating a dataset consisting of $N$ positions as
 
 $$
-\epsilon = \frac{1}{N} \sum_{i=1}^{N} \left( R_i - \sigma \left( E_i \right) \right) ^ 2
+\epsilon = \frac{1}{N} \sum_{i=1}^{N} \left( R_{i} - \sigma \left( E_{i} \right) \right) ^ 2
 $$
 
 where $ \sigma \left(E \right) $ is the sigmoid function
 
 $$
-\sigma \left( E \right) = \frac{1}{1 +  e ^{-KE}}
+\sigma \left( E \right) = \frac{1}{1 +  e^{-KE}}
 $$
 
 for an arbitrary constant $ K $.
@@ -29,17 +29,17 @@ For a simple linear evaluation, we can express the derivative of the error as
 
 $$
 \frac{\partial \epsilon}{\partial\underline{L}_{mg}} =
-    - \alpha \sum_{j=1}^{N} \left( R_j - \sigma \left( E_j \right) \right) \cdot
-    \sigma \left( E_j \right) \cdot
-    \left( 1 - \sigma \left( E_j \right) \right) \cdot
+    - \alpha \sum_{j=1}^{N} \left( R_{j} - \sigma \left( E_{j} \right) \right) \cdot
+    \sigma \left( E_{j} \right) \cdot
+    \left( 1 - \sigma \left( E_{j} \right) \right) \cdot
     \rho_{mg,j} \left ( \underline{C}_{w,j} - \underline{C}_{b,j} \right)
 $$
 
 $$
 \frac{\partial \epsilon}{\partial\underline{L}_{eg}} =
-    - \alpha \sum_{j=1}^{N} \left( R_j - \sigma \left( E_j \right) \right) \cdot
-    \sigma \left( E_j \right) \cdot
-    \left( 1 - \sigma \left( E_j \right) \right) \cdot
+    - \alpha \sum_{j=1}^{N} \left( R_{j} - \sigma \left( E_{j} \right) \right) \cdot
+    \sigma \left( E_{j} \right) \cdot
+    \left( 1 - \sigma \left( E_{j} \right) \right) \cdot
     \rho_{eg,j} \left ( \underline{C}_{w,j} - \underline{C}_{b,j} \right)
 $$
 
