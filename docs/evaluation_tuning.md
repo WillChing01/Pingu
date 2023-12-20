@@ -12,9 +12,9 @@ Full credit goes to Andrew Grant's [tuning guide](https://github.com/AndyGrant/E
 
 Pingu's HCE (hand-crafted evaluation) consists of a tapered evaluation - the evaluation varies linearly depending on how many pieces are on the board. As such, each evaluation term (material, pst, etc.) has two values - one for the middlegame and one for the endgame.
 
-Game phases $ \rho $ are defined for the middlegame '$ mg $' and the endgame '$ eg $' and they specify how close we are to the endgame.
+Game phases $ \rho $ are defined for the middlegame, $ mg $, and the endgame, $ eg $, and they specify how close we are to the endgame.
 
-The phases must obey $ \rho_{mg} + \rho_{eg} = 1 $
+The phases must obey $ \rho\_{mg} + \rho\_{eg} = 1 $
 
 Static evaluation of a position can be expressed as
 
