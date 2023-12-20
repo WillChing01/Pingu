@@ -8,7 +8,7 @@ Full credit goes to Andrew Grant's [tuning guide](https://github.com/AndyGrant/E
 
 > __N.B. Following the introduction of NNUE to Pingu, this tuning process is no longer used and can only be found in Pingu 2.0.0.__
 
-## Contents
+## Background
 
 Pingu's HCE (hand-crafted evaluation) consists of a tapered evaluation - the evaluation varies linearly depending on how many pieces are on the board. As such, each evaluation term (material, pst, etc.) has two values - one for the middlegame and one for the endgame.
 
@@ -62,3 +62,17 @@ For a simple linear evaluation, we can express the derivative of the error as
 ```
 
 for the middlegame and endgame weights respectively. All constants have been absorbed into an arbitrary term $` \alpha > 0 `$ which can be scaled to adjust the learning rate of gradient descent.
+
+## Process
+
+The tuning dataset consisted of ~30M positions labelled by game result and it was obtained from this [post](https://talkchess.com/forum3/viewtopic.php?f=7&t=77502).
+
+A simple batch gradient descent algorithm with constant learning rate was used (available as ```/include/tuning.h``` in Pingu 2.0.0).
+
+All evaluation terms were tuned together and the tuner was manually stopped upon reaching a local minimum.
+
+## Results
+
+This tuning method was implemented before the release of Pingu 1.0.0 in this [commit](https://github.com/WillChing01/Pingu/commit/e7d6f53158079b0b67043c4fef67978a2ad21109). However the implementation had bugs in the maths and no test results were recorded due to human error.
+
+Tuning was fixed and optimized before the release of Pingu 2.0.0, and Pingu's evaluation (material, pst, rook/bishop mobility) received a full retuning in this [commit](https://github.com/WillChing01/Pingu/commit/d2423141cec12a95af9fea1daf0dea6cdaf750c9). This led to a gain of ~140 elo at 10+0.1s, and a gain of ~180 elo at 60+0.6s against the old version of Pingu.
