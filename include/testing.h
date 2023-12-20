@@ -135,12 +135,13 @@ bool testIncrementalUpdate(Board &b, int depth, auto Board::* param, void (Board
     return true;
 }
 
-bool testIncrementalUpdateNNUE(Board &b, int depth, auto NNUE::* param, void (Board::* hardUpdate)())
+bool testIncrementalUpdateNNUE(Board &b, int depth, void (Board::* hardUpdate)())
 {
     //verify incremental updates of 'param' in NNUE.
-    auto oldParam = b.nnue.*param;
+    int oldEval = b.nnue.forward();
     (b.*hardUpdate)();
-    if ((depth ==0) || (oldParam != b.nnue.*param)) {return (oldParam == b.nnue.*param);}
+    int newEval = b.nnue.forward();
+    if ((depth ==0) || (oldEval != newEval)) {return (oldEval == newEval);}
 
     //make moves recursively.
     b.generatePseudoMoves(b.moveHistory.size() & 1);
@@ -148,7 +149,7 @@ bool testIncrementalUpdateNNUE(Board &b, int depth, auto NNUE::* param, void (Bo
     for (const auto &move: moveCache)
     {
         b.makeMove(move);
-        if (!testIncrementalUpdateNNUE(b, depth-1, param, hardUpdate)) {return false;}
+        if (!testIncrementalUpdateNNUE(b, depth-1, hardUpdate)) {return false;}
         b.unmakeMove();
     }
     return true;
@@ -161,7 +162,7 @@ bool incrementalTest(Board &b, int depth)
     bool res = true;
 
     //nnue.
-    res &= testIncrementalUpdateNNUE(b, depth, &NNUE::l1_layer, &Board::nnueHardUpdate);
+    res &= testIncrementalUpdateNNUE(b, depth, &Board::nnueHardUpdate);
 
     //phase.
     res &= testIncrementalUpdate(b, depth, &Board::phase, &Board::phaseHardUpdate);
