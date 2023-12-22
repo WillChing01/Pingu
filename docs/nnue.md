@@ -36,7 +36,9 @@ The input layer does not change much on move make/unmake, allowing for efficient
 
 ## Model architecture
 
-![Model architecture](img/model_architecture.png)
+<div align="center">
+    <img src="img/model_architecture.png"/>
+</div>
 
 Pingu's NNUE consists of linear (fully connected) layers.
 
