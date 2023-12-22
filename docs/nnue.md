@@ -12,7 +12,7 @@ What is covered:
 - Training the network
 - Efficient implementation of NNUE
 
-For code examples, please refer to
+For code examples, please refer to:
 - ```/tuning/``` for dataset and training code
 - ```/include/nnue.h``` for model implementation
 
@@ -57,10 +57,6 @@ Activations of the hidden layers (64 and 8) are clipped ReLU, defined as
 Linear activation is used for the output layer.
 
 The clipped ReLU activation allows the network to learn non-linear relationships, and clipping the values in the range [0,1] limits the magnitude of intermediate values, which helps quantization into small integer types (e.g. int_16 or int_8).
-
-768 -> 64 is updated incrementally for move make/unmake.
-
-64 -> cReLU(64) -> 8 -> cReLU(8) -> 1 is calculated fully on evaluation.
 
 ## Dataset
 
@@ -118,7 +114,7 @@ The sparse arrays were 32-element arrays containing non-zero indices of each 768
 
 These sparse arrays were transferred to the GPU, which converted them to dense 768-element vectors.
 
-```Sparse (CPU/RAM) -> Sparse (GPU) -> Dense (GPU) -> Backpropagate (GPU)```
+```Sparse (CPU/RAM) -> Sparse (GPU) -> Dense (GPU)```
 
 ### Large dataset
 
@@ -128,9 +124,7 @@ Each chunk was loaded into RAM, and the chunk was randomly divided into mini-bat
 
 A numpy memmap was used to access the dataset to transfer a chunk to RAM.
 
-While dividing the dataset into chunks slightly decreased the effectiveness of shuffling (data in separate chunks was not interchanged between epochs), 
-it was much faster in terms of performance compared to the alternative method of creating batches directly from disk. When loading a chunk, numpy accesses 
-a contiguous subarray once which is ok. In contrast, creating batches directly from disk requires many random accesses of the memmap which is slow.
+While dividing the dataset into chunks slightly decreased the effectiveness of shuffling (data in separate chunks was not interchanged between epochs), it was much faster in terms of performance compared to the alternative method of creating batches directly from disk. When loading a chunk, numpy accesses a contiguous subarray once which is ok. In contrast, creating batches directly from disk requires many random accesses of the memmap which is slow.
 
 ### Overall process
 
@@ -164,11 +158,26 @@ The current Pingu NNUE took 88 epochs to train.
 
 ## Implementation
 
-Listed below are some key optimizations to improve the speed of NNUE evaluation.
+After training, the NNUE was integrated with Pingu, fully replacing the HCE.
+
+Listed below are some key optimizations that Pingu's NNUE benefits from.
+
+### Incremental updates
+
+The first hidden layer is incrementally updated. It is efficient because relatively few inputs change each time a piece is moved.
+
+This requires that we track the values of the first hidden layer _before_ the clipped ReLU is applied, since clipped ReLU cannot be inverted outside the interval (0,1).
+
+```
+    Move make/unmake: 768 -> 64
+    Static eval: 64 -> cReLU(64) -> 8 -> cReLU(8) -> 1
+```
 
 ### Quantization
 
-It is beneficial to quantize the floating point weights into integer domain
+Pingu's NNUE stores its weight and bias values as integers, with appropriate scaling to maintain precision.
+
+It is beneficial to quantize the floating point weights into integer domain for the following reasons:
 - __Incremental updates;__ integer arithmetic is exact so we can perform incremental updates freely.
 - __Speed;__ arithmetic with integers is faster than with floating point numbers.
 - __Size;__ if we can quantize to int_16 or int_8 domain, this allows more values to fit into AVX2 register and therefore faster execution.
@@ -179,7 +188,9 @@ Pingu quantizes the first layer and its weights to 16-bit integers. The second a
 
 Finally, SIMD intrinsics can be used to speed up matrix operations. Pingu uses AVX2 which makes use of 256 bit registers.
 
-More aggressive quantization to smaller integer types would allow for faster SIMD execution.
+SIMD intrinsics are fastest when dealing with contiguous sections of memory, and for this reason the ```input_weights``` array in ```/include/nnue.h``` is stored as its transpose.
+
+More aggressive quantization to smaller integer types would allow for faster SIMD execution, and future versions of Pingu will aim to do this.
 
 ## Results
 
