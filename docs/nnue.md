@@ -151,7 +151,7 @@ For each chunk:
     - Create batch of sparse arrays (random sample without replacement)
     For each batch:
         - Transfer batch of sparse arrays to GPU
-        - In GPU, convert batch of sparse arrays into batch of dense inputs
+        - Convert sparse arrays into dense inputs
         - Calculate error
         - Backpropagate
 
@@ -186,7 +186,6 @@ Pingu's NNUE stores its weight and bias values as integers, with appropriate sca
 It is beneficial to quantize the floating point weights into integer domain for the following reasons:
 - __Incremental updates;__ integer arithmetic is exact so we can perform incremental updates freely.
 - __Speed;__ arithmetic with integers is faster than with floating point numbers.
-- __Size;__ if we can quantize to int_16 or int_8 domain, this allows more values to fit into AVX2 register and therefore faster execution.
 
 Pingu quantizes the first layer and its weights to 16-bit integers. The second and output layers are quantized to 32-bit integers.
 
