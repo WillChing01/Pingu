@@ -43,7 +43,7 @@ Pingu's NNUE consists of linear (fully connected) layers.
 The input layer encodes piece positions as follows:
 
 ```math
-\text{input\_layer}[64 * i + j] = \left\{ \begin{array}{lr} 1, & \text{if piece i on square j} \\ 0, & \text{otherwise} \end{array}
+\text{input\_layer}[64 * i + j] = \left\lbrace \begin{array}{lr} 1, & \text{if piece i on square j} \\ 0, & \text{otherwise} \end{array}
 ```
 
 Activations of the hidden layers (64 and 8) are clipped ReLU, defined as
