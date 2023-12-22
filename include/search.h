@@ -428,23 +428,19 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     bool canFutilityPrune = depth <= futilityDepthLimit &&
                             alpha == (beta - 1) &&
                             !inCheck &&
+                            abs(alpha) <= MATE_BOUND && abs(beta) <= MATE_BOUND &&
                             b.regularEval() + futilityMargins[depth-1] <= alpha;
 
     for (int i=0;i<(int)(moveCache.size());i++)
     {
         move = moveCache[i].first;
 
-        //futility pruning.
-        if (canFutilityPrune && numMoves > 0 &&
-            abs(alpha) != MATE_SCORE && abs(beta) != MATE_SCORE &&
-            !b.isCheckingMove(move))
-        {
-            continue;
-        }
-
         if (hashHit && (move == hashMove)) {continue;}
         if ((move == killers[0]) || (move == killers[1])) {continue;}
-        
+
+        //futility pruning.
+        if (canFutilityPrune && numMoves > 0 && !b.isCheckingMove(move)) {continue;}
+
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
         {
