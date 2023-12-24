@@ -18,6 +18,9 @@ const int nullMoveDepthLimit = 3;
 static const int futilityDepthLimit = 2;
 const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
 
+static const int lateMovePruningDepthLimit = 4;
+const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {8, 14, 20, 26};
+
 U32 storedBestMove = 0;
 int storedBestScore = 0;
 std::vector<U32> pvMoves;
@@ -126,7 +129,7 @@ int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
         b.generateQuiets(side, numChecks);
     }
 
-    std::vector<std::pair<U32,int> > moveCache = b.orderQMoves();
+    std::vector<std::pair<U32,int> > moveCache = b.orderQMoves(inCheck ? -INT_MAX : 0);
 
     for (const auto &[move,moveScore]: moveCache)
     {
@@ -425,14 +428,20 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     b.generateQuiets(side, numChecks);
     moveCache = b.orderQuiets();
 
-    bool canFutilityPrune = depth <= futilityDepthLimit &&
-                            alpha == (beta - 1) &&
-                            !inCheck &&
-                            abs(alpha) <= MATE_BOUND && abs(beta) <= MATE_BOUND &&
+    int numQuiets = 0;
+
+    bool canPrune = alpha == beta - 1 && !inCheck && abs(alpha) < MATE_BOUND;
+
+    bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
+
+    bool canFutilityPrune = canPrune && depth <= futilityDepthLimit &&
                             b.regularEval() + futilityMargins[depth-1] <= alpha;
 
     for (int i=0;i<(int)(moveCache.size());i++)
     {
+        //late move pruning.
+        if (canLateMovePrune && numQuiets > lateMovePruningMargins[depth-1]) {break;}
+
         move = moveCache[i].first;
 
         if (hashHit && (move == hashMove)) {continue;}
@@ -465,7 +474,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         }
         else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
-        numMoves++;
+        numMoves++; numQuiets++;
 
         if (score > bestScore)
         {
