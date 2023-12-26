@@ -32,6 +32,10 @@ auto currentTime = std::chrono::high_resolution_clock::now();
 std::atomic_bool isSearchAborted(false);
 U32 totalNodes = 0;
 
+U32 lastIterTime = 0;
+U32 lastIterNodes = 0;
+U32 lastIterNps = 0;
+
 bool isGameOver = false;
 
 inline int formatScore(int score)
@@ -662,15 +666,19 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
         double iterationTime = std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
         double realTimeLeft = std::max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
 
+        lastIterTime = (U32)(iterationTime);
+        lastIterNodes = totalNodes - startNodes;
+        lastIterNps = (U32)((double)(lastIterNodes) / (iterationTime / 1000.));
+
         //display info.
         if (!gensfen)
         {
             std::cout << "info" <<
                 " depth " << itDepth <<
                 " score " << (abs(storedBestScore) > MATE_BOUND ? "mate " : "cp ") << formatScore(storedBestScore) <<
-                " time " << (U32)(iterationTime) <<
-                " nodes " << totalNodes - startNodes <<
-                " nps " << (U32)((double)(totalNodes - startNodes) / (iterationTime / 1000.)) <<
+                " time " << lastIterTime <<
+                " nodes " << lastIterNodes <<
+                " nps " << lastIterNps <<
                 " pv";
             collectPVRoot(b, storedBestMove, itDepth);
             for (const auto pvMove: pvMoves)

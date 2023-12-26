@@ -17,6 +17,7 @@
 #include "format.h"
 #include "search.h"
 #include "board.h"
+#include "bench.h"
 
 const std::string ENGINE_NAME = "Pingu 2.0.0";
 const std::string ENGINE_AUTHOR = "William Ching";
@@ -419,6 +420,7 @@ void uciLoop()
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display(); std::cout << b.positionToFen() << std::endl;}
         else if (commands[0] == "gensfen") {gensfenCommand(b, commands);}
+        else if (commands[0] == "bench") {benchCommand(b); break;}
         else if (commands[0] == "test") {testCommand(b, commands);}
         else if (commands[0] == "help") {helpCommand(commands);}
     }
