@@ -10,10 +10,10 @@ LDFLAGS = -s -static -static-libstdc++ -static-libgcc
 
 ifeq ($(OS),Windows_NT)
 	EXE = Pingu.exe
-	DEL = del $(DIR)\$(OBJ) $(DIR)\$(EXE)
+	RM = rd /s /q
 else
 	EXE = Pingu
-	DEL = $(RM) $(DIR)/$(OBJ) $(DIR)/$(EXE)
+	RM = rm -rf
 endif
 
 .PHONY: all clean
@@ -24,7 +24,8 @@ $(DIR)/$(EXE): $(DIR)/$(OBJ)
 	$(CXX) $(DIR)/$(OBJ) -o $(DIR)/$(EXE) $(LDFLAGS)
 
 $(DIR)/$(OBJ): $(SRC)
+	mkdir $(DIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(SRC) -o $(DIR)/$(OBJ)
 
 clean:
-	$(DEL)
+	$(RM) $(DIR)
