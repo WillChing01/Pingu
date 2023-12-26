@@ -10,9 +10,11 @@ LDFLAGS = -s -static -static-libstdc++ -static-libgcc
 
 ifeq ($(OS),Windows_NT)
 	EXE = Pingu.exe
+	MKDIR = if not exist $(DIR) mkdir $(DIR)
 	RM = rd /s /q
 else
 	EXE = Pingu
+	MKDIR = mkdir -p $(DIR)
 	RM = rm -rf
 endif
 
@@ -24,7 +26,7 @@ $(DIR)/$(EXE): $(DIR)/$(OBJ)
 	$(CXX) $(DIR)/$(OBJ) -o $(DIR)/$(EXE) $(LDFLAGS)
 
 $(DIR)/$(OBJ): $(SRC)
-	mkdir $(DIR)
+	$(MKDIR)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(SRC) -o $(DIR)/$(OBJ)
 
 clean:
