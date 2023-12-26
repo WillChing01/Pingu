@@ -1,6 +1,5 @@
 CXX = g++
 
-DIR = build
 SRC = main.cpp
 OBJ = main.o
 
@@ -10,24 +9,21 @@ LDFLAGS = -s -static -static-libstdc++ -static-libgcc
 
 ifeq ($(OS),Windows_NT)
 	EXE = Pingu.exe
-	MKDIR = if not exist $(DIR) mkdir $(DIR)
-	RM = rd /s /q
+	RM = del /q
 else
 	EXE = Pingu
-	MKDIR = mkdir -p $(DIR)
-	RM = rm -rf
+	RM = rm -f
 endif
 
 .PHONY: all clean
 
-all: $(DIR)/$(EXE)
+all: $(EXE)
 
-$(DIR)/$(EXE): $(DIR)/$(OBJ)
-	$(CXX) $(DIR)/$(OBJ) -o $(DIR)/$(EXE) $(LDFLAGS)
+$(EXE): $(OBJ)
+	$(CXX) $(OBJ) -o $(EXE) $(LDFLAGS)
 
-$(DIR)/$(OBJ): $(SRC)
-	$(MKDIR)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(SRC) -o $(DIR)/$(OBJ)
+$(OBJ): $(SRC)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(SRC) -o $(OBJ)
 
 clean:
-	$(RM) $(DIR)
+	$(RM) $(OBJ) $(EXE)
