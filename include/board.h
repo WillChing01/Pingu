@@ -1306,6 +1306,182 @@ class Board {
             return inCheck;
         }
 
+        bool stalemateCheck(bool side)
+        {
+            //we assume we are not in check.
+            updateOccupied();
+            U64 p = (occupied[0] | occupied[1]);
+            U64 pinned = getPinnedPieces(side);
+
+            //check for ordinary moves.
+            U32 pos; U64 x; U64 temp;
+
+            //knight - not pinned.
+            temp = pieces[_nKnights+(int)(side)] & ~pinned;
+            x = knightAttacks(temp) & ~occupied[(int)(side)];
+            if (x) {return false;}
+
+            //bishop - not pinned.
+            temp = pieces[_nBishops+(int)(side)] & ~pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicBishopAttacks(p, pos) & ~occupied[(int)(side)];
+                if (x) {return false;}
+            }
+
+            //rook - not pinned.
+            temp = pieces[_nRooks+(int)(side)] & ~pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicRookAttacks(p, pos) & ~occupied[(int)(side)];
+                if (x) {return false;}
+            }
+
+            //queen - not pinned.
+            temp = pieces[_nQueens+(int)(side)] & ~pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicQueenAttacks(p, pos) & ~occupied[(int)(side)];
+                if (x) {return false;}
+            }
+
+            //pawn - not pinned.
+            temp = pieces[_nPawns+(int)(side)] & ~pinned;
+            x = 0;
+            //move forward.
+            if (side==0)
+            {
+                x |= (temp << 8) & ~p;
+                x |= ((((temp & FILE_2) << 8) & (~p)) << 8) & (~p);
+            }
+            else
+            {
+                x |= (temp >> 8) & ~p;
+                x |= ((((temp & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+            }
+            if (x) {return false;}
+            //capture.
+            x = pawnAttacks(temp, side) & occupied[(int)(!side)];
+            if (x) {return false;}
+
+            //check for special moves (en-passant, king, pinned).
+            moveBuffer.clear();
+
+            //bishop - pinned.
+            temp = pieces[_nBishops+(int)(side)] & pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicBishopAttacks(p, pos) & ~occupied[(int)(side)];
+                while (x)
+                {
+                    appendMove(_nBishops+(int)(side), pos, popLSB(x), true);
+                    if (moveBuffer.size()) {return false;}
+                }
+            }
+
+            //rook - pinned.
+            temp = pieces[_nRooks+(int)(side)] & pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicRookAttacks(p, pos) & ~occupied[(int)(side)];
+                while (x)
+                {
+                    appendMove(_nRooks+(int)(side), pos, popLSB(x), true);
+                    if (moveBuffer.size()) {return false;}
+                }
+            }
+
+            //queen - pinned.
+            temp = pieces[_nQueens+(int)(side)] & pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicQueenAttacks(p, pos) & ~occupied[(int)(side)];
+                while (x)
+                {
+                    appendMove(_nQueens+(int)(side), pos, popLSB(x), true);
+                    if (moveBuffer.size()) {return false;}
+                }
+            }
+
+            //pawn - pinned.
+            temp = pieces[_nPawns+(int)(side)] & pinned;
+            U64 pawnPosBoard;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                pawnPosBoard = 1ull << pos;
+                
+                x = pawnAttacks(pawnPosBoard, side) & occupied[(int)(!side)];
+                //move forward.
+                if (side == 0)
+                {
+                    x |= (pawnPosBoard << 8) & (~p);
+                    x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
+                }
+                else
+                {
+                    x |= (pawnPosBoard >> 8 & (~p));
+                    x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+                }
+
+                while (x)
+                {
+                    appendMove(_nPawns+(int)(side), pos, popLSB(x), true);
+                    if (moveBuffer.size()) {return false;}
+                }
+            }
+
+            //pawn - en-passant.
+            if (current.enPassantSquare != -1)
+            {
+                temp = pieces[_nPawns+(int)(side)];
+                x = pawnAttacks(1ull << current.enPassantSquare, !side) & temp;
+                while (x)
+                {
+                    appendMove(_nPawns+(int)(side), popLSB(x), current.enPassantSquare, true);
+                    if (moveBuffer.size()) {return false;}
+                }
+            }
+
+            //king moves.
+            pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+            x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & ~occupied[(int)(side)];
+            while (x)
+            {
+                appendMove(_nKing+(int)(side), pos, popLSB(x), true);
+                if (moveBuffer.size()) {return false;}
+            }
+
+            //castling.
+            if (current.canKingCastle[(int)(side)] || current.canQueenCastle[(int)(side)])
+            {
+                updateAttacked(!side);
+                if (current.canKingCastle[(int)(side)] &&
+                    !(bool)(KING_CASTLE_OCCUPIED[(int)(side)] & p) &&
+                    !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                {
+                    //kingside castle.
+                    return false;
+                }
+                if (current.canQueenCastle[(int)(side)] &&
+                    !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & p) &&
+                    !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                {
+                    //queenside castle.
+                    return false;
+                }
+            }
+
+            //no legal moves found - stalemate.
+            return true;
+        }
+
         bool generateEvalMoves(bool side)
         {
             //only need one legal move to exit early.
