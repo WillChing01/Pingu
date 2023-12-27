@@ -168,14 +168,6 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     //draw by insufficient material.
     if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
 
-    //qSearch at horizon.
-    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
-
-    //main search.
-    bool side = b.moveHistory.size() & 1;
-    b.updateOccupied();
-    bool inCheck = b.isInCheck(side);
-
     //probe hash table.
     U64 bHash = b.zHashPieces ^ b.zHashState;
     bool hashHit = ttProbe(bHash, ply);
@@ -191,6 +183,14 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         //All node.
         else {if (tableEntry.evaluation <= alpha) {return tableEntry.evaluation;}}
     }
+
+    //qSearch at horizon.
+    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
+
+    //main search.
+    bool side = b.moveHistory.size() & 1;
+    b.updateOccupied();
+    bool inCheck = b.isInCheck(side);
 
     if (hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
 
