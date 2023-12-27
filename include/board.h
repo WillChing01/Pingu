@@ -1306,250 +1306,180 @@ class Board {
             return inCheck;
         }
 
-        bool generateEvalMoves(bool side)
+        bool stalemateCheck(bool side)
         {
-            //only need one legal move to exit early.
-            moveBuffer.clear();
-            //generate all pseudo-legal moves.
+            //we assume we are not in check.
             updateOccupied();
-            updateAttacked(!side);
+            U64 p = (occupied[0] | occupied[1]);
+            U64 pinned = getPinnedPieces(side);
 
-            if (!(bool)(pieces[_nKing+(int)(side)] & attacked[(int)(!side)]))
+            //check for ordinary moves.
+            U32 pos; U64 x; U64 temp;
+
+            //knight - not pinned.
+            temp = pieces[_nKnights+(int)(side)] & ~pinned;
+            x = knightAttacks(temp) & ~occupied[(int)(side)];
+            if (x) {return false;}
+
+            //bishop - not pinned.
+            temp = pieces[_nBishops+(int)(side)] & ~pinned;
+            while (temp)
             {
-                //regular moves.
-                U32 pos; U64 x;
-
-                //castling.
-                if (current.canKingCastle[(int)(side)] &&
-                    !(bool)(KING_CASTLE_OCCUPIED[(int)(side)] & (occupied[0] | occupied[1])) &&
-                    !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
-                {
-                    //kingside castle.
-                    pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                    appendMove(_nKing+(int)(side), pos, pos+2, false);
-                    return false;
-                }
-                if (current.canQueenCastle[(int)(side)] &&
-                    !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & (occupied[0] | occupied[1])) &&
-                    !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
-                {
-                    //queenside castle.
-                    pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                    appendMove(_nKing+(int)(side), pos, pos-2, false);
-                    return false;
-                }
-
-                U64 pinned = getPinnedPieces(side);
-                U64 p = (occupied[0] | occupied[1]);
-
-                //knights.
-                U64 knights = pieces[_nKnights+(int)(side)] & ~pinned;
-                while (knights)
-                {
-                    pos = popLSB(knights);
-                    x = knightAttacks(1ull << pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nKnights+(int)(side), pos, popLSB(x), false);
-                        if (moveBuffer.size() > 0) {return false;}
-                    }
-                }
-
-                //bishops.
-                U64 bishops = pieces[_nBishops+(int)(side)];
-                while (bishops)
-                {
-                    pos = popLSB(bishops);
-                    x = magicBishopAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nBishops+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);
-                        if (moveBuffer.size() > 0) {return false;}
-                    }
-                }
-
-                //pawns.
-                U64 pawns = pieces[_nPawns+(int)(side)];
-                U64 pawnPosBoard;
-                while (pawns)
-                {
-                    pos = popLSB(pawns);
-                    pawnPosBoard = 1ull << pos;
-                    //en passant square included.
-                    x = pawnAttacks(pawnPosBoard,side) & ~occupied[(int)(side)];
-
-                    if (current.enPassantSquare != -1) {x &= (occupied[(int)(!side)] | (1ull << current.enPassantSquare));}
-                    else {x &= occupied[(int)(!side)];}
-
-                    //move forward.
-                    if (side==0)
-                    {
-                        x |= (pawnPosBoard << 8) & (~p);
-                        x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
-                    }
-                    else
-                    {
-                        x |= (pawnPosBoard >> 8 & (~p));
-                        x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
-                    }
-
-                    while (x)
-                    {
-                        appendMove(_nPawns+(int)(side), pos,popLSB(x), (pawnPosBoard & pinned)!=0);
-                        if (moveBuffer.size() > 0) {return false;}
-                    }
-                }
-
-                //rook.
-                U64 rooks = pieces[_nRooks+(int)(side)];
-                while (rooks)
-                {
-                    pos = popLSB(rooks);
-                    x = magicRookAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nRooks+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);
-                        if (moveBuffer.size() > 0) {return false;}
-                    }
-                }
-
-                //queen.
-                U64 queens = pieces[_nQueens+(int)(side)];
-                while (queens)
-                {
-                    pos = popLSB(queens);
-                    x = magicQueenAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nQueens+(int)(side), pos, popLSB(x), ((1ull << pos) & pinned)!=0);
-                        if (moveBuffer.size() > 0) {return false;}
-                    }
-                }
-
-                //king.
-                pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & ~occupied[(int)(side)];
-                while (x)
-                {
-                    appendMove(_nKing+(int)(side), pos, popLSB(x), false);
-                    if (moveBuffer.size() > 0) {return false;}
-                }
-
-                return false;
+                pos = popLSB(temp);
+                x = magicBishopAttacks(p, pos) & ~occupied[(int)(side)];
+                if (x) {return false;}
             }
-            else if (isInCheckDetailed(side) == 1)
+
+            //rook - not pinned.
+            temp = pieces[_nRooks+(int)(side)] & ~pinned;
+            while (temp)
             {
-                //single check.
-                U32 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & ~occupied[(int)(side)];
-                while (x)
-                {
-                    appendMove(_nKing+(int)(side), pos, popLSB(x),true);
-                    if (moveBuffer.size() > 0) {return true;}
-                }
+                pos = popLSB(temp);
+                x = magicRookAttacks(p, pos) & ~occupied[(int)(side)];
+                if (x) {return false;}
+            }
 
-                U64 p = (occupied[0] | occupied[1]);
+            //queen - not pinned.
+            temp = pieces[_nQueens+(int)(side)] & ~pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicQueenAttacks(p, pos) & ~occupied[(int)(side)];
+                if (x) {return false;}
+            }
 
-                //pawns.
-                U64 pawns = pieces[_nPawns+(int)(side)];
-                U64 pawnPosBoard;
-                while (pawns)
-                {
-                    pos = popLSB(pawns);
-                    pawnPosBoard = 1ull << pos;
-
-                    //en passant square included.
-                    x = pawnAttacks(pawnPosBoard,side) & ~occupied[(int)(side)];
-
-                    if (current.enPassantSquare != -1) {x &= (occupied[(int)(!side)] | (1ull << current.enPassantSquare));}
-                    else {x &= occupied[(int)(!side)];}
-
-                    //move forward.
-                    if (side==0)
-                    {
-                        x |= (pawnPosBoard << 8) & (~p);
-                        x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
-                    }
-                    else
-                    {
-                        x |= (pawnPosBoard >> 8 & (~p));
-                        x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
-                    }
-
-                    while (x)
-                    {
-                        appendMove(_nPawns+(int)(side), pos,popLSB(x), true);
-                        if (moveBuffer.size() > 0) {return true;}
-                    }
-                }
-
-                //bishops.
-                U64 bishops = pieces[_nBishops+(int)(side)];
-                while (bishops)
-                {
-                    pos = popLSB(bishops);
-                    x = magicBishopAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nBishops+(int)(side), pos, popLSB(x), true);
-                        if (moveBuffer.size() > 0) {return true;}
-                    }
-                }
-
-                //knights.
-                U64 knights = pieces[_nKnights+(int)(side)];
-                while (knights)
-                {
-                    pos = popLSB(knights);
-                    x = knightAttacks(1ull << pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nKnights+(int)(side), pos, popLSB(x), true);
-                        if (moveBuffer.size() > 0) {return true;}
-                    }
-                }
-
-                //rook.
-                U64 rooks = pieces[_nRooks+(int)(side)];
-                while (rooks)
-                {
-                    pos = popLSB(rooks);
-                    x = magicRookAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nRooks+(int)(side), pos, popLSB(x), true);
-                        if (moveBuffer.size() > 0) {return true;}
-                    }
-                }
-
-                //queen.
-                U64 queens = pieces[_nQueens+(int)(side)];
-                while (queens)
-                {
-                    pos = popLSB(queens);
-                    x = magicQueenAttacks(p,pos) & ~occupied[(int)(side)];
-                    while (x)
-                    {
-                        appendMove(_nQueens+(int)(side), pos, popLSB(x), true);
-                        if (moveBuffer.size() > 0) {return true;}
-                    }
-                }
-
-                return true;
+            //pawn - not pinned.
+            temp = pieces[_nPawns+(int)(side)] & ~pinned;
+            x = 0;
+            //move forward.
+            if (side==0)
+            {
+                x |= (temp << 8) & ~p;
+                x |= ((((temp & FILE_2) << 8) & (~p)) << 8) & (~p);
             }
             else
             {
-                //multiple check. only king moves allowed.
-                U32 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~attacked[(int)(!side)] & ~occupied[(int)(side)];
+                x |= (temp >> 8) & ~p;
+                x |= ((((temp & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+            }
+            if (x) {return false;}
+            //capture.
+            x = pawnAttacks(temp, side) & occupied[(int)(!side)];
+            if (x) {return false;}
+
+            //check for special moves (en-passant, king, pinned).
+            moveBuffer.clear();
+
+            //bishop - pinned.
+            temp = pieces[_nBishops+(int)(side)] & pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicBishopAttacks(p, pos) & ~occupied[(int)(side)];
                 while (x)
                 {
-                    appendMove(_nKing+(int)(side), pos, popLSB(x), true);
-                    if (moveBuffer.size() > 0) {return true;}
+                    appendMove(_nBishops+(int)(side), pos, popLSB(x), true);
+                    if (moveBuffer.size()) {return false;}
+                }
+            }
+
+            //rook - pinned.
+            temp = pieces[_nRooks+(int)(side)] & pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicRookAttacks(p, pos) & ~occupied[(int)(side)];
+                while (x)
+                {
+                    appendMove(_nRooks+(int)(side), pos, popLSB(x), true);
+                    if (moveBuffer.size()) {return false;}
+                }
+            }
+
+            //queen - pinned.
+            temp = pieces[_nQueens+(int)(side)] & pinned;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                x = magicQueenAttacks(p, pos) & ~occupied[(int)(side)];
+                while (x)
+                {
+                    appendMove(_nQueens+(int)(side), pos, popLSB(x), true);
+                    if (moveBuffer.size()) {return false;}
+                }
+            }
+
+            //pawn - pinned.
+            temp = pieces[_nPawns+(int)(side)] & pinned;
+            U64 pawnPosBoard;
+            while (temp)
+            {
+                pos = popLSB(temp);
+                pawnPosBoard = 1ull << pos;
+                
+                x = pawnAttacks(pawnPosBoard, side) & occupied[(int)(!side)];
+                //move forward.
+                if (side == 0)
+                {
+                    x |= (pawnPosBoard << 8) & (~p);
+                    x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
+                }
+                else
+                {
+                    x |= (pawnPosBoard >> 8 & (~p));
+                    x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
                 }
 
-                return true;
+                while (x)
+                {
+                    appendMove(_nPawns+(int)(side), pos, popLSB(x), true);
+                    if (moveBuffer.size()) {return false;}
+                }
             }
+
+            //pawn - en-passant.
+            if (current.enPassantSquare != -1)
+            {
+                temp = pieces[_nPawns+(int)(side)];
+                x = pawnAttacks(1ull << current.enPassantSquare, !side) & temp;
+                while (x)
+                {
+                    appendMove(_nPawns+(int)(side), popLSB(x), current.enPassantSquare, true);
+                    if (moveBuffer.size()) {return false;}
+                }
+            }
+
+            //king moves.
+            pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+            x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & ~occupied[(int)(side)];
+            while (x)
+            {
+                appendMove(_nKing+(int)(side), pos, popLSB(x), true);
+                if (moveBuffer.size()) {return false;}
+            }
+
+            //castling.
+            if (current.canKingCastle[(int)(side)] || current.canQueenCastle[(int)(side)])
+            {
+                updateAttacked(!side);
+                if (current.canKingCastle[(int)(side)] &&
+                    !(bool)(KING_CASTLE_OCCUPIED[(int)(side)] & p) &&
+                    !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                {
+                    //kingside castle.
+                    return false;
+                }
+                if (current.canQueenCastle[(int)(side)] &&
+                    !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & p) &&
+                    !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                {
+                    //queenside castle.
+                    return false;
+                }
+            }
+
+            //no legal moves found - stalemate.
+            return true;
         }
 
         void movePieces()
@@ -1904,11 +1834,11 @@ class Board {
 
         int evaluateBoard()
         {
-            bool turn = moveHistory.size() & 1;
-            bool inCheck = generateEvalMoves(turn);
+            //assume we are not in check.
+            bool side = moveHistory.size() & 1;
+            bool stalemate = stalemateCheck(side);
 
-            if (moveBuffer.size() > 0) {return regularEval();}
-            return inCheck ? -MATE_SCORE : 0;
+            return stalemate ? 0 : regularEval();
         }
 
         std::vector<std::pair<U32,int> > orderCaptures()
