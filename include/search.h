@@ -12,6 +12,11 @@
 #include "format.h"
 #include "board.h"
 
+const int maximumPruningDepth = 8;
+
+const int inverseFutilityMargin = 120;
+const int inverseFutilityDepthLimit = 8;
+
 const int nullMoveR = 2;
 const int nullMoveDepthLimit = 3;
 
@@ -191,6 +196,18 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     bool side = b.moveHistory.size() & 1;
     b.updateOccupied();
     bool inCheck = b.isInCheck(side);
+
+    //get static evaluation.
+    int staticEval = 0;
+    bool canPrune = (alpha == beta - 1) && !inCheck && abs(alpha) < MATE_BOUND;
+    if (canPrune && depth <= maximumPruningDepth) {staticEval = b.regularEval();}
+
+    //inverse futility pruning.
+    if (canPrune && depth <= inverseFutilityDepthLimit)
+    {
+        int margin = inverseFutilityMargin * depth;
+        if (staticEval - margin >= beta) {return beta;}
+    }
 
     if (hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
 
@@ -434,12 +451,10 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
 
     int numQuiets = 0;
 
-    bool canPrune = alpha == beta - 1 && !inCheck && abs(alpha) < MATE_BOUND;
-
     bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
 
     bool canFutilityPrune = canPrune && depth <= futilityDepthLimit &&
-                            b.regularEval() + futilityMargins[depth-1] <= alpha;
+                            staticEval + futilityMargins[depth-1] <= alpha;
 
     for (int i=0;i<(int)(moveCache.size());i++)
     {
@@ -624,7 +639,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
                     alpha = std::max(storedBestScore - 200, alpha);
                     beta = std::min(storedBestScore + 200, beta);
                     score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
-                    if ((score <= alpha || score >= beta) && score != MATE_SCORE)
+                    if (score <= alpha || score >= beta)
                     {
                         //shift to full search window.
                         alpha = -MATE_SCORE-1; beta = MATE_SCORE;
