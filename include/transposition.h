@@ -155,8 +155,9 @@ inline bool ttProbe(U64 zHash, int ply)
 
 void populateRandomNums()
 {
-    std::mt19937_64 _mt(974u);
-    std::uniform_int_distribution<unsigned long long> _dist(0ull,ULLONG_MAX);
+    std::seed_seq ss{866052240, 524600418, 294500052, 845566473};
+    std::mt19937_64 _mt(ss);
+    std::uniform_int_distribution<unsigned long long> _dist(1ull,ULLONG_MAX);
 
     for (int i=0;i<781;i++) {randomNums[i] = _dist(_mt);}
 }
