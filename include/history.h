@@ -73,7 +73,7 @@ inline void updateHistoryWithoutPrev(const std::vector<U32> &quiets, U32 cutMove
 
     int delta = depth * depth;
 
-    //decrase history of previous quiets.
+    //decrease history of previous quiets.
     for (const auto &move: quiets)
     {
         int pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
