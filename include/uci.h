@@ -254,9 +254,6 @@ void prepareForNewGame(Board &b)
     //reset hash table.
     clearTT();
     rootCounter = 0;
-
-    //reset history.
-    clearHistory();
 }
 
 void gensfenCommand(Board &b, const std::vector<std::string> &words)
