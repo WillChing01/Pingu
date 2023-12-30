@@ -26,7 +26,7 @@ const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
 static const int lateMovePruningDepthLimit = 4;
 const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {8, 14, 20, 26};
 
-const int deltaMargin = 50;
+const int deltaMargin = 200;
 
 U32 storedBestMove = 0;
 int storedBestScore = 0;
