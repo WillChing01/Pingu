@@ -26,6 +26,8 @@ const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
 static const int lateMovePruningDepthLimit = 4;
 const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {8, 14, 20, 26};
 
+const int deltaMargin = 50;
+
 U32 storedBestMove = 0;
 int storedBestScore = 0;
 std::vector<U32> pvMoves;
@@ -138,7 +140,7 @@ int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
         b.generateQuiets(side, numChecks);
     }
 
-    std::vector<std::pair<U32,int> > moveCache = b.orderQMoves(inCheck ? -INT_MAX : 0);
+    std::vector<std::pair<U32,int> > moveCache = b.orderQMoves(inCheck ? -INT_MAX : std::max(0, alpha - deltaMargin - bestScore));
 
     for (const auto &[move,moveScore]: moveCache)
     {
