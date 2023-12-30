@@ -16,6 +16,8 @@
 #include "evaluation.h"
 #include "nnue.h"
 
+#include "history.h"
+
 #include "transposition.h"
 
 struct gameState
@@ -60,7 +62,6 @@ class Board {
         std::vector<U32> quietBuffer;
         std::vector<U32> moveBuffer;
         std::vector<std::pair<U32,int> > scoredMoves;
-        U32 killerMoves[128][2] = {};
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -89,9 +90,6 @@ class Board {
 
         //SEE.
         int gain[32]={};
-
-        //history table, history[pieceType][to_square]
-        int history[12][64] = {};
 
         //temp variable for move appending.
         U32 newMove;
@@ -1864,12 +1862,16 @@ class Board {
 
             for (const auto &move: moveBuffer)
             {
-                scoredMoves.push_back(
-                    std::pair<U32,int>(
-                        move,
-                        history[(move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET][(move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET]
-                    )
-                );
+                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                int moveScore = HISTORY[pieceType][finishSquare];
+                if (moveHistory.back() != 0)
+                {
+                    U32 prevPieceType = (moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                    U32 prevFinishSquare = (moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                    moveScore += COUNTERMOVE_HISTORY[prevPieceType][prevFinishSquare][pieceType][finishSquare];
+                }
+                scoredMoves.push_back(std::pair<U32,int>(move, moveScore));
             }
 
             //sort the moves.
@@ -1902,22 +1904,6 @@ class Board {
             //sort the moves.
             sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
             return scoredMoves;
-        }
-
-        void ageHistory(const int factor = 16)
-        {
-            for (int i=0;i<12;i++)
-            {
-                for (int j=0;j<64;j++) {history[i][j] /= factor;}
-            }
-        }
-
-        void clearHistory()
-        {
-            for (int i=0;i<12;i++)
-            {
-                for (int j=0;j<64;j++) {history[i][j] = 0;}
-            }
         }
 };
 

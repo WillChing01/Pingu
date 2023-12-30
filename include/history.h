@@ -8,6 +8,7 @@
 const int HISTORY_MAX = 1048576;
 const int COUNTERMOVE_HISTORY_MAX = 1048576;
 const int HISTORY_AGE_FACTOR = 16;
+const int COUNTERMOVE_HISTORY_AGE_FACTOR = 16;
 
 int HISTORY[12][64] = {};
 
@@ -19,21 +20,22 @@ inline void clearHistory()
     for (int i=0;i<12;i++) {for (int j=0;j<64;j++) {for (int k=0;k<12;k++) {for (int l=0;l<64;l++) {COUNTERMOVE_HISTORY[i][j][k][l] = 0;}}}}
 }
 
-inline void ageHistory(int prevPieceType, int prevToSquare)
+inline void ageMainHistory()
 {
-    for (int i=0;i<12;i++)
-    {
-        for (int j=0;j<64;j++)
-        {
-            HISTORY[i][j] /= HISTORY_AGE_FACTOR;
-            COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][i][j] /= HISTORY_AGE_FACTOR;
-        }
-    }
+    for (int i=0;i<12;i++) {for (int j=0;j<64;j++) {HISTORY[i][j] /= HISTORY_AGE_FACTOR;}}
 }
 
-inline void updateHistory(const std::vector<U32> &quiets, U32 cutMove, U32 prevMove, int depth)
+inline void ageCounterHistory(int prevPieceType, int prevToSquare)
 {
-    bool shouldAge = false;
+    for (int i=0;i<12;i++) {for (int j=0;j<64;j++) {COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][i][j] /= COUNTERMOVE_HISTORY_AGE_FACTOR;}}
+}
+
+inline void updateHistoryWithPrev(const std::vector<U32> &quiets, U32 cutMove, U32 prevMove, int depth)
+{
+    bool shouldAgeHistory = false;
+    bool shouldAgeCounterHistory = false;
+
+    int delta = depth * depth;
 
     int prevPieceType = (prevMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
     int prevToSquare = (prevMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
@@ -43,31 +45,60 @@ inline void updateHistory(const std::vector<U32> &quiets, U32 cutMove, U32 prevM
     {
         int pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
         int toSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-        
-        HISTORY[pieceType][toSquare] -= depth * depth;
-        COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][pieceType][toSquare] -= depth*depth;
 
-        if (HISTORY[pieceType][toSquare] < -HISTORY_MAX ||
-            COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][pieceType][toSquare] < -COUNTERMOVE_HISTORY_MAX)
-        {
-            shouldAge = true;
-        }
+        HISTORY[pieceType][toSquare] -= delta;
+        COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][pieceType][toSquare] -= delta;
+
+        if (HISTORY[pieceType][toSquare] < -HISTORY_MAX) {shouldAgeHistory = true;}
+        if (COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][pieceType][toSquare] < -COUNTERMOVE_HISTORY_MAX) {shouldAgeCounterHistory = true;}
     }
 
     //increase history of cut move.
     int pieceType = (cutMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
     int toSquare = (cutMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
 
-    HISTORY[pieceType][toSquare] += depth * depth;
-    COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][pieceType][toSquare] -= depth*depth;
+    HISTORY[pieceType][toSquare] += delta;
+    COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][pieceType][toSquare] += delta;
 
-    if (HISTORY[pieceType][toSquare] > HISTORY_MAX ||
-        COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][pieceType][toSquare] > COUNTERMOVE_HISTORY_MAX)
+    if (HISTORY[pieceType][toSquare] > HISTORY_MAX) {shouldAgeHistory = true;}
+    if (COUNTERMOVE_HISTORY[prevPieceType][prevToSquare][pieceType][toSquare] > COUNTERMOVE_HISTORY_MAX) {shouldAgeHistory = true;}
+
+    if (shouldAgeHistory) {ageMainHistory();}
+    if (shouldAgeCounterHistory) {ageCounterHistory(prevPieceType, prevToSquare);}
+}
+
+inline void updateHistoryWithoutPrev(const std::vector<U32> &quiets, U32 cutMove, int depth)
+{
+    bool shouldAgeHistory = false;
+
+    int delta = depth * depth;
+
+    //decrase history of previous quiets.
+    for (const auto &move: quiets)
     {
-        shouldAge = true;
+        int pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        int toSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+
+        HISTORY[pieceType][toSquare] -= delta;
+
+        if (HISTORY[pieceType][toSquare] < -HISTORY_MAX) {shouldAgeHistory = true;}
     }
 
-    if (shouldAge) {ageHistory(prevPieceType, prevToSquare);}
+    //increase history of cut move.
+    int pieceType = (cutMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+    int toSquare = (cutMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+
+    HISTORY[pieceType][toSquare] += delta;
+
+    if (HISTORY[pieceType][toSquare] > HISTORY_MAX) {shouldAgeHistory = true;}
+
+    if (shouldAgeHistory) {ageMainHistory();}
+}
+
+inline void updateHistory(const std::vector<U32> &quiets, U32 cutMove, U32 prevMove, int depth)
+{
+    if (prevMove != 0) {updateHistoryWithPrev(quiets, cutMove, prevMove, depth);}
+    else {updateHistoryWithoutPrev(quiets, cutMove, depth);}
 }
 
 #endif // HISTORY_H_INCLUDED

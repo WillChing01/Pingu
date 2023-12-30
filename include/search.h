@@ -7,8 +7,9 @@
 #include <cmath>
 
 #include "bitboard.h"
+#include "history.h"
+#include "killer.h"
 #include "transposition.h"
-#include "evaluation.h"
 #include "format.h"
 #include "board.h"
 
@@ -228,32 +229,24 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     int bestScore = -MATE_SCORE; U32 bestMove = 0;
     int numMoves = 0;
 
+    std::vector<U32> quietsPlayed = {};
+
     //try hash move.
     if (hashHit && b.isValidMove(hashMove, inCheck))
     {
         b.makeMove(hashMove);
         bestScore = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
         b.unmakeMove();
-        numMoves++;
 
+        //beta cutoff.
         if (bestScore >= beta)
         {
-            //beta cutoff.
-            if (b.currentMove.capturedPieceType == 15)
+            bool isQuiet = (hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET == 15 &&
+            (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET == (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            if (isQuiet)
             {
-                //update killers.
-                if (b.killerMoves[ply][0] != hashMove)
-                {
-                    b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                    b.killerMoves[ply][0] = hashMove;
-                }
-
-                //increase history score.
-                if (depth >= 5)
-                {
-                    b.history[b.currentMove.pieceType][b.currentMove.finishSquare] += depth * depth;
-                    if (b.history[b.currentMove.pieceType][b.currentMove.finishSquare] > HISTORY_MAX) {b.ageHistory();}
-                }
+                updateKillers(hashMove, ply);
+                if (depth >= 5) {updateHistory(quietsPlayed, hashMove, b.moveHistory.back(), depth);}
             }
 
             //update transposition table.
@@ -262,6 +255,11 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         }
         if (bestScore > alpha) {alpha = bestScore; isExact = true;}
         bestMove = hashMove;
+
+        bool isQuiet = (hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET == 15 &&
+        (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET == (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        if (isQuiet) {quietsPlayed.push_back(hashMove);}
+        numMoves++;
     }
 
     //internal iterative reduction on hash miss.
@@ -294,19 +292,17 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
             if (score > alpha && score < beta)
             {
-                //full window re-search.
                 score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
             }
         }
         else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
-        numMoves++;
 
         if (score > bestScore)
         {
+            //beta cutoff.
             if (score >= beta)
             {
-                //beta cutoff.
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
                 return score;
@@ -315,17 +311,19 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             bestScore = score;
             bestMove = move;
         }
+
+        numMoves++;
     }
 
     //try killers.
     U32 killers[2] = {0,0};
     for (int i=0;i<2;i++)
     {
-        move = b.killerMoves[ply][i];
+        move = killerMoves[ply][i];
         //check that killer is not hash move.
         if (hashHit && move == hashMove) {continue;}
         //check that killers not identical.
-        if (i == 1 && move == b.killerMoves[ply][0]) {continue;}
+        if (i == 1 && move == killerMoves[ply][0]) {continue;}
         //check if killer is valid.
         if (!b.isValidMove(move, inCheck)) {continue;}
         killers[i] = move;
@@ -334,6 +332,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         if (depth >= 2 && numMoves > 0)
         {
             //late move reductions (non pv nodes).
+            //reduce killers less than other quiets.
             if (depth >= 3 && (alpha == (beta - 1)) && numMoves >= 3 && !inCheck)
             {
                 score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);
@@ -353,49 +352,14 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         }
         else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
-        numMoves++;
 
         if (score > bestScore)
         {
+            //beta cutoff.
             if (score >= beta)
             {
-                //beta cutoff.
-                //update killers.
-                if (b.killerMoves[ply][0] != move)
-                {
-                    b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                    b.killerMoves[ply][0] = move;
-                }
-
-                //update history.
-                if (depth >= 5)
-                {
-                    bool shouldAge = false;
-
-                    b.history[b.currentMove.pieceType][b.currentMove.finishSquare] += depth * depth;
-                    if (b.history[b.currentMove.pieceType][b.currentMove.finishSquare] > HISTORY_MAX) {shouldAge = true;}
-
-                    //decrement hash move.
-                    if (hashHit &&
-                        (((hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15))
-                    {
-                        U32 pieceType = (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        U32 finishSquare = (hashMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                        b.history[pieceType][finishSquare] -= depth * depth;
-                        if (b.history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
-                    }
-
-                    //decrement previous killer.
-                    if (i > 0 && killers[0] != 0 && killers[0] != hashMove)
-                    {
-                        U32 pieceType = (killers[0] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        U32 finishSquare = (killers[0] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                        b.history[pieceType][finishSquare] -= depth * depth;
-                        if (b.history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
-                    }
-
-                    if (shouldAge) {b.ageHistory();}
-                }
+                updateKillers(move, ply);
+                if (depth >= 5) {updateHistory(quietsPlayed, move, b.moveHistory.back(), depth);}
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
@@ -405,6 +369,9 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             bestScore = score;
             bestMove = move;
         }
+
+        quietsPlayed.push_back(move);
+        numMoves++;
     }
 
     //bad captures.
@@ -421,19 +388,17 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
             if (score > alpha && score < beta)
             {
-                //full window re-search.
                 score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
             }
         }
         else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
-        numMoves++;
 
         if (score > bestScore)
         {
+            //beta cutoff.
             if (score >= beta)
             {
-                //beta cutoff.
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
                 return score;
@@ -442,6 +407,8 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             bestScore = score;
             bestMove = move;
         }
+
+        numMoves++;
     }
 
     //generate quiets and try them.
@@ -456,12 +423,10 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
     bool canFutilityPrune = canPrune && depth <= futilityDepthLimit &&
                             staticEval + futilityMargins[depth-1] <= alpha;
 
-    for (int i=0;i<(int)(moveCache.size());i++)
+    for (const auto &[move, moveScore]: moveCache)
     {
         //late move pruning.
         if (canLateMovePrune && numQuiets > lateMovePruningMargins[depth-1]) {break;}
-
-        move = moveCache[i].first;
 
         if (hashHit && (move == hashMove)) {continue;}
         if ((move == killers[0]) || (move == killers[1])) {continue;}
@@ -493,60 +458,14 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         }
         else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
-        numMoves++; numQuiets++;
 
         if (score > bestScore)
         {
             if (score >= beta)
             {
                 //beta cutoff.
-                //update killers.
-                if (b.killerMoves[ply][0] != move)
-                {
-                    b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                    b.killerMoves[ply][0] = move;
-                }
-
-                //update history.
-                if (depth >= 5)
-                {
-                    bool shouldAge = false;
-
-                    b.history[b.currentMove.pieceType][b.currentMove.finishSquare] += depth * depth;
-                    if (b.history[b.currentMove.pieceType][b.currentMove.finishSquare] > HISTORY_MAX) {shouldAge = true;}
-
-                    //decrement hash move.
-                    if (hashHit &&
-                        (((hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15))
-                    {
-                        U32 pieceType = (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        U32 finishSquare = (hashMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                        b.history[pieceType][finishSquare] -= depth * depth;
-                        if (b.history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
-                    }
-
-                    //decrement previous killers.
-                    for (int j=0;j<2;j++)
-                    {
-                        if (killers[j] == 0 || killers[j] == hashMove) {continue;}
-                        U32 pieceType = (killers[j] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        U32 finishSquare = (killers[j] & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                        b.history[pieceType][finishSquare] -= depth * depth;
-                        if (b.history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
-                    }
-
-                    //decrement previous quiets.
-                    for (int j=0;j<i;j++)
-                    {
-                        if (moveCache[j].first == hashMove || moveCache[j].first == killers[0] || moveCache[j].first == killers[1]) {continue;}
-                        U32 pieceType = (moveCache[j].first & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        U32 finishSquare = (moveCache[j].first & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                        b.history[pieceType][finishSquare] -= depth * depth;
-                        if (b.history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
-                    }
-
-                    if (shouldAge) {b.ageHistory();}
-                }
+                updateKillers(move, ply);
+                if (depth >= 5) {updateHistory(quietsPlayed, move, b.moveHistory.back(), depth);}
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
@@ -556,6 +475,10 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             bestScore = score;
             bestMove = move;
         }
+
+        quietsPlayed.push_back(move);
+        numQuiets++;
+        numMoves++;
     }
 
     //stalemate or checkmate.
@@ -599,7 +522,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
     }
 
     //reset history at root.
-    b.clearHistory();
+    clearHistory();
 
     //reset best score and best move.
     storedBestScore = -MATE_SCORE; storedBestMove = 0;
