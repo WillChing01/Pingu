@@ -242,7 +242,9 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         if (bestScore >= beta)
         {
             //beta cutoff.
-            if (b.currentMove.capturedPieceType == 15)
+            bool isQuiet = (hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET == 15 &&
+            (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET == (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            if (isQuiet)
             {
                 b.updateKiller(hashMove, ply);
                 if (depth >= 5) {b.updateHistory(singleQuiets, hashMove, depth);}
@@ -254,10 +256,9 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         }
         if (bestScore > alpha) {alpha = bestScore; isExact = true;}
         bestMove = hashMove;
-        if ((hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET == 15)
-        {
-            singleQuiets.insert(hashMove);
-        }
+        bool isQuiet = (hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET == 15 &&
+        (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET == (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        if (isQuiet) {singleQuiets.insert(hashMove);}
     }
 
     //internal iterative reduction on hash miss.
