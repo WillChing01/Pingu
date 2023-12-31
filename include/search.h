@@ -241,12 +241,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             //beta cutoff.
             if (b.currentMove.capturedPieceType == 15)
             {
-                //update killers.
-                if (b.killerMoves[ply][0] != hashMove)
-                {
-                    b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                    b.killerMoves[ply][0] = hashMove;
-                }
+                b.updateKiller(hashMove, ply);
 
                 //increase history score.
                 if (depth >= 5)
@@ -360,12 +355,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             if (score >= beta)
             {
                 //beta cutoff.
-                //update killers.
-                if (b.killerMoves[ply][0] != move)
-                {
-                    b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                    b.killerMoves[ply][0] = move;
-                }
+                b.updateKiller(move, ply);
 
                 //update history.
                 if (depth >= 5)
@@ -500,12 +490,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             if (score >= beta)
             {
                 //beta cutoff.
-                //update killers.
-                if (b.killerMoves[ply][0] != move)
-                {
-                    b.killerMoves[ply][1] = b.killerMoves[ply][0];
-                    b.killerMoves[ply][0] = move;
-                }
+                b.updateKiller(move, ply);
 
                 //update history.
                 if (depth >= 5)

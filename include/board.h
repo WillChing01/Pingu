@@ -1919,6 +1919,15 @@ class Board {
                 for (int j=0;j<64;j++) {history[i][j] = 0;}
             }
         }
+
+        void updateKiller(U32 killer, int ply)
+        {
+            if (killerMoves[ply][0] != killer)
+            {
+                killerMoves[ply][1] = killerMoves[ply][0];
+                killerMoves[ply][0] = killer;
+            }
+        }
 };
 
 #endif // BOARD_H_INCLUDED
