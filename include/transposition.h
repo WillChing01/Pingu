@@ -141,7 +141,7 @@ inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, 
     evaluation = ttSaveScore(evaluation, ply);
     bucket->zHash = zHash;
     bucket->info =
-        bestMove +
+        (U64)(bestMove) +
         (((U64)(depth) << DEPTHSHIFT) & DEPTHMASK) +
         (((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK) +
         ((U64)(evaluation > 0) << EVALSIGNSHIFT) +
