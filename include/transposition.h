@@ -28,7 +28,7 @@ const U64 AGEMASK = 18374686479671623680ull;
 const U64 AGESHIFT = 56;
 
 int rootCounter = 0;
-const int ageLimit = 2;
+const int ageLimit = 256;
 
 struct hashEntry
 {
@@ -47,7 +47,6 @@ struct hashStore
     U64 info;
 };
 
-static hashStore tableStore;
 const hashStore emptyStore =
 {
     .zHash = 0,
@@ -70,6 +69,15 @@ void clearTT()
     for (int i=0;i<(int)(hashTableMask + 1);i++)
     {
         hashTable[i] = std::pair<hashStore, hashStore>(emptyStore, emptyStore);
+    }
+}
+
+void ageTT()
+{
+    for (auto& entry: hashTable)
+    {
+        entry.first.info &= ~AGEMASK;
+        entry.second.info &= ~AGEMASK;
     }
 }
 
@@ -114,39 +122,46 @@ inline void unpackInfo(U64 info, int ply)
 
 inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, bool isExact, bool isBeta)
 {
-    evaluation = ttSaveScore(evaluation, ply);
-    tableStore.zHash = zHash;
-    tableStore.info = bestMove;
-    tableStore.info += ((U64)(depth) << DEPTHSHIFT) & DEPTHMASK;
-    tableStore.info += ((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK;
-    tableStore.info += ((U64)(evaluation > 0) << EVALSIGNSHIFT);
-    tableStore.info += ((U64)(isExact) << EXACTFLAGSHIFT);
-    tableStore.info += ((U64)(isBeta) << BETAFLAGSHIFT);
-    tableStore.info += ((U64)(rootCounter) << AGESHIFT) & AGEMASK;
+    static std::pair<hashStore, hashStore>* entry;
+    static hashStore* bucket;
 
-    if (depth >= (int)((hashTable[zHash & hashTableMask].first.info & DEPTHMASK) >> DEPTHSHIFT) ||
-        rootCounter > (int)((hashTable[zHash & hashTableMask].first.info & AGEMASK) >> AGESHIFT) + ageLimit)
-    {
-        //fits in deep table.
-        hashTable[zHash & hashTableMask].first = tableStore;
-    }
-    else
-    {
-        //fits in always table.
-        hashTable[zHash & hashTableMask].second = tableStore;
-    }
+    entry = &hashTable[zHash & hashTableMask];
+
+    //choose which bucket to replace.
+
+    //replace the lowest depth entry, penalizing older entries and entries with same hash.
+    static int firstValue;
+    static int secondValue;
+    firstValue = ((entry->first.info & DEPTHMASK) >> DEPTHSHIFT) - 6 * (rootCounter - ((entry->first.info & AGEMASK) >> AGESHIFT)) - 100000 * (entry->first.zHash == zHash);
+    secondValue = ((entry->second.info & DEPTHMASK) >> DEPTHSHIFT) - 6 * (rootCounter - ((entry->second.info & AGEMASK) >> AGESHIFT)) - 100000 * (entry->second.zHash == zHash);
+
+    bucket = firstValue <= secondValue ? &entry->first : &entry->second;
+
+    //store info in bucket.
+    evaluation = ttSaveScore(evaluation, ply);
+    bucket->zHash = zHash;
+    bucket->info =
+        bestMove +
+        (((U64)(depth) << DEPTHSHIFT) & DEPTHMASK) +
+        (((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK) +
+        ((U64)(evaluation > 0) << EVALSIGNSHIFT) +
+        ((U64)(isExact) << EXACTFLAGSHIFT) +
+        ((U64)(isBeta) << BETAFLAGSHIFT) +
+        (((U64)(rootCounter) << AGESHIFT) & AGEMASK);
 }
 
 inline bool ttProbe(U64 zHash, int ply)
 {
-    if (hashTable[zHash & hashTableMask].first.zHash == zHash)
+    static std::pair<hashStore, hashStore>* entry;
+    entry = &hashTable[zHash & hashTableMask];
+    if (entry->first.zHash == zHash)
     {
-        unpackInfo(hashTable[zHash & hashTableMask].first.info, ply);
+        unpackInfo(entry->first.info, ply);
         return true;
     }
-    if (hashTable[zHash & hashTableMask].second.zHash == zHash)
+    if (entry->second.zHash == zHash)
     {
-        unpackInfo(hashTable[zHash & hashTableMask].second.info, ply);
+        unpackInfo(entry->second.info, ply);
         return true;
     }
 

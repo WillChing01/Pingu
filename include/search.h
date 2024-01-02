@@ -486,7 +486,8 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
     startTime = std::chrono::high_resolution_clock::now();
 
     //update TT 'age' and reset nodes.
-    rootCounter++;
+    rootCounter = (rootCounter + 1) % ageLimit;
+    if (rootCounter == 0) {ageTT();}
     totalNodes = 0;
 
     //reset gameover state.
