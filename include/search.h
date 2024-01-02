@@ -13,7 +13,7 @@
 #include "format.h"
 #include "board.h"
 
-const double LMR_SCALING = 0.62;
+const double LMR_SCALING = 0.7;
 
 const int maximumPruningDepth = 8;
 
