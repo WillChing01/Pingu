@@ -13,10 +13,10 @@
 #include "format.h"
 #include "board.h"
 
-const int maximumPruningDepth = 8;
+const int maximumPruningDepth = 6;
 
 const int inverseFutilityMargin = 120;
-const int inverseFutilityDepthLimit = 8;
+const int inverseFutilityDepthLimit = 6;
 
 const int nullMoveR = 2;
 const int nullMoveDepthLimit = 3;
