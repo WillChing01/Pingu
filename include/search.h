@@ -512,8 +512,8 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
         moveCache.push_back(std::pair<U32,int>(move, 0));
     }
 
-    //reset history at root.
-    b.clearHistory();
+    //age history at root.
+    b.ageHistory(8);
 
     //reset best score and best move.
     storedBestScore = -MATE_SCORE; storedBestMove = 0;
