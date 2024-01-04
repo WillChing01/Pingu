@@ -13,8 +13,8 @@
 #include "format.h"
 #include "board.h"
 
-int LMR_SCALING = 62;
-int LMR_BASE = 0;
+const double LMR_SCALING = 0.62;
+const double LMR_BASE = 0.30;
 
 const int maximumPruningDepth = 8;
 
@@ -435,7 +435,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         if (depth >= 2 && numMoves > 0)
         {
             //late move reductions (non pv nodes).
-            int LMR = int(LMR_SCALING * 0.01 * std::log((double)depth) * std::log((double)(numMoves+1)) + LMR_BASE * 0.01);
+            int LMR = int(LMR_SCALING * std::log((double)depth) * std::log((double)(numMoves+1)) + LMR_BASE);
             if (LMR && (alpha == (beta - 1)) && !inCheck)
             {
                 score = -alphaBeta(b, -beta, -alpha, depth-1-LMR, ply+1, true);
