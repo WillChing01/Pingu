@@ -45,6 +45,9 @@ void uciCommand()
     //tell GUI which options can be changed.
     std::cout << "option name Hash type spin default 1 min 1 max 8192" << std::endl;
 
+    std::cout << "option name LMR type spin default 62 min 30 max 150" << std::endl;
+    std::cout << "option name LMRbase type spin default 0 min 0 max 100" << std::endl;
+
     //confirmation command.
     std::cout << "uciok" << std::endl;
 }
@@ -53,6 +56,8 @@ void setOptionCommand(const std::vector<std::string> &words)
 {
     if (words[2] == "Hash") {resizeTT(std::stoi(words[4]));}
     else if (words[2] == "Clear" && words[3] == "Hash") {clearTT();}
+    else if (words[2] == "LMR") {LMR_SCALING = std::stoi(words[4]);}
+    else if (words[2] == "LMRbase") {LMR_BASE = std::stoi(words[4]);}
 }
 
 void positionCommand(Board &b, const std::vector<std::string> &words)
