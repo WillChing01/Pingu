@@ -248,6 +248,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             {
                 b.updateKiller(hashMove, ply);
                 if (depth >= 5) {b.updateHistory(singleQuiets, hashMove, depth);}
+                b.updateCounterMoves(hashMove);
             }
 
             //update transposition table.
@@ -314,13 +315,25 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         }
     }
 
-    //try killers.
-    for (int i=0;i<2;i++)
+    //try countermove and killers.
+    for (int i=0;i<3;i++)
     {
-        move = b.killerMoves[ply][i];
+        if (i == 0)
+        {
+            //countermove.
+            if (b.moveHistory.back() == 0) {continue;}
+            U32 prevPieceType = (b.moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            U32 prevToSquare = (b.moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+            move = b.counterMoves[prevPieceType][prevToSquare];
+        }
+        else
+        {
+            //killers.
+            move = b.killerMoves[ply][i-1];
+        }
         //check if move was played before.
         if (singleQuiets.contains(move)) {continue;}
-        //check if killer is valid.
+        //check if move is valid.
         if (!b.isValidMove(move, inCheck)) {continue;}
 
         b.makeMove(move);
@@ -355,6 +368,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
                 //beta cutoff.
                 b.updateKiller(move, ply);
                 if (depth >= 5) {b.updateHistory(singleQuiets, move, depth);}
+                b.updateCounterMoves(move);
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
@@ -461,6 +475,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
                 //beta cutoff.
                 b.updateKiller(move, ply);
                 if (depth >= 5) {b.updateHistory(singleQuiets, moveCache, i, move, depth);}
+                b.updateCounterMoves(move);
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}

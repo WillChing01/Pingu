@@ -1,6 +1,7 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
+#include <cstring>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -18,6 +19,11 @@
 #include "nnue.h"
 
 #include "transposition.h"
+
+template<typename T, size_t N, size_t M> inline void _zero2D(T(&arr)[N][M])
+{
+    std::memset(arr, 0, N * M * sizeof(T));
+}
 
 struct gameState
 {
@@ -93,6 +99,9 @@ class Board {
 
         //history table, history[pieceType][to_square]
         int history[12][64] = {};
+
+        //counter moves table, counterMoves[pieceType][toSquare]
+        U32 counterMoves[12][64] = {};
 
         //temp variable for move appending.
         U32 newMove;
@@ -391,6 +400,10 @@ class Board {
         {
             //verifies if a move is valid in this position.
             //move is assumed to be legal from some other arbitrary position in the search tree.
+
+            //check if empty move.
+            if (chessMove == 0) {return false;}
+
             updateOccupied();
             unpackMove(chessMove);
 
@@ -1905,28 +1918,28 @@ class Board {
             return scoredMoves;
         }
 
-        void ageHistory(const int factor = 16)
-        {
-            for (int i=0;i<12;i++)
-            {
-                for (int j=0;j<64;j++) {history[i][j] /= factor;}
-            }
-        }
-
-        void clearHistory()
-        {
-            for (int i=0;i<12;i++)
-            {
-                for (int j=0;j<64;j++) {history[i][j] = 0;}
-            }
-        }
-
         void updateKiller(U32 killer, int ply)
         {
             if (killerMoves[ply][0] != killer)
             {
                 killerMoves[ply][1] = killerMoves[ply][0];
                 killerMoves[ply][0] = killer;
+            }
+        }
+
+        void updateCounterMoves(U32 counterMove)
+        {
+            if (moveHistory.back() == 0) {return;}
+            U32 prevPieceType = (moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            U32 prevToSquare = (moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+            counterMoves[prevPieceType][prevToSquare] = counterMove;
+        }
+
+        void ageHistory(const int factor = 16)
+        {
+            for (int i=0;i<12;i++)
+            {
+                for (int j=0;j<64;j++) {history[i][j] /= factor;}
             }
         }
 
@@ -1988,6 +2001,14 @@ class Board {
 
             //age history if necessary.
             if (shouldAge) {ageHistory();}
+        }
+
+        void clearCounters()
+        {
+            //reset history, killers, etc.
+            _zero2D(history);
+            _zero2D(killerMoves);
+            _zero2D(counterMoves);
         }
 };
 

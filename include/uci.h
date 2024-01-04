@@ -255,8 +255,8 @@ void prepareForNewGame(Board &b)
     clearTT();
     rootCounter = 0;
 
-    //clear history.
-    b.clearHistory();
+    //clear killer, history, etc.
+    b.clearCounters();
 }
 
 void gensfenCommand(Board &b, const std::vector<std::string> &words)
