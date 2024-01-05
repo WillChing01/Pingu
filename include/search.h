@@ -247,8 +247,11 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             if (isQuiet)
             {
                 b.updateKiller(hashMove, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, hashMove, depth);}
-                b.updateCounterMoves(hashMove);
+                if (depth >= 5)
+                {
+                    b.updateHistory(singleQuiets, hashMove, depth);
+                    b.updateCounterMoves(hashMove);
+                }
             }
 
             //update transposition table.
@@ -367,8 +370,11 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             {
                 //beta cutoff.
                 b.updateKiller(move, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, move, depth);}
-                b.updateCounterMoves(move);
+                if (depth >= 5)
+                {
+                    b.updateHistory(singleQuiets, move, depth);
+                    b.updateCounterMoves(move);
+                }
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
@@ -474,8 +480,11 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
             {
                 //beta cutoff.
                 b.updateKiller(move, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, moveCache, i, move, depth);}
-                b.updateCounterMoves(move);
+                if (depth >= 5)
+                {
+                    b.updateHistory(singleQuiets, moveCache, i, move, depth);
+                    b.updateCounterMoves(move);
+                }
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
