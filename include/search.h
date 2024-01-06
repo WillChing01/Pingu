@@ -318,21 +318,21 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
         }
     }
 
-    //try countermove and killers.
+    //try killers and countermove.
     for (int i=0;i<3;i++)
     {
-        if (i == 0)
+        if (i < 2)
+        {
+            //killers.
+            move = b.killerMoves[ply][i];
+        }
+        else
         {
             //countermove.
             if (b.moveHistory.back() == 0) {continue;}
             U32 prevPieceType = (b.moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
             U32 prevToSquare = (b.moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
             move = b.counterMoves[prevPieceType][prevToSquare];
-        }
-        else
-        {
-            //killers.
-            move = b.killerMoves[ply][i-1];
         }
         //check if move was played before.
         if (singleQuiets.contains(move)) {continue;}
