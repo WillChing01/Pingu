@@ -139,7 +139,7 @@ int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
         b.generateQuiets(side, numChecks);
     }
 
-    std::vector<std::pair<U32,int> > moveCache = b.orderQMoves(inCheck ? -INT_MAX : 0);
+    std::vector<std::pair<U32,int> > moveCache = inCheck ? b.orderQMovesInCheck() : b.orderQMoves();
 
     for (const auto &[move,moveScore]: moveCache)
     {
