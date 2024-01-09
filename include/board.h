@@ -1850,7 +1850,17 @@ class Board {
 
             for (const auto &move: moveBuffer)
             {
-                scoredMoves.push_back(std::pair<U32,int>(move,seeCaptures(move)));
+                U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                int score = 16 * (15 - capturedPieceType) + pieceType;
+
+                if (pieceType < capturedPieceType && pieceType >= _nQueens)
+                {
+                    int seeCheck = seeCaptures(move);
+                    if (seeCheck < 0) {score = seeCheck;}
+                }
+
+                scoredMoves.push_back(std::pair<U32, int>(move, score));
             }
 
             //sort the moves.
@@ -1877,8 +1887,30 @@ class Board {
             sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
             return scoredMoves;
         }
+        
+        std::vector<std::pair<U32, int> > orderQMoves()
+        {
+            //assumes that updateOccupied() has been called immediately before.
+            scoredMoves.clear();
 
-        std::vector<std::pair<U32,int> > orderQMoves(const int threshhold = 0)
+            for (const auto &move: moveBuffer)
+            {
+                U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+
+                if (pieceType >= capturedPieceType || pieceType < _nQueens || seeCaptures(move) >= 0)
+                {
+                    int score = 16 * (15 - capturedPieceType) + pieceType;
+                    scoredMoves.push_back(std::pair<U32, int>(move, score));
+                }
+            }
+
+            //sort the moves.
+            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+            return scoredMoves;
+        }
+
+        std::vector<std::pair<U32,int> > orderQMovesInCheck()
         {
             //assumes that updateOccupied() has been called immediately before.
             scoredMoves.clear();
@@ -1891,7 +1923,7 @@ class Board {
                 if (capturedPieceType != 15 || pieceType != finishPieceType)
                 {
                     int score = seeCaptures(move);
-                    if (score >= threshhold) {scoredMoves.push_back(std::pair<U32,int>(move, score));}
+                    scoredMoves.push_back(std::pair<U32,int>(move, score));
                 }
                 else
                 {
