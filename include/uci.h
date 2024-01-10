@@ -19,9 +19,9 @@
 #include "board.h"
 #include "bench.h"
 
-const std::string ENGINE_NAME = "Pingu 2.0.0";
+const std::string ENGINE_NAME = "Pingu 3.0.0";
 const std::string ENGINE_AUTHOR = "William Ching";
-const std::string ENGINE_NAME_NO_SPACE = "Pingu_2.0.0";
+const std::string ENGINE_NAME_NO_SPACE = "Pingu_3.0.0";
 
 std::atomic_bool isSearching(false);
 
