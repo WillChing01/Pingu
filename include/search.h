@@ -27,6 +27,9 @@ const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
 static const int lateMovePruningDepthLimit = 4;
 const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {8, 14, 20, 26};
 
+const std::array<int, 3> aspirationDelta = {50, 200, 2 * MATE_SCORE};
+const std::array<int, 4> betaDelta = {1, 50, 200, 2 * MATE_SCORE};
+
 U32 storedBestMove = 0;
 int storedBestScore = 0;
 std::vector<U32> pvMoves;
@@ -528,7 +531,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
         totalNodes++;
 
         int score;
-        int alpha = -MATE_SCORE-1; int beta = MATE_SCORE;
+        int alpha = -MATE_SCORE; int beta = MATE_SCORE;
 
         //order moves for later depths by nodes searched.
         if (itDepth > 1)
@@ -547,34 +550,29 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
             b.makeMove(moveCache[i].first);
             if (i == 0)
             {
-                if (itDepth >= 5)
+                //aspiration window for pv move.
+                int alphaInd = itDepth >= 5 ? 0 : aspirationDelta.size() - 1;
+                int betaInd = itDepth >= 5 ? 0 : aspirationDelta.size() - 1;
+                while (true)
                 {
-                    //aspiration window for pv move.
-                    alpha = std::max(storedBestScore - 200, alpha);
-                    beta = std::min(storedBestScore + 200, beta);
+                    alpha = std::max(storedBestScore - aspirationDelta[alphaInd], -MATE_SCORE);
+                    beta = std::min(storedBestScore + aspirationDelta[betaInd], MATE_SCORE);
                     score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
-                    if (score <= alpha || score >= beta)
-                    {
-                        //shift to full search window.
-                        alpha = -MATE_SCORE-1; beta = MATE_SCORE;
-                        score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
-                    }
+                    if (score <= alpha) {++alphaInd;}
+                    else if (score >= beta) {++betaInd;}
+                    else {break;}
                 }
-                else {score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);}
             }
             else
             {
-                if (itDepth >= 2)
+                int betaInd = itDepth >= 2 ? 0 : betaDelta.size() - 1;
+                while (true)
                 {
-                    //PV search.
-                    score = -alphaBeta(b, -alpha-1, -alpha, itDepth-1, 1, true);
-                    if (score > alpha)
-                    {
-                        //full window re-search.
-                        score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
-                    }
+                    beta = std::min(alpha + betaDelta[betaInd], MATE_SCORE);
+                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
+                    if (score >= beta) {++betaInd;}
+                    else {break;}
                 }
-                else {score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);}
             }
             b.unmakeMove();
             if (score > alpha && !isSearchAborted)
