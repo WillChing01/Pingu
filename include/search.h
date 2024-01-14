@@ -110,7 +110,6 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     //draw by insufficient material.
     if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
 
-    b.updateOccupied();
     bool side = b.moveHistory.size() & 1;
     bool inCheck = b.isInCheck(side);
 
@@ -195,7 +194,6 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //main search.
     bool side = b.moveHistory.size() & 1;
-    b.updateOccupied();
     bool inCheck = b.isInCheck(side);
 
     //get static evaluation.
@@ -266,7 +264,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //get number of checks for move-gen.
     U32 numChecks = 0;
-    if (inCheck) {b.updateOccupied(); numChecks = b.isInCheckDetailed(side);}
+    if (inCheck) {numChecks = b.isInCheckDetailed(side);}
 
     //generate tactical moves and play them.
     b.moveBuffer.clear();
