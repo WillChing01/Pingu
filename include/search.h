@@ -100,7 +100,7 @@ inline bool checkTime()
     else {return true;}
 }
 
-int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
+inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
 {
     //check time.
     totalNodes++;
@@ -161,7 +161,7 @@ int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     return bestScore;
 }
 
-int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
+inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
 {
     //check time.
     totalNodes++;
