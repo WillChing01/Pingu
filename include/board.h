@@ -1454,12 +1454,10 @@ class Board {
         {
             //remove piece from start square;
             pieces[currentMove.pieceType] -= 1ull << (currentMove.startSquare);
-            occupied[currentMove.pieceType & 1] -= 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
 
             //add piece to end square, accounting for promotion.
             pieces[currentMove.finishPieceType] += 1ull << (currentMove.finishSquare);
-            occupied[currentMove.finishPieceType & 1] += 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
 
             //update nnue.
@@ -1477,7 +1475,6 @@ class Board {
             {
                 int capturedSquare = currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1));
                 pieces[currentMove.capturedPieceType] -= 1ull << capturedSquare;
-                occupied[currentMove.capturedPieceType & 1] -= 1ull << capturedSquare;
                 zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + capturedSquare];
 
                 //update the game phase.
@@ -1495,8 +1492,6 @@ class Board {
                     //kingside.
                     pieces[_nRooks+(currentMove.pieceType & 1)] -= KING_ROOK_POS[currentMove.pieceType & 1];
                     pieces[_nRooks+(currentMove.pieceType & 1)] += KING_ROOK_POS[currentMove.pieceType & 1] >> 2;
-                    occupied[currentMove.pieceType & 1] -= KING_ROOK_POS[currentMove.pieceType & 1];
-                    occupied[currentMove.pieceType & 1] += KING_ROOK_POS[currentMove.pieceType & 1] >> 2;
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
@@ -1510,8 +1505,6 @@ class Board {
                     //queenside.
                     pieces[_nRooks+(currentMove.pieceType & 1)] -= QUEEN_ROOK_POS[currentMove.pieceType & 1];
                     pieces[_nRooks+(currentMove.pieceType & 1)] += QUEEN_ROOK_POS[currentMove.pieceType & 1] << 3;
-                    occupied[currentMove.pieceType & 1] -= QUEEN_ROOK_POS[currentMove.pieceType & 1];
-                    occupied[currentMove.pieceType & 1] += QUEEN_ROOK_POS[currentMove.pieceType & 1] << 3;
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
@@ -1521,18 +1514,18 @@ class Board {
                     nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
                 }
             }
+
+            updateOccupied();
         }
 
         void unMovePieces()
         {
             //remove piece from destination square.
             pieces[currentMove.finishPieceType] -= 1ull << (currentMove.finishSquare);
-            occupied[currentMove.finishPieceType & 1] -= 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
             
             //add piece to start square.
             pieces[currentMove.pieceType] += 1ull << (currentMove.startSquare);
-            occupied[currentMove.pieceType & 1] += 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
 
             //update nnue.
@@ -1550,7 +1543,6 @@ class Board {
             {
                 int capturedSquare = currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(currentMove.pieceType & 1));
                 pieces[currentMove.capturedPieceType] += 1ull << capturedSquare;
-                occupied[currentMove.capturedPieceType & 1] += 1ull << capturedSquare;
                 zHashPieces ^= randomNums[64 * currentMove.capturedPieceType + capturedSquare];
 
                 //update the game phase.
@@ -1568,8 +1560,6 @@ class Board {
                     //kingside.
                     pieces[_nRooks+(currentMove.pieceType & 1)] -= KING_ROOK_POS[currentMove.pieceType & 1] >> 2;
                     pieces[_nRooks+(currentMove.pieceType & 1)] += KING_ROOK_POS[currentMove.pieceType & 1];
-                    occupied[currentMove.pieceType & 1] -= KING_ROOK_POS[currentMove.pieceType & 1] >> 2;
-                    occupied[currentMove.pieceType & 1] += KING_ROOK_POS[currentMove.pieceType & 1];
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
@@ -1583,8 +1573,6 @@ class Board {
                     //queenside.
                     pieces[_nRooks+(currentMove.pieceType & 1)] -= QUEEN_ROOK_POS[currentMove.pieceType & 1] << 3;
                     pieces[_nRooks+(currentMove.pieceType & 1)] += QUEEN_ROOK_POS[currentMove.pieceType & 1];
-                    occupied[currentMove.pieceType & 1] -= QUEEN_ROOK_POS[currentMove.pieceType & 1] << 3;
-                    occupied[currentMove.pieceType & 1] += QUEEN_ROOK_POS[currentMove.pieceType & 1];
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
@@ -1594,6 +1582,8 @@ class Board {
                     nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
                 }
             }
+
+            updateOccupied();
         }
 
         void unpackMove(U32 chessMove)
