@@ -1274,7 +1274,6 @@ class Board {
         bool generatePseudoMoves(bool side)
         {
             moveBuffer.clear();
-            updateOccupied();
             bool inCheck = isInCheck(side);
             U32 numChecks = 0;
             if (inCheck) {numChecks = isInCheckDetailed(side);}
