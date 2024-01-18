@@ -155,14 +155,9 @@ inline bool ttProbe(U64 zHash, int ply)
 
 void populateRandomNums()
 {
-    std::random_device _rd;
-    std::size_t seed;
-
-    if (_rd.entropy()) {seed = _rd();}
-    else {seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();}
-
-    std::mt19937 _mt(seed);
-    std::uniform_int_distribution<unsigned long long> _dist(0ull,ULLONG_MAX);
+    std::seed_seq ss{866052240, 524600418, 294500052, 845566473};
+    std::mt19937_64 _mt(ss);
+    std::uniform_int_distribution<unsigned long long> _dist(1ull,ULLONG_MAX);
 
     for (int i=0;i<781;i++) {randomNums[i] = _dist(_mt);}
 }
