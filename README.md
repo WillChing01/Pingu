@@ -22,10 +22,10 @@ Pingu accepts many of the usual UCI commands (go/stop/position etc.) and it has 
 
 # Rating
 
-| Version | CCRL Blitz |
-| ------: | ---------: |
-| 1.0.0   | 2250       |
-| 2.0.0   | 2586       |
+| Version | CCRL Blitz | CCRL 40/15 |
+| ------: | ---------: | ---------: |
+| 1.0.0   | 2250       | N/A        |
+| 2.0.0   | 2586       | 2612       |
 
 More information on [CCRL Blitz](https://www.computerchess.org.uk/ccrl/404/).
 
@@ -51,7 +51,8 @@ More information on [CCRL Blitz](https://www.computerchess.org.uk/ccrl/404/).
 - Quiescence search
   1. Good captures + promotions
   2. Check evasions
-- Captures ordered by static exchange evaluation
+- Winning captures ordered by MVV/LVA
+- Losing captures ordered by static exchange evaluation
 - Quiet moves ordered by history heuristic
 
 ### Search
@@ -63,10 +64,12 @@ More information on [CCRL Blitz](https://www.computerchess.org.uk/ccrl/404/).
 - Main search
   - Fail-soft alpha-beta
   - Principal variation search
+  - Reverse futility pruning
   - Null move pruning
   - Internal iterative reduction
   - Late move reductions
   - Futility pruning
+  - Late move pruning
   - Repetition detection
   - Transposition tables
     1. Always replace
@@ -86,6 +89,8 @@ More information on [CCRL Blitz](https://www.computerchess.org.uk/ccrl/404/).
     3. Clipped ReLU activation
   - Quantized weights
   - AVX2 instructions
+
+NNUE trained from Pingu 2.0.0 self-play data.
 
 # Thanks
 
