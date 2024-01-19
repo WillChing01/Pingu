@@ -103,7 +103,7 @@ inline bool checkTime()
     else {return true;}
 }
 
-int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
+inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
 {
     //check time.
     totalNodes++;
@@ -113,7 +113,6 @@ int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     //draw by insufficient material.
     if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
 
-    b.updateOccupied();
     bool side = b.moveHistory.size() & 1;
     bool inCheck = b.isInCheck(side);
 
@@ -164,7 +163,7 @@ int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     return bestScore;
 }
 
-int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
+inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
 {
     //check time.
     totalNodes++;
@@ -198,7 +197,6 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
 
     //main search.
     bool side = b.moveHistory.size() & 1;
-    b.updateOccupied();
     bool inCheck = b.isInCheck(side);
 
     //get static evaluation.
@@ -269,7 +267,7 @@ int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAl
 
     //get number of checks for move-gen.
     U32 numChecks = 0;
-    if (inCheck) {b.updateOccupied(); numChecks = b.isInCheckDetailed(side);}
+    if (inCheck) {numChecks = b.isInCheckDetailed(side);}
 
     //generate tactical moves and play them.
     b.moveBuffer.clear();
