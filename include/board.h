@@ -391,7 +391,6 @@ class Board {
         {
             //verifies if a move is valid in this position.
             //move is assumed to be legal from some other arbitrary position in the search tree.
-            updateOccupied();
             unpackMove(chessMove);
 
             //check for correct side-to-move.
@@ -478,7 +477,6 @@ class Board {
         bool isCheckingMove(U32 chessMove)
         {
             //verifies if a legal move gives check.
-            updateOccupied();
             U32 pieceType = (chessMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
             U32 finishSquare = (chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
             bool side = pieceType & 1;
@@ -722,7 +720,7 @@ class Board {
             moveBuffer.push_back(newMove);
         }
 
-        void appendMove(U32 pieceType, U32 startSquare, U32 finishSquare, bool shouldCheck=false)
+        bool checkStalemateMove(U32 pieceType, U32 startSquare, U32 finishSquare)
         {
             int capturedPieceType = 15; bool enPassant = false;
 
@@ -745,61 +743,41 @@ class Board {
                 //en-passant capture.
                 enPassant = true;
 
-                //always check en-passant.
-                shouldCheck = true;
-
                 //check for captured piece.
                 capturedPieceType = (_nPawns+((pieceType+1u) & 1u));
             }
 
-            if (shouldCheck)
+            //check if move is legal (does not leave king in check).
+            //move pieces.
+            U64 start = 1ull << startSquare;
+            U64 finish = 1ull << finishSquare;
+            pieces[pieceType] -= start;
+            pieces[pieceType] += finish;
+            occupied[pieceType & 1] -= start;
+            occupied[pieceType & 1] += finish;
+            if (capturedPieceType != 15)
             {
-                //check if move is legal (does not leave king in check).
-                //move pieces.
-                pieces[pieceType] -= 1ull << (startSquare);
-                pieces[pieceType] += 1ull << (finishSquare);
-                if (capturedPieceType != 15)
-                {
-                    pieces[capturedPieceType] -= 1ull << (finishSquare+(int)(enPassant)*(-8+16*(pieceType & 1)));
-                }
-                updateOccupied();
-                bool isBad = isInCheck(pieceType & 1);
+                U64 captured = 1ull << (finishSquare+(int)(enPassant)*(-8+16*(pieceType & 1)));
+                pieces[capturedPieceType] -= captured;
+                occupied[capturedPieceType & 1] -= captured;
+            }
+            bool isBad = isInCheck(pieceType & 1);
 
-                //unmove pieces.
-                pieces[pieceType] += 1ull << (startSquare);
-                pieces[pieceType] -= 1ull << (finishSquare);
-                if (capturedPieceType != 15)
-                {
-                    pieces[capturedPieceType] += 1ull << (finishSquare+(int)(enPassant)*(-8+16*(pieceType & 1)));
-                }
-                updateOccupied();
-
-                if (isBad) {return;}
+            //unmove pieces.
+            pieces[pieceType] += start;
+            pieces[pieceType] -= finish;
+            occupied[pieceType & 1] += start;
+            occupied[pieceType & 1] -= finish;
+            if (capturedPieceType != 15)
+            {
+                U64 captured = 1ull << (finishSquare+(int)(enPassant)*(-8+16*(pieceType & 1)));
+                pieces[capturedPieceType] += captured;
+                occupied[capturedPieceType & 1] += captured;
             }
 
-            newMove = (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
-            (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
-            (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
-            (enPassant << MOVEINFO_ENPASSANT_OFFSET) |
-            (capturedPieceType << MOVEINFO_CAPTUREDPIECETYPE_OFFSET) |
-            (pieceType << MOVEINFO_FINISHPIECETYPE_OFFSET);
+            if (isBad) {return false;}
 
-            //check for pawn promotion.
-            if (pieceType >> 1 == _nPawns >> 1 && finishSquare >> 3 == 7-7*(pieceType & 1))
-            {
-                //promotion.
-                for (U32 i=_nQueens+(pieceType & 1);i<_nPawns;i+=2)
-                {
-                    newMove &= ~MOVEINFO_FINISHPIECETYPE_MASK;
-                    newMove |= i << MOVEINFO_FINISHPIECETYPE_OFFSET;
-                    moveBuffer.push_back(newMove);
-                }
-            }
-            else
-            {
-                //append normally.
-                moveBuffer.push_back(newMove);
-            }
+            return true;
         }
 
         void updateOccupied()
@@ -954,7 +932,6 @@ class Board {
 
         void generateCaptures(bool side, int numChecks = 0)
         {
-            updateOccupied();
             if (numChecks == 0)
             {
                 //regular captures.
@@ -1117,7 +1094,6 @@ class Board {
 
         void generateQuiets(bool side, int numChecks = 0)
         {
-            updateOccupied();
             U64 p = (occupied[0] | occupied[1]);
             if (numChecks == 0)
             {
@@ -1298,7 +1274,6 @@ class Board {
         bool generatePseudoMoves(bool side)
         {
             moveBuffer.clear();
-            updateOccupied();
             bool inCheck = isInCheck(side);
             U32 numChecks = 0;
             if (inCheck) {numChecks = isInCheckDetailed(side);}
@@ -1310,7 +1285,6 @@ class Board {
         bool stalemateCheck(bool side)
         {
             //we assume we are not in check.
-            updateOccupied();
             U64 p = (occupied[0] | occupied[1]);
             U64 pinned = getPinnedPieces(side);
 
@@ -1369,7 +1343,6 @@ class Board {
             if (x) {return false;}
 
             //check for special moves (en-passant, king, pinned).
-            moveBuffer.clear();
 
             //bishop - pinned.
             temp = pieces[_nBishops+(int)(side)] & pinned;
@@ -1379,8 +1352,7 @@ class Board {
                 x = magicBishopAttacks(p, pos) & ~occupied[(int)(side)];
                 while (x)
                 {
-                    appendMove(_nBishops+(int)(side), pos, popLSB(x), true);
-                    if (moveBuffer.size()) {return false;}
+                    if (checkStalemateMove(_nBishops+(int)(side), pos, popLSB(x))) {return false;}
                 }
             }
 
@@ -1392,8 +1364,7 @@ class Board {
                 x = magicRookAttacks(p, pos) & ~occupied[(int)(side)];
                 while (x)
                 {
-                    appendMove(_nRooks+(int)(side), pos, popLSB(x), true);
-                    if (moveBuffer.size()) {return false;}
+                    if (checkStalemateMove(_nRooks+(int)(side), pos, popLSB(x))) {return false;}
                 }
             }
 
@@ -1405,8 +1376,7 @@ class Board {
                 x = magicQueenAttacks(p, pos) & ~occupied[(int)(side)];
                 while (x)
                 {
-                    appendMove(_nQueens+(int)(side), pos, popLSB(x), true);
-                    if (moveBuffer.size()) {return false;}
+                    if (checkStalemateMove(_nQueens+(int)(side), pos, popLSB(x))) {return false;}
                 }
             }
 
@@ -1433,8 +1403,7 @@ class Board {
 
                 while (x)
                 {
-                    appendMove(_nPawns+(int)(side), pos, popLSB(x), true);
-                    if (moveBuffer.size()) {return false;}
+                    if (checkStalemateMove(_nPawns+(int)(side), pos, popLSB(x))) {return false;}
                 }
             }
 
@@ -1445,8 +1414,7 @@ class Board {
                 x = pawnAttacks(1ull << current.enPassantSquare, !side) & temp;
                 while (x)
                 {
-                    appendMove(_nPawns+(int)(side), popLSB(x), current.enPassantSquare, true);
-                    if (moveBuffer.size()) {return false;}
+                    if (checkStalemateMove(_nPawns+(int)(side), popLSB(x), current.enPassantSquare)) {return false;}
                 }
             }
 
@@ -1455,8 +1423,7 @@ class Board {
             x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & ~occupied[(int)(side)];
             while (x)
             {
-                appendMove(_nKing+(int)(side), pos, popLSB(x), true);
-                if (moveBuffer.size()) {return false;}
+                if (checkStalemateMove(_nKing+(int)(side), pos, popLSB(x))) {return false;}
             }
 
             //castling.
@@ -1547,6 +1514,8 @@ class Board {
                     nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
                 }
             }
+
+            updateOccupied();
         }
 
         void unMovePieces()
@@ -1613,6 +1582,8 @@ class Board {
                     nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
                 }
             }
+
+            updateOccupied();
         }
 
         void unpackMove(U32 chessMove)
@@ -1845,7 +1816,6 @@ class Board {
         std::vector<std::pair<U32,int> > orderCaptures()
         {
             //order captures/promotions.
-            updateOccupied();
             scoredMoves.clear();
 
             for (const auto &move: moveBuffer)
@@ -1890,7 +1860,6 @@ class Board {
         
         std::vector<std::pair<U32, int> > orderQMoves()
         {
-            //assumes that updateOccupied() has been called immediately before.
             scoredMoves.clear();
 
             for (const auto &move: moveBuffer)
@@ -1912,7 +1881,6 @@ class Board {
 
         std::vector<std::pair<U32,int> > orderQMovesInCheck()
         {
-            //assumes that updateOccupied() has been called immediately before.
             scoredMoves.clear();
 
             for (const auto &move: moveBuffer)
