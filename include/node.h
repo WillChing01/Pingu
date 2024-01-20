@@ -9,7 +9,6 @@
 class BaseNode
 {
     protected:
-        std::vector<std::pair<U32,int> > moveCache;
         int mvv;
         int lva;
         U64 victimBB;
@@ -28,6 +27,8 @@ class BaseNode
         int score;
         U32 bestMove;
         U32 move;
+
+        std::vector<std::pair<U32,int> > moveCache;
 };
 
 class Node : public BaseNode

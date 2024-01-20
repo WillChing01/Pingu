@@ -282,18 +282,18 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //generate tactical moves and play them.
     b.moveBuffer.clear();
     b.generateCaptures(side, numChecks);
-    std::vector<std::pair<U32,int> > moveCache = b.orderCaptures();
+    ss->moveCache = b.orderCaptures();
 
     //good captures and promotions.
     U32 move;
-    int ind = moveCache.size();
-    for (int i=0;i<(int)(moveCache.size());i++)
+    int ind = ss->moveCache.size();
+    for (int i=0;i<(int)(ss->moveCache.size());i++)
     {
-        move = moveCache[i].first;
+        move = ss->moveCache[i].first;
         //check that capture is not hash move.
         if (ss->hashHit && (move == hashMove)) {continue;}
         //exit when we get to bad captures.
-        if (moveCache[i].second < 0) {ind = i; break;}
+        if (ss->moveCache[i].second < 0) {ind = i; break;}
 
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
@@ -379,9 +379,9 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //bad captures.
-    for (int i=ind;i<(int)(moveCache.size());i++)
+    for (int i=ind;i<(int)(ss->moveCache.size());i++)
     {
-        move = moveCache[i].first;
+        move = ss->moveCache[i].first;
         //check that capture is not hash move.
         if (ss->hashHit && (move == hashMove)) {continue;}
 
@@ -418,7 +418,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //generate quiets and try them.
     b.moveBuffer.clear();
     b.generateQuiets(side, numChecks);
-    moveCache = b.orderQuiets();
+    ss->moveCache = b.orderQuiets();
 
     int numQuiets = 0;
 
@@ -427,12 +427,12 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     bool canFutilityPrune = canPrune && depth <= futilityDepthLimit &&
                             staticEval + futilityMargins[depth-1] <= alpha;
 
-    for (int i=0;i<(int)(moveCache.size());i++)
+    for (int i=0;i<(int)(ss->moveCache.size());i++)
     {
         //late move pruning.
         if (canLateMovePrune && numQuiets > lateMovePruningMargins[depth-1]) {break;}
 
-        move = moveCache[i].first;
+        move = ss->moveCache[i].first;
 
         if (singleQuiets.contains(move)) {continue;}
 
@@ -471,7 +471,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             {
                 //beta cutoff.
                 b.updateKiller(move, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, moveCache, i, move, depth);}
+                if (depth >= 5) {b.updateHistory(singleQuiets, ss->moveCache, i, move, depth);}
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, move, score, false, true);}
