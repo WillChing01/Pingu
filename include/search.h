@@ -12,6 +12,7 @@
 #include "evaluation.h"
 #include "format.h"
 #include "board.h"
+#include "node.h"
 
 const int maximumPruningDepth = 8;
 
@@ -46,6 +47,12 @@ U32 lastIterNodes = 0;
 U32 lastIterNps = 0;
 
 bool isGameOver = false;
+
+static const int MAX_PLY = 64;
+static const int MAX_Q_PLY = 64;
+
+Node searchStack[MAX_PLY] = {};
+QNode qStack[MAX_Q_PLY] = {};
 
 inline int formatScore(int score)
 {
@@ -176,13 +183,16 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //draw by insufficient material.
     if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
 
+    //initialize pointer to node.
+    Node* ss = &searchStack[ply];
+
     //probe hash table.
-    U64 bHash = b.zHashPieces ^ b.zHashState;
-    bool hashHit = ttProbe(bHash, ply);
-    U32 hashMove = hashHit ? tableEntry.bestMove : 0;
+    ss->zHash = b.zHashPieces ^ b.zHashState;
+    ss->hashHit = ttProbe(ss->zHash, ply);
+    U32 hashMove = ss->hashHit ? tableEntry.bestMove : 0;
 
     //check for early TT cutoff.
-    if (hashHit && tableEntry.depth >= depth)
+    if (ss->hashHit && tableEntry.depth >= depth)
     {
         //PV node.
         if (tableEntry.isExact) {return tableEntry.evaluation;}
@@ -211,7 +221,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         if (staticEval - margin >= beta) {return beta;}
     }
 
-    if (hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
+    if (ss->hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
 
     //null move pruning.
     if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
@@ -233,7 +243,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     std::unordered_set<U32> singleQuiets;
 
     //try hash move.
-    if (hashHit && b.isValidMove(hashMove, inCheck))
+    if (ss->hashHit && b.isValidMove(hashMove, inCheck))
     {
         b.makeMove(hashMove);
         bestScore = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
@@ -252,7 +262,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             }
 
             //update transposition table.
-            if (!isSearchAborted) {ttSave(bHash, ply, depth, hashMove, bestScore, false, true);}
+            if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, hashMove, bestScore, false, true);}
             return bestScore;
         }
         if (bestScore > alpha) {alpha = bestScore; isExact = true;}
@@ -263,7 +273,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //internal iterative reduction on hash miss.
-    if (!hashHit && depth > 3) {depth--;}
+    if (!ss->hashHit && depth > 3) {depth--;}
 
     //get number of checks for move-gen.
     U32 numChecks = 0;
@@ -281,7 +291,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     {
         move = moveCache[i].first;
         //check that capture is not hash move.
-        if (hashHit && (move == hashMove)) {continue;}
+        if (ss->hashHit && (move == hashMove)) {continue;}
         //exit when we get to bad captures.
         if (moveCache[i].second < 0) {ind = i; break;}
 
@@ -306,7 +316,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             {
                 //beta cutoff.
                 //update transposition table.
-                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -358,7 +368,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
                 if (depth >= 5) {b.updateHistory(singleQuiets, move, depth);}
 
                 //update transposition table.
-                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -373,7 +383,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     {
         move = moveCache[i].first;
         //check that capture is not hash move.
-        if (hashHit && (move == hashMove)) {continue;}
+        if (ss->hashHit && (move == hashMove)) {continue;}
 
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
@@ -396,7 +406,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             {
                 //beta cutoff.
                 //update transposition table.
-                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -464,7 +474,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
                 if (depth >= 5) {b.updateHistory(singleQuiets, moveCache, i, move, depth);}
 
                 //update transposition table.
-                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -477,7 +487,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if (numMoves == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
 
     //update transposition table.
-    if (!isSearchAborted) {ttSave(bHash, ply, depth, bestMove, bestScore, isExact, false);}
+    if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, bestMove, bestScore, isExact, false);}
     return bestScore;
 }
 
