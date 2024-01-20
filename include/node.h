@@ -17,26 +17,14 @@ class BaseNode
         bool side;
 
         bool inCheck;
-        int numChecks;
 
         int staticEval;
-
-        int depth;
-
-        int bestScore;
-        int score;
-        U32 bestMove;
-        U32 move;
 
         std::vector<std::pair<U32,int> > moveCache;
 };
 
 class Node : public BaseNode
 {
-    protected:
-        std::vector<U32> quietsPlayed;
-        int numMoves = 0;
-
     public:
         U64 zHash;
         bool hashHit;

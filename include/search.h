@@ -184,15 +184,15 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
 
     //initialize pointer to node.
-    Node* ss = &searchStack[ply];
+    Node* node = &searchStack[ply];
 
     //probe hash table.
-    ss->zHash = b.zHashPieces ^ b.zHashState;
-    ss->hashHit = ttProbe(ss->zHash, ply);
-    U32 hashMove = ss->hashHit ? tableEntry.bestMove : 0;
+    node->zHash = b.zHashPieces ^ b.zHashState;
+    node->hashHit = ttProbe(node->zHash, ply);
+    U32 hashMove = node->hashHit ? tableEntry.bestMove : 0;
 
     //check for early TT cutoff.
-    if (ss->hashHit && tableEntry.depth >= depth)
+    if (node->hashHit && tableEntry.depth >= depth)
     {
         //PV node.
         if (tableEntry.isExact) {return tableEntry.evaluation;}
@@ -206,26 +206,25 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
 
     //main search.
-    bool side = b.moveHistory.size() & 1;
-    bool inCheck = b.isInCheck(side);
+    node->side = b.moveHistory.size() & 1;
+    node->inCheck = b.isInCheck(node->side);
 
     //get static evaluation.
-    int staticEval = 0;
-    bool canPrune = (alpha == beta - 1) && !inCheck && abs(alpha) < MATE_BOUND;
-    if (canPrune && depth <= maximumPruningDepth) {staticEval = b.regularEval();}
+    bool canPrune = (alpha == beta - 1) && !node->inCheck && abs(alpha) < MATE_BOUND;
+    if (canPrune && depth <= maximumPruningDepth) {node->staticEval = b.regularEval();}
 
     //inverse futility pruning.
     if (canPrune && depth <= inverseFutilityDepthLimit)
     {
         int margin = inverseFutilityMargin * depth;
-        if (staticEval - margin >= beta) {return beta;}
+        if (node->staticEval - margin >= beta) {return beta;}
     }
 
-    if (ss->hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
+    if (node->hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
 
     //null move pruning.
-    if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
-        (b.occupied[side] ^ b.pieces[b._nKing+side] ^ b.pieces[b._nPawns+side]))
+    if (nullMoveAllowed && !node->inCheck && depth >= nullMoveDepthLimit &&
+        (b.occupied[node->side] ^ b.pieces[b._nKing+node->side] ^ b.pieces[b._nPawns+node->side]))
     {
         b.makeNullMove();
         int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR-depth/6, ply+1, false);
@@ -243,7 +242,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     std::unordered_set<U32> singleQuiets;
 
     //try hash move.
-    if (ss->hashHit && b.isValidMove(hashMove, inCheck))
+    if (node->hashHit && b.isValidMove(hashMove, node->inCheck))
     {
         b.makeMove(hashMove);
         bestScore = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
@@ -262,7 +261,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             }
 
             //update transposition table.
-            if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, hashMove, bestScore, false, true);}
+            if (!isSearchAborted) {ttSave(node->zHash, ply, depth, hashMove, bestScore, false, true);}
             return bestScore;
         }
         if (bestScore > alpha) {alpha = bestScore; isExact = true;}
@@ -273,27 +272,27 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //internal iterative reduction on hash miss.
-    if (!ss->hashHit && depth > 3) {depth--;}
+    if (!node->hashHit && depth > 3) {depth--;}
 
     //get number of checks for move-gen.
     U32 numChecks = 0;
-    if (inCheck) {numChecks = b.isInCheckDetailed(side);}
+    if (node->inCheck) {numChecks = b.isInCheckDetailed(node->side);}
 
     //generate tactical moves and play them.
     b.moveBuffer.clear();
-    b.generateCaptures(side, numChecks);
-    ss->moveCache = b.orderCaptures();
+    b.generateCaptures(node->side, numChecks);
+    node->moveCache = b.orderCaptures();
 
     //good captures and promotions.
     U32 move;
-    int ind = ss->moveCache.size();
-    for (int i=0;i<(int)(ss->moveCache.size());i++)
+    int ind = node->moveCache.size();
+    for (int i=0;i<(int)(node->moveCache.size());i++)
     {
-        move = ss->moveCache[i].first;
+        move = node->moveCache[i].first;
         //check that capture is not hash move.
-        if (ss->hashHit && (move == hashMove)) {continue;}
+        if (node->hashHit && (move == hashMove)) {continue;}
         //exit when we get to bad captures.
-        if (ss->moveCache[i].second < 0) {ind = i; break;}
+        if (node->moveCache[i].second < 0) {ind = i; break;}
 
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
@@ -316,7 +315,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             {
                 //beta cutoff.
                 //update transposition table.
-                if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(node->zHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -332,13 +331,13 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         //check if move was played before.
         if (singleQuiets.contains(move)) {continue;}
         //check if killer is valid.
-        if (!b.isValidMove(move, inCheck)) {continue;}
+        if (!b.isValidMove(move, node->inCheck)) {continue;}
 
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
         {
             //late move reductions (non pv nodes).
-            if (depth >= 3 && (alpha == (beta - 1)) && numMoves >= 3 && !inCheck)
+            if (depth >= 3 && (alpha == (beta - 1)) && numMoves >= 3 && !node->inCheck)
             {
                 score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);
             }
@@ -368,7 +367,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
                 if (depth >= 5) {b.updateHistory(singleQuiets, move, depth);}
 
                 //update transposition table.
-                if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(node->zHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -379,11 +378,11 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //bad captures.
-    for (int i=ind;i<(int)(ss->moveCache.size());i++)
+    for (int i=ind;i<(int)(node->moveCache.size());i++)
     {
-        move = ss->moveCache[i].first;
+        move = node->moveCache[i].first;
         //check that capture is not hash move.
-        if (ss->hashHit && (move == hashMove)) {continue;}
+        if (node->hashHit && (move == hashMove)) {continue;}
 
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
@@ -406,7 +405,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             {
                 //beta cutoff.
                 //update transposition table.
-                if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(node->zHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -417,22 +416,22 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //generate quiets and try them.
     b.moveBuffer.clear();
-    b.generateQuiets(side, numChecks);
-    ss->moveCache = b.orderQuiets();
+    b.generateQuiets(node->side, numChecks);
+    node->moveCache = b.orderQuiets();
 
     int numQuiets = 0;
 
     bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
 
     bool canFutilityPrune = canPrune && depth <= futilityDepthLimit &&
-                            staticEval + futilityMargins[depth-1] <= alpha;
+                            node->staticEval + futilityMargins[depth-1] <= alpha;
 
-    for (int i=0;i<(int)(ss->moveCache.size());i++)
+    for (int i=0;i<(int)(node->moveCache.size());i++)
     {
         //late move pruning.
         if (canLateMovePrune && numQuiets > lateMovePruningMargins[depth-1]) {break;}
 
-        move = ss->moveCache[i].first;
+        move = node->moveCache[i].first;
 
         if (singleQuiets.contains(move)) {continue;}
 
@@ -444,7 +443,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         {
             //late move reductions (non pv nodes).
             int LMR = int(0.5 * std::log((double)depth) * std::log((double)(numMoves+1)));
-            if (LMR && (alpha == (beta - 1)) && !inCheck)
+            if (LMR && (alpha == (beta - 1)) && !node->inCheck)
             {
                 score = -alphaBeta(b, -beta, -alpha, depth-1-LMR, ply+1, true);
             }
@@ -471,10 +470,10 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             {
                 //beta cutoff.
                 b.updateKiller(move, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, ss->moveCache, i, move, depth);}
+                if (depth >= 5) {b.updateHistory(singleQuiets, node->moveCache, i, move, depth);}
 
                 //update transposition table.
-                if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, move, score, false, true);}
+                if (!isSearchAborted) {ttSave(node->zHash, ply, depth, move, score, false, true);}
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -484,10 +483,10 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //stalemate or checkmate.
-    if (numMoves == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
+    if (numMoves == 0) {return node->inCheck ? -MATE_SCORE + ply : 0;}
 
     //update transposition table.
-    if (!isSearchAborted) {ttSave(ss->zHash, ply, depth, bestMove, bestScore, isExact, false);}
+    if (!isSearchAborted) {ttSave(node->zHash, ply, depth, bestMove, bestScore, isExact, false);}
     return bestScore;
 }
 
