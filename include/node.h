@@ -28,24 +28,8 @@ class Node : public BaseNode
     public:
         U64 zHash;
         bool hashHit;
-
-        Node()
-        {
-            //initiate the node.
-        }
-
-        void reset()
-        {
-            //reset the node for a new position.
-        }
 };
 
-class QNode : public BaseNode
-{
-    public:
-        QNode() {}
-
-        void reset() {}
-};
+class QNode : public BaseNode {};
 
 #endif // NODE_H_INCLUDED
