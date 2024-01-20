@@ -110,7 +110,7 @@ inline bool checkTime()
     else {return true;}
 }
 
-inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
+inline int alphaBetaQuiescence(Board &b, QNode* node, int ply, int alpha, int beta)
 {
     //check time.
     totalNodes++;
@@ -120,12 +120,12 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     //draw by insufficient material.
     if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
 
-    bool side = b.moveHistory.size() & 1;
-    bool inCheck = b.isInCheck(side);
+    node->side = b.moveHistory.size() & 1;
+    node->inCheck = b.isInCheck(node->side);
 
     int bestScore = -MATE_SCORE + ply;
 
-    if (!inCheck)
+    if (!node->inCheck)
     {
         //do stand-pat check.
         bestScore = b.evaluateBoard();
@@ -137,23 +137,23 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
 
         //generate regular tactical moves.
         b.moveBuffer.clear();
-        b.generateCaptures(side, 0);
+        b.generateCaptures(node->side, 0);
     }
     else
     {
         //generate check evasion.
-        U32 numChecks = b.isInCheckDetailed(side);
+        U32 numChecks = b.isInCheckDetailed(node->side);
         b.moveBuffer.clear();
-        b.generateCaptures(side, numChecks);
-        b.generateQuiets(side, numChecks);
+        b.generateCaptures(node->side, numChecks);
+        b.generateQuiets(node->side, numChecks);
     }
 
-    std::vector<std::pair<U32,int> > moveCache = inCheck ? b.orderQMovesInCheck() : b.orderQMoves();
+    node->moveCache = node->inCheck ? b.orderQMovesInCheck() : b.orderQMoves();
 
-    for (const auto &[move,moveScore]: moveCache)
+    for (const auto &[move,moveScore]: node->moveCache)
     {
         b.makeMove(move);
-        int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
+        int score = -alphaBetaQuiescence(b, node+1, ply+1, -beta, -alpha);
         b.unmakeMove();
 
         if (score > bestScore)
@@ -170,7 +170,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     return bestScore;
 }
 
-inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
+inline int alphaBeta(Board &b, Node* node, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
 {
     //check time.
     totalNodes++;
@@ -182,9 +182,6 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //draw by insufficient material.
     if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
-
-    //initialize pointer to node.
-    Node* node = &searchStack[ply];
 
     //probe hash table.
     node->zHash = b.zHashPieces ^ b.zHashState;
@@ -203,7 +200,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //qSearch at horizon.
-    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
+    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, &qStack[0], ply, alpha, beta);}
 
     //main search.
     node->side = b.moveHistory.size() & 1;
@@ -227,7 +224,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         (b.occupied[node->side] ^ b.pieces[b._nKing+node->side] ^ b.pieces[b._nPawns+node->side]))
     {
         b.makeNullMove();
-        int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR-depth/6, ply+1, false);
+        int nullScore = -alphaBeta(b, node+1, -beta, -beta+1, depth-1-nullMoveR-depth/6, ply+1, false);
         b.unmakeNullMove();
 
         //fail hard only for null move pruning.
@@ -245,7 +242,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if (node->hashHit && b.isValidMove(hashMove, node->inCheck))
     {
         b.makeMove(hashMove);
-        bestScore = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
+        bestScore = -alphaBeta(b, node+1, -beta, -alpha, depth-1, ply+1, true);
         b.unmakeMove();
         numMoves++;
 
@@ -298,14 +295,14 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         if (depth >= 2 && numMoves > 0)
         {
             //PV search.
-            score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
+            score = -alphaBeta(b, node+1, -alpha-1, -alpha, depth-1, ply+1, true);
             if (score > alpha && score < beta)
             {
                 //full window re-search.
-                score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
+                score = -alphaBeta(b, node+1, -beta, -alpha, depth-1, ply+1, true);
             }
         }
-        else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
+        else {score = -alphaBeta(b, node+1, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
         numMoves++;
 
@@ -339,7 +336,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             //late move reductions (non pv nodes).
             if (depth >= 3 && (alpha == (beta - 1)) && numMoves >= 3 && !node->inCheck)
             {
-                score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);
+                score = -alphaBeta(b, node+1, -beta, -alpha, depth-2, ply+1, true);
             }
             else {score = alpha + 1;}
 
@@ -347,14 +344,14 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             //if lmr above alpha then research at original depth.
             if (score > alpha)
             {
-                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
+                score = -alphaBeta(b, node+1, -alpha-1, -alpha, depth-1, ply+1, true);
                 if (score > alpha && score < beta)
                 {
-                    score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
+                    score = -alphaBeta(b, node+1, -beta, -alpha, depth-1, ply+1, true);
                 }
             }
         }
-        else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
+        else {score = -alphaBeta(b, node+1, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
         numMoves++;
 
@@ -388,14 +385,14 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         if (depth >= 2 && numMoves > 0)
         {
             //PV search.
-            score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
+            score = -alphaBeta(b, node+1, -alpha-1, -alpha, depth-1, ply+1, true);
             if (score > alpha && score < beta)
             {
                 //full window re-search.
-                score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
+                score = -alphaBeta(b, node+1, -beta, -alpha, depth-1, ply+1, true);
             }
         }
-        else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
+        else {score = -alphaBeta(b, node+1, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
         numMoves++;
 
@@ -445,7 +442,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             int LMR = int(0.5 * std::log((double)depth) * std::log((double)(numMoves+1)));
             if (LMR && (alpha == (beta - 1)) && !node->inCheck)
             {
-                score = -alphaBeta(b, -beta, -alpha, depth-1-LMR, ply+1, true);
+                score = -alphaBeta(b, node+1, -beta, -alpha, depth-1-LMR, ply+1, true);
             }
             else {score = alpha + 1;}
 
@@ -453,14 +450,14 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             //if lmr above alpha then research at original depth.
             if (score > alpha)
             {
-                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
+                score = -alphaBeta(b, node+1, -alpha-1, -alpha, depth-1, ply+1, true);
                 if (score > alpha && score < beta)
                 {
-                    score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
+                    score = -alphaBeta(b, node+1, -beta, -alpha, depth-1, ply+1, true);
                 }
             }
         }
-        else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
+        else {score = -alphaBeta(b, node+1, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
         numMoves++; numQuiets++;
 
@@ -564,7 +561,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
                 {
                     alpha = std::max(storedBestScore - aspirationDelta[alphaInd], -MATE_SCORE);
                     beta = std::min(storedBestScore + aspirationDelta[betaInd], MATE_SCORE);
-                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
+                    score = -alphaBeta(b, &searchStack[0], -beta, -alpha, itDepth-1, 1, true);
                     if (score <= alpha) {++alphaInd;}
                     else if (score >= beta) {++betaInd;}
                     else {break;}
@@ -576,7 +573,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
                 while (true)
                 {
                     beta = std::min(alpha + betaDelta[betaInd], MATE_SCORE);
-                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
+                    score = -alphaBeta(b, &searchStack[0], -beta, -alpha, itDepth-1, 1, true);
                     if (score >= beta) {++betaInd;}
                     else {break;}
                 }

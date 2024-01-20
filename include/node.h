@@ -15,11 +15,7 @@ class BaseNode
         U64 attackerBB;
     public:
         bool side;
-
         bool inCheck;
-
-        int staticEval;
-
         std::vector<std::pair<U32,int> > moveCache;
 };
 
@@ -28,6 +24,7 @@ class Node : public BaseNode
     public:
         U64 zHash;
         bool hashHit;
+        int staticEval;
 };
 
 class QNode : public BaseNode {};
