@@ -250,6 +250,7 @@ void prepareForNewGame(Board &b)
     b.stateHistory.clear();
     b.moveHistory.clear();
     b.hashHistory.clear();
+    b.irrevMoveInd.clear();
 
     //reset hash table.
     clearTT();
