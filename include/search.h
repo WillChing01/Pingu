@@ -86,18 +86,13 @@ void collectPVRoot(Board &b, U32 bestMove, int depth)
 inline bool isDraw(Board &b)
 {
     //check if current position has appeared in moveHistory.
-    bool draw = false;
     U32 zHash = b.zHashPieces ^ b.zHashState;
-    for (int i=(int)(b.moveHistory.size())-1;i>=0;i--)
+    int finishInd = b.irrevMoveInd.size() ? b.irrevMoveInd.back() : -1;
+    for (int i=(int)(b.hashHistory.size())-4;i>finishInd;i-=2)
     {
-        if ((((b.moveHistory[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET) >> 1) == (b._nPawns >> 1) ||
-            ((b.moveHistory[i] & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) != 15)
-        {
-            break;
-        }
-        else if (b.hashHistory[i] == zHash) {draw = true; break;}
+        if (b.hashHistory[i] == zHash) {return true;}
     }
-    return draw;
+    return false;
 }
 
 inline bool checkTime()

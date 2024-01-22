@@ -56,6 +56,7 @@ class Board {
         std::vector<gameState> stateHistory;
         std::vector<U32> moveHistory;
         std::vector<U32> hashHistory;
+        std::vector<int> irrevMoveInd;
 
         std::vector<U32> captureBuffer;
         std::vector<U32> quietBuffer;
@@ -207,6 +208,7 @@ class Board {
             stateHistory.clear();
             moveHistory.clear();
             hashHistory.clear();
+            irrevMoveInd.clear();
 
             std::vector<std::string> temp; temp.push_back("");
 
@@ -1614,6 +1616,13 @@ class Board {
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
 
+            //irrev move.
+            if (currentMove.pieceType >> 1 == _nPawns >> 1 || currentMove.capturedPieceType != 15 ||
+                (currentMove.pieceType >> 1 == _nKing >> 1 && abs((int)currentMove.finishSquare - (int)currentMove.startSquare) == 2))
+            {
+                irrevMoveInd.push_back(moveHistory.size() - 1);
+            }
+
             //if double-pawn push, set en-passant square.
             //otherwise, set en-passant square to -1.
             if (currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16)
@@ -1687,6 +1696,11 @@ class Board {
             stateHistory.pop_back();
             moveHistory.pop_back();
             hashHistory.pop_back();
+
+            if (irrevMoveInd.size() && irrevMoveInd.back() >= (int)moveHistory.size())
+            {
+                irrevMoveInd.pop_back();
+            }
         }
 
         void makeNullMove()
@@ -1697,6 +1711,8 @@ class Board {
 
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+
+            irrevMoveInd.push_back(moveHistory.size() - 1);
 
             current.enPassantSquare = -1;
 
@@ -1712,6 +1728,8 @@ class Board {
 
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+
+            irrevMoveInd.pop_back();
 
             if (current.enPassantSquare != -1)
             {
