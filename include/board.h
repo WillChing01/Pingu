@@ -36,6 +36,17 @@ struct moveInfo
     U32 finishPieceType;
 };
 
+struct captureCounter
+{
+    bool side;
+    int numChecks;
+    U64 pinned;
+    int victim;
+    U64 victimBB;
+    int attacker;
+    U64 attackerBB;
+};
+
 static const std::array<int,6> seeValues = 
 {{
     20000,
@@ -96,6 +107,8 @@ class Board {
 
         //temp variable for move appending.
         U32 newMove;
+
+        captureCounter cc;
 
         Board()
         {
@@ -929,6 +942,10 @@ class Board {
             }
             std::cout << " A  B  C  D  E  F  G  H" << std::endl;
         }
+
+        void resetCaptureCounter();
+        void updateCaptureCounter();
+        void generateNextCapture();
 
         void generateCaptures(bool side, int numChecks = 0)
         {
