@@ -41,9 +41,11 @@ struct captureCounter
     bool side;
     int numChecks;
     U64 pinned;
-    int victim;
-    U64 victimBB;
-    int attacker;
+    bool enPassant;
+    int victimPieceType;
+    U64 victimsBB;
+    int currentVictimSquare;
+    int attackerPieceType;
     U64 attackerBB;
 };
 
@@ -943,9 +945,130 @@ class Board {
             std::cout << " A  B  C  D  E  F  G  H" << std::endl;
         }
 
-        void resetCaptureCounter();
-        void updateCaptureCounter();
-        void generateNextCapture();
+        void resetCaptureCounter(int side, int numChecks)
+        {
+            cc.side = side;
+            cc.numChecks = numChecks;
+            cc.pinned = getPinnedPieces(side);
+            cc.enPassant = false;
+            cc.victimPieceType = _nKing + (int)(!side);
+            cc.victimsBB = 0;
+            cc.attackerPieceType = _nKing + (int)(side);
+            cc.attackerBB = 0;
+            updateCaptureCounter();
+        }
+
+        void updateCaptureCounter()
+        {
+            //check if we update the victim.
+            if (cc.attackerPieceType >> 1 == cc.victimPieceType >> 1)
+            {
+                //check if we update victim piece type.
+                if (!cc.victimsBB)
+                {
+                    //check if all captures exhausted.
+                    if (cc.victimPieceType == _nPawns + (int)(!cc.side))
+                    {
+                        if (cc.enPassant) {cc.attackerBB = 0; return;}
+
+                        cc.enPassant = true;
+                        //test for enpassant.
+                        if (current.enPassantSquare != -1)
+                        {
+                            cc.currentVictimSquare = current.enPassantSquare;
+                            cc.attackerBB = pawnAttacks(1ull << current.enPassantSquare, !cc.side) & pieces[cc.attackerPieceType];
+                        }
+                        return;
+                    }
+
+                    //update victim piece type.
+                    while (!cc.victimsBB && cc.victimPieceType < _nPawns + 2)
+                    {
+                        cc.victimPieceType += 2;
+                        cc.victimsBB = pieces[cc.victimPieceType];
+                    }
+                    if (!cc.victimsBB) {return;}
+                }
+
+                //update victim.
+                cc.currentVictimSquare = popLSB(cc.victimsBB);
+                cc.attackerPieceType = _nPawns + (int)(cc.side) + 2;
+            }
+
+            //update attacker.
+            cc.attackerPieceType -= 2;
+
+            switch(cc.attackerPieceType >> 1)
+            {
+                case _nPawns:
+                    break;
+                case _nKnights:
+                    break;
+                case _nBishops:
+                    break;
+                case _nRooks:
+                    break;
+                case _nQueens:
+                    break;
+                case _nKing:
+                    break;
+            }
+        }
+
+        U32 generateNextGoodCapture()
+        {
+            if (!cc.attackerBB)
+            {
+                updateCaptureCounter();
+                if (!cc.attackerBB) {return 0;}
+            }
+
+            int finishSquare = cc.currentVictimSquare;
+            int startSquare = popLSB(cc.attackerBB);
+            int pieceType = cc.attackerPieceType;
+            int finishPieceType = cc.attackerPieceType;
+            //check for promotion. only consider queen promotion for qsearch.
+            if ((pieceType == _nPawns + (int)(cc.side)) &&
+                ((cc.side && ((1ull << startSquare) & FILE_2)) ||
+                 (!cc.side && ((1ull << startSquare) & FILE_7))))
+            {
+                finishPieceType = _nQueens + (int)(cc.side);
+            }
+            int capturedPieceType = cc.victimPieceType;
+            bool enPassant = cc.enPassant;
+
+            //check if the piece is pinned.
+            if ((cc.pinned & (1ull << startSquare)) || enPassant)
+            {
+                U64 start = 1ull << startSquare;
+                U64 finish = 1ull << finishSquare;
+                pieces[pieceType] -= start;
+                pieces[pieceType] += finish;
+                pieces[capturedPieceType] -= finish;
+                occupied[(int)(cc.side)] -= start;
+                occupied[(int)(cc.side)] += finish;
+                occupied[(int)(!cc.side)] -= finish;
+                bool isBad = isInCheck(cc.side);
+
+                //unmove pieces.
+                pieces[pieceType] += start;
+                pieces[pieceType] -= finish;
+                pieces[capturedPieceType] += finish;
+                occupied[(int)(cc.side)] += start;
+                occupied[(int)(cc.side)] -= finish;
+                occupied[(int)(!cc.side)] += finish;
+
+                if (isBad) {return generateNextGoodCapture();}
+            }
+
+            //return the move.
+            return (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
+            (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
+            (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
+            (enPassant << MOVEINFO_ENPASSANT_OFFSET) |
+            (capturedPieceType << MOVEINFO_CAPTUREDPIECETYPE_OFFSET) |
+            (pieceType << MOVEINFO_FINISHPIECETYPE_OFFSET);
+        }
 
         void generateCaptures(bool side, int numChecks = 0)
         {
