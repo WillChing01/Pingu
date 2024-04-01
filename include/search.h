@@ -242,8 +242,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET == (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
             if (isQuiet)
             {
-                b.updateKiller(hashMove, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, hashMove, depth);}
+                b.killer.update(hashMove, ply);
+                if (depth >= 5) {b.history.update(singleQuiets, hashMove, depth);}
             }
 
             //update transposition table.
@@ -313,7 +313,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //try killers.
     for (int i=0;i<2;i++)
     {
-        move = b.killerMoves[ply][i];
+        move = b.killer.killerMoves[ply][i];
         //check if move was played before.
         if (singleQuiets.contains(move)) {continue;}
         //check if killer is valid.
@@ -349,8 +349,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             if (score >= beta)
             {
                 //beta cutoff.
-                b.updateKiller(move, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, move, depth);}
+                b.killer.update(move, ply);
+                if (depth >= 5) {b.history.update(singleQuiets, move, depth);}
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
@@ -455,8 +455,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             if (score >= beta)
             {
                 //beta cutoff.
-                b.updateKiller(move, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, moveCache, i, move, depth);}
+                b.killer.update(move, ply);
+                if (depth >= 5) {b.history.update(singleQuiets, moveCache, i, move, depth);}
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
@@ -509,7 +509,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
     }
 
     //age history at root.
-    b.ageHistory(8);
+    b.history.age(8);
 
     //reset best score and best move.
     storedBestScore = -MATE_SCORE; storedBestMove = 0;
