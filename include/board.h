@@ -1001,18 +1001,30 @@ class Board {
             switch(cc.attackerPieceType >> 1)
             {
                 case _nPawns:
+                    cc.attackerBB = pawnAttacks(1ull << cc.currentVictimSquare, !cc.side);
                     break;
                 case _nKnights:
+                    cc.attackerBB = knightAttacks(1ull << cc.currentVictimSquare);
                     break;
                 case _nBishops:
+                    cc.attackerBB = magicBishopAttacks(occupied[0] | occupied[1], cc.currentVictimSquare);
                     break;
                 case _nRooks:
+                    cc.attackerBB = magicRookAttacks(occupied[0] | occupied[1], cc.currentVictimSquare);
                     break;
                 case _nQueens:
+                    cc.attackerBB = magicQueenAttacks(occupied[0] | occupied[1], cc.currentVictimSquare);
                     break;
                 case _nKing:
+                    cc.attackerBB = kingAttacks(1ull << cc.currentVictimSquare) & ~kingAttacks(pieces[_nKing + (int)(!cc.side)]);
                     break;
             }
+
+            //intersection with attackers.
+            cc.attackerBB &= pieces[cc.attackerPieceType];
+
+            //if no valid attacks, iterate again.
+            if (!cc.attackerBB) {updateCaptureCounter();}
         }
 
         U32 generateNextGoodCapture()
@@ -1038,7 +1050,7 @@ class Board {
             bool enPassant = cc.enPassant;
 
             //check if the piece is pinned.
-            if ((cc.pinned & (1ull << startSquare)) || enPassant)
+            if ((cc.pinned & (1ull << startSquare)) || enPassant || pieceType >> 1 == _nKing >> 1)
             {
                 U64 start = 1ull << startSquare;
                 U64 finish = 1ull << finishSquare;
