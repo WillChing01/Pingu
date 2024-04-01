@@ -14,6 +14,8 @@
 #include "pawn.h"
 #include "magic.h"
 
+#include "killer.h"
+
 #include "evaluation.h"
 #include "nnue.h"
 
@@ -62,7 +64,8 @@ class Board {
         std::vector<U32> quietBuffer;
         std::vector<U32> moveBuffer;
         std::vector<std::pair<U32,int> > scoredMoves;
-        U32 killerMoves[128][2] = {};
+
+        Killer killer;
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -1943,15 +1946,6 @@ class Board {
             for (int i=0;i<12;i++)
             {
                 for (int j=0;j<64;j++) {history[i][j] = 0;}
-            }
-        }
-
-        void updateKiller(U32 killer, int ply)
-        {
-            if (killerMoves[ply][0] != killer)
-            {
-                killerMoves[ply][1] = killerMoves[ply][0];
-                killerMoves[ply][0] = killer;
             }
         }
 
