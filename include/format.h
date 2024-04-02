@@ -54,7 +54,7 @@ inline std::string moveToString(U32 chessMove)
 
 inline U32 stringToMove(Board &b, const std::string &input)
 {
-    //return 0 (null move) if input is not correct.
+//return 0 (null move) if input is not correct.
     if (input.length() != 4 && input.length() != 5) {return 0;}
 
     size_t startFile = fileSymbols.find(input[0]);
@@ -100,6 +100,61 @@ inline U32 stringToMove(Board &b, const std::string &input)
     }
 
     return 0;
+}
+
+inline std::string positionToFen(const U64* pieces, const gameState &current, bool side)
+{
+    const std::string pieceTypes = "KkQqRrBbNnPp";
+    std::string fen = "";
+
+    //piece placement.
+    for (int i=7;i>=0;i--)
+    {
+        int c = 0;
+        for (int j=0;j<8;j++)
+        {
+            U64 square = 1ull << (8*i + j);
+            bool occ = false;
+            for (int k=0;k<12;k++)
+            {
+                //check if occupied by piece.
+                if (pieces[k] & square)
+                {
+                    if (c > 0) {fen += std::to_string(c);}
+                    fen += pieceTypes[k];
+                    c = 0;
+                    occ = true;
+                }
+            }
+            if (!occ) {c++;}
+        }
+        if (c > 0) {fen += std::to_string(c);}
+        if (i > 0) {fen += '/';}
+    }
+
+    //side to move.
+    fen += side & 1 ? " b" : " w";
+
+    //castling rights.
+    fen += ' ';
+    if (current.canKingCastle[0] || current.canKingCastle[1] ||
+        current.canQueenCastle[0] || current.canQueenCastle[1])
+    {
+        if (current.canKingCastle[0]) {fen += 'K';}
+        if (current.canQueenCastle[0]) {fen += 'Q';}
+        if (current.canKingCastle[1]) {fen += 'k';}
+        if (current.canQueenCastle[1]) {fen += 'q';}
+    }
+    else {fen += '-';}
+
+    //en passant square.
+    fen += ' ';
+    fen += current.enPassantSquare != -1 ? toCoord(current.enPassantSquare) : "-";
+
+    //move numbers.
+    fen += " 0 1";
+
+    return fen;
 }
 
 #endif // FORMAT_H_INCLUDED

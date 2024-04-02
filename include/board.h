@@ -22,12 +22,9 @@
 
 #include "transposition.h"
 
-struct gameState
-{
-    bool canKingCastle[2];
-    bool canQueenCastle[2];
-    int enPassantSquare;
-};
+#include "format.h"
+
+inline std::string positionToFen(const U64* pieces, const gameState &current, bool side);
 
 struct moveInfo
 {
@@ -75,13 +72,6 @@ class Board {
         };
 
         moveInfo currentMove = {};
-
-        static const U32 _nKing=0;
-        static const U32 _nQueens=2;
-        static const U32 _nRooks=4;
-        static const U32 _nBishops=6;
-        static const U32 _nKnights=8;
-        static const U32 _nPawns=10;
 
         NNUE nnue;
 
@@ -148,62 +138,7 @@ class Board {
 
         void nnueHardUpdate()
         {
-            nnue.refreshInput(positionToFen());
-        }
-
-        std::string positionToFen()
-        {
-            const std::string pieceTypes = "KkQqRrBbNnPp";
-            std::string fen = "";
-
-            //piece placement.
-            for (int i=7;i>=0;i--)
-            {
-                int c = 0;
-                for (int j=0;j<8;j++)
-                {
-                    U64 square = 1ull << (8*i + j);
-                    bool occ = false;
-                    for (int k=0;k<12;k++)
-                    {
-                        //check if occupied by piece.
-                        if (pieces[k] & square)
-                        {
-                            if (c > 0) {fen += std::to_string(c);}
-                            fen += pieceTypes[k];
-                            c = 0;
-                            occ = true;
-                        }
-                    }
-                    if (!occ) {c++;}
-                }
-                if (c > 0) {fen += std::to_string(c);}
-                if (i > 0) {fen += '/';}
-            }
-
-            //side to move.
-            fen += moveHistory.size() & 1 ? " b" : " w";
-
-            //castling rights.
-            fen += ' ';
-            if (current.canKingCastle[0] || current.canKingCastle[1] ||
-                current.canQueenCastle[0] || current.canQueenCastle[1])
-            {
-                if (current.canKingCastle[0]) {fen += 'K';}
-                if (current.canQueenCastle[0]) {fen += 'Q';}
-                if (current.canKingCastle[1]) {fen += 'k';}
-                if (current.canQueenCastle[1]) {fen += 'q';}
-            }
-            else {fen += '-';}
-
-            //en passant square.
-            fen += ' ';
-            fen += current.enPassantSquare != -1 ? toCoord(current.enPassantSquare) : "-";
-
-            //move numbers.
-            fen += " 0 1";
-
-            return fen;
+            nnue.refreshInput(positionToFen(pieces, current, moveHistory.size() & 1));
         }
 
         void setPositionFen(const std::string &fen)
@@ -955,8 +890,8 @@ class Board {
                     x = pawnAttacks(pawnPosBoard,side) & occupied[(int)(!side)];
 
                     //promotion by moving forward.
-                    if (!side) {x |= ((pawnPosBoard & FILE_7) << 8) & (~p);}
-                    else {x |= ((pawnPosBoard & FILE_2) >> 8) & (~p);}
+                    if (!side) {x |= ((pawnPosBoard & RANK_7) << 8) & (~p);}
+                    else {x |= ((pawnPosBoard & RANK_2) >> 8) & (~p);}
 
                     while (x) {appendPawnCapture(_nPawns+(int)(side), pos, popLSB(x), false, (pawnPosBoard & pinned)!=0);}
                 }
@@ -1036,8 +971,8 @@ class Board {
                     x = pawnAttacks(pawnPosBoard,side) & target;
 
                     //promotion by moving forward.
-                    if (!side) {x |= ((pawnPosBoard & FILE_7) << 8) & (~p);}
-                    else {x |= ((pawnPosBoard & FILE_2) >> 8) & (~p);}
+                    if (!side) {x |= ((pawnPosBoard & RANK_7) << 8) & (~p);}
+                    else {x |= ((pawnPosBoard & RANK_2) >> 8) & (~p);}
 
                     while (x) {appendPawnCapture(_nPawns+(int)(side), pos, popLSB(x), false, true);}
                 }
@@ -1161,13 +1096,13 @@ class Board {
                     //move forward (exclude promotion).
                     if (side==0)
                     {
-                        x |= ((pawnPosBoard & (~FILE_7)) << 8) & (~p);
-                        x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
+                        x |= ((pawnPosBoard & (~RANK_7)) << 8) & (~p);
+                        x |= ((((pawnPosBoard & RANK_2) << 8) & (~p)) << 8) & (~p);
                     }
                     else
                     {
-                        x |= ((pawnPosBoard & (~FILE_2)) >> 8 & (~p));
-                        x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+                        x |= ((pawnPosBoard & (~RANK_2)) >> 8 & (~p));
+                        x |= ((((pawnPosBoard & RANK_7) >> 8) & (~p)) >> 8) & (~p);
                     }
 
                     while (x) {appendQuiet(_nPawns+(int)(side), pos, popLSB(x), (pawnPosBoard & pinned)!=0);}
@@ -1220,13 +1155,13 @@ class Board {
                     //move forward (exclude promotion).
                     if (side==0)
                     {
-                        x |= ((pawnPosBoard & (~FILE_7)) << 8) & blockBB;
-                        x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & blockBB;
+                        x |= ((pawnPosBoard & (~RANK_7)) << 8) & blockBB;
+                        x |= ((((pawnPosBoard & RANK_2) << 8) & (~p)) << 8) & blockBB;
                     }
                     else
                     {
-                        x |= ((pawnPosBoard & (~FILE_2)) >> 8) & blockBB;
-                        x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & blockBB;
+                        x |= ((pawnPosBoard & (~RANK_2)) >> 8) & blockBB;
+                        x |= ((((pawnPosBoard & RANK_7) >> 8) & (~p)) >> 8) & blockBB;
                     }
 
                     while (x) {appendQuiet(_nPawns+(int)(side), pos, popLSB(x), true);}
@@ -1336,12 +1271,12 @@ class Board {
             if (side==0)
             {
                 x |= (temp << 8) & ~p;
-                x |= ((((temp & FILE_2) << 8) & (~p)) << 8) & (~p);
+                x |= ((((temp & RANK_2) << 8) & (~p)) << 8) & (~p);
             }
             else
             {
                 x |= (temp >> 8) & ~p;
-                x |= ((((temp & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+                x |= ((((temp & RANK_7) >> 8) & (~p)) >> 8) & (~p);
             }
             if (x) {return false;}
             //capture.
@@ -1399,12 +1334,12 @@ class Board {
                 if (side == 0)
                 {
                     x |= (pawnPosBoard << 8) & (~p);
-                    x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
+                    x |= ((((pawnPosBoard & RANK_2) << 8) & (~p)) << 8) & (~p);
                 }
                 else
                 {
                     x |= (pawnPosBoard >> 8 & (~p));
-                    x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+                    x |= ((((pawnPosBoard & RANK_7) >> 8) & (~p)) >> 8) & (~p);
                 }
 
                 while (x)

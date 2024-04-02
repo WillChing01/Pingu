@@ -106,7 +106,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     if (isSearchAborted) {return 0;}
 
     //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
+    if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
     bool side = b.moveHistory.size() & 1;
     bool inCheck = b.isInCheck(side);
@@ -169,7 +169,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if (isDraw(b)) {return 0;}
 
     //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
+    if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
     //probe hash table.
     U64 bHash = b.zHashPieces ^ b.zHashState;
@@ -210,7 +210,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //null move pruning.
     if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
-        (b.occupied[side] ^ b.pieces[b._nKing+side] ^ b.pieces[b._nPawns+side]))
+        (b.occupied[side] ^ b.pieces[_nKing+side] ^ b.pieces[_nPawns+side]))
     {
         b.makeNullMove();
         int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR-depth/6, ply+1, false);
@@ -499,7 +499,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
     if (b.moveBuffer.size() == 1 && !gensfen) {storedBestMove = b.moveBuffer[0]; return 0;}
 
     //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {storedBestMove = b.moveBuffer[0]; isGameOver = true; return 0;}
+    if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {storedBestMove = b.moveBuffer[0]; isGameOver = true; return 0;}
 
     //create move cache.
     std::vector<std::pair<U32,int> > moveCache;
