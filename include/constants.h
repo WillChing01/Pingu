@@ -9,8 +9,8 @@ const U64 NOT_H_FILE=0x7f7f7f7f7f7f7f7f;
 const U64 NOT_AB_FILE=~(217020518514230019ull);
 const U64 NOT_GH_FILE=~(13889313184910721216ull);
 
-const U64 FILE_2=65280ull;
-const U64 FILE_7=71776119061217280ull;
+const U64 RANK_2=65280ull;
+const U64 RANK_7=71776119061217280ull;
 
 const U64 KING_CASTLE_OCCUPIED[2]={96ull,6917529027641081856ull};
 const U64 QUEEN_CASTLE_OCCUPIED[2]={14ull,1008806316530991104ull};
@@ -43,8 +43,20 @@ const U32 MOVEINFO_CAPTUREDPIECETYPE_OFFSET = 17;
 const U32 MOVEINFO_FINISHPIECETYPE_MASK = 31457280;
 const U32 MOVEINFO_FINISHPIECETYPE_OFFSET = 21;
 
-//MOVE ORDERING
+//GAME STATE
 
-const int HISTORY_MAX = 1048576;
+struct gameState
+{
+    bool canKingCastle[2];
+    bool canQueenCastle[2];
+    int enPassantSquare;
+};
+
+const U32 _nKing=0;
+const U32 _nQueens=2;
+const U32 _nRooks=4;
+const U32 _nBishops=6;
+const U32 _nKnights=8;
+const U32 _nPawns=10;
 
 #endif // CONSTANTS_H_INCLUDED

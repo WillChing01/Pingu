@@ -79,18 +79,13 @@ void collectPVRoot(Board &b, U32 bestMove, int depth)
 inline bool isDraw(Board &b)
 {
     //check if current position has appeared in moveHistory.
-    bool draw = false;
     U32 zHash = b.zHashPieces ^ b.zHashState;
-    for (int i=(int)(b.moveHistory.size())-1;i>=0;i--)
+    int finishInd = b.irrevMoveInd.size() ? b.irrevMoveInd.back() : -1;
+    for (int i=(int)(b.hashHistory.size())-4;i>finishInd;i-=2)
     {
-        if ((((b.moveHistory[i] & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET) >> 1) == (b._nPawns >> 1) ||
-            ((b.moveHistory[i] & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) != 15)
-        {
-            break;
-        }
-        else if (b.hashHistory[i] == zHash) {draw = true; break;}
+        if (b.hashHistory[i] == zHash) {return true;}
     }
-    return draw;
+    return false;
 }
 
 inline bool checkTime()
@@ -111,7 +106,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     if (isSearchAborted) {return 0;}
 
     //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
+    if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
     bool side = b.moveHistory.size() & 1;
     bool inCheck = b.isInCheck(side);
@@ -174,7 +169,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if (isDraw(b)) {return 0;}
 
     //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {return 0;}
+    if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
     //probe hash table.
     U64 bHash = b.zHashPieces ^ b.zHashState;
@@ -215,7 +210,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //null move pruning.
     if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
-        (b.occupied[side] ^ b.pieces[b._nKing+side] ^ b.pieces[b._nPawns+side]))
+        (b.occupied[side] ^ b.pieces[_nKing+side] ^ b.pieces[_nPawns+side]))
     {
         b.makeNullMove();
         int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR-depth/6, ply+1, false);
@@ -247,8 +242,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET == (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
             if (isQuiet)
             {
-                b.updateKiller(hashMove, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, hashMove, depth);}
+                b.killer.update(hashMove, ply);
+                if (depth >= 5) {b.history.update(singleQuiets, hashMove, depth);}
             }
 
             //update transposition table.
@@ -318,7 +313,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //try killers.
     for (int i=0;i<2;i++)
     {
-        move = b.killerMoves[ply][i];
+        move = b.killer.killerMoves[ply][i];
         //check if move was played before.
         if (singleQuiets.contains(move)) {continue;}
         //check if killer is valid.
@@ -354,8 +349,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             if (score >= beta)
             {
                 //beta cutoff.
-                b.updateKiller(move, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, move, depth);}
+                b.killer.update(move, ply);
+                if (depth >= 5) {b.history.update(singleQuiets, move, depth);}
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
@@ -460,8 +455,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             if (score >= beta)
             {
                 //beta cutoff.
-                b.updateKiller(move, ply);
-                if (depth >= 5) {b.updateHistory(singleQuiets, moveCache, i, move, depth);}
+                b.killer.update(move, ply);
+                if (depth >= 5) {b.history.update(singleQuiets, moveCache, i, move, depth);}
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
@@ -504,7 +499,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
     if (b.moveBuffer.size() == 1 && !gensfen) {storedBestMove = b.moveBuffer[0]; return 0;}
 
     //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[b._nPawns] | b.pieces[b._nPawns+1])) {storedBestMove = b.moveBuffer[0]; isGameOver = true; return 0;}
+    if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {storedBestMove = b.moveBuffer[0]; isGameOver = true; return 0;}
 
     //create move cache.
     std::vector<std::pair<U32,int> > moveCache;
@@ -514,7 +509,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
     }
 
     //age history at root.
-    b.ageHistory(8);
+    b.history.age(8);
 
     //reset best score and best move.
     storedBestScore = -MATE_SCORE; storedBestMove = 0;

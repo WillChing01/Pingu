@@ -14,17 +14,18 @@
 #include "pawn.h"
 #include "magic.h"
 
+#include "killer.h"
+#include "history.h"
+#include "see.h"
+
 #include "evaluation.h"
 #include "nnue.h"
 
 #include "transposition.h"
 
-struct gameState
-{
-    bool canKingCastle[2];
-    bool canQueenCastle[2];
-    int enPassantSquare;
-};
+#include "format.h"
+
+inline std::string positionToFen(const U64* pieces, const gameState &current, bool side);
 
 struct moveInfo
 {
@@ -49,16 +50,6 @@ struct captureCounter
     U64 attackerBB;
 };
 
-static const std::array<int,6> seeValues = 
-{{
-    20000,
-    1000,
-    525,
-    350,
-    350,
-    100,
-}};
-
 class Board {
     public:
         U64 pieces[12]={};
@@ -69,12 +60,14 @@ class Board {
         std::vector<gameState> stateHistory;
         std::vector<U32> moveHistory;
         std::vector<U32> hashHistory;
+        std::vector<int> irrevMoveInd;
 
         std::vector<U32> captureBuffer;
         std::vector<U32> quietBuffer;
         std::vector<U32> moveBuffer;
         std::vector<std::pair<U32,int> > scoredMoves;
-        U32 killerMoves[128][2] = {};
+
+        Killer killer;
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -83,13 +76,6 @@ class Board {
         };
 
         moveInfo currentMove = {};
-
-        static const U32 _nKing=0;
-        static const U32 _nQueens=2;
-        static const U32 _nRooks=4;
-        static const U32 _nBishops=6;
-        static const U32 _nKnights=8;
-        static const U32 _nPawns=10;
 
         NNUE nnue;
 
@@ -101,11 +87,8 @@ class Board {
         U64 zHashPieces = 0;
         U64 zHashState = 0;
 
-        //SEE.
-        int gain[32]={};
-
-        //history table, history[pieceType][to_square]
-        int history[12][64] = {};
+        //history table, history.scores[pieceType][to_square]
+        History history;
 
         //temp variable for move appending.
         U32 newMove;
@@ -158,62 +141,7 @@ class Board {
 
         void nnueHardUpdate()
         {
-            nnue.refreshInput(positionToFen());
-        }
-
-        std::string positionToFen()
-        {
-            const std::string pieceTypes = "KkQqRrBbNnPp";
-            std::string fen = "";
-
-            //piece placement.
-            for (int i=7;i>=0;i--)
-            {
-                int c = 0;
-                for (int j=0;j<8;j++)
-                {
-                    U64 square = 1ull << (8*i + j);
-                    bool occ = false;
-                    for (int k=0;k<12;k++)
-                    {
-                        //check if occupied by piece.
-                        if (pieces[k] & square)
-                        {
-                            if (c > 0) {fen += std::to_string(c);}
-                            fen += pieceTypes[k];
-                            c = 0;
-                            occ = true;
-                        }
-                    }
-                    if (!occ) {c++;}
-                }
-                if (c > 0) {fen += std::to_string(c);}
-                if (i > 0) {fen += '/';}
-            }
-
-            //side to move.
-            fen += moveHistory.size() & 1 ? " b" : " w";
-
-            //castling rights.
-            fen += ' ';
-            if (current.canKingCastle[0] || current.canKingCastle[1] ||
-                current.canQueenCastle[0] || current.canQueenCastle[1])
-            {
-                if (current.canKingCastle[0]) {fen += 'K';}
-                if (current.canQueenCastle[0]) {fen += 'Q';}
-                if (current.canKingCastle[1]) {fen += 'k';}
-                if (current.canQueenCastle[1]) {fen += 'q';}
-            }
-            else {fen += '-';}
-
-            //en passant square.
-            fen += ' ';
-            fen += current.enPassantSquare != -1 ? toCoord(current.enPassantSquare) : "-";
-
-            //move numbers.
-            fen += " 0 1";
-
-            return fen;
+            nnue.refreshInput(positionToFen(pieces, current, moveHistory.size() & 1));
         }
 
         void setPositionFen(const std::string &fen)
@@ -222,6 +150,7 @@ class Board {
             stateHistory.clear();
             moveHistory.clear();
             hashHistory.clear();
+            irrevMoveInd.clear();
 
             std::vector<std::string> temp; temp.push_back("");
 
@@ -1101,8 +1030,8 @@ class Board {
                     x = pawnAttacks(pawnPosBoard,side) & occupied[(int)(!side)];
 
                     //promotion by moving forward.
-                    if (!side) {x |= ((pawnPosBoard & FILE_7) << 8) & (~p);}
-                    else {x |= ((pawnPosBoard & FILE_2) >> 8) & (~p);}
+                    if (!side) {x |= ((pawnPosBoard & RANK_7) << 8) & (~p);}
+                    else {x |= ((pawnPosBoard & RANK_2) >> 8) & (~p);}
 
                     while (x) {appendPawnCapture(_nPawns+(int)(side), pos, popLSB(x), false, (pawnPosBoard & pinned)!=0);}
                 }
@@ -1182,8 +1111,8 @@ class Board {
                     x = pawnAttacks(pawnPosBoard,side) & target;
 
                     //promotion by moving forward.
-                    if (!side) {x |= ((pawnPosBoard & FILE_7) << 8) & (~p);}
-                    else {x |= ((pawnPosBoard & FILE_2) >> 8) & (~p);}
+                    if (!side) {x |= ((pawnPosBoard & RANK_7) << 8) & (~p);}
+                    else {x |= ((pawnPosBoard & RANK_2) >> 8) & (~p);}
 
                     while (x) {appendPawnCapture(_nPawns+(int)(side), pos, popLSB(x), false, true);}
                 }
@@ -1307,13 +1236,13 @@ class Board {
                     //move forward (exclude promotion).
                     if (side==0)
                     {
-                        x |= ((pawnPosBoard & (~FILE_7)) << 8) & (~p);
-                        x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
+                        x |= ((pawnPosBoard & (~RANK_7)) << 8) & (~p);
+                        x |= ((((pawnPosBoard & RANK_2) << 8) & (~p)) << 8) & (~p);
                     }
                     else
                     {
-                        x |= ((pawnPosBoard & (~FILE_2)) >> 8 & (~p));
-                        x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+                        x |= ((pawnPosBoard & (~RANK_2)) >> 8 & (~p));
+                        x |= ((((pawnPosBoard & RANK_7) >> 8) & (~p)) >> 8) & (~p);
                     }
 
                     while (x) {appendQuiet(_nPawns+(int)(side), pos, popLSB(x), (pawnPosBoard & pinned)!=0);}
@@ -1366,13 +1295,13 @@ class Board {
                     //move forward (exclude promotion).
                     if (side==0)
                     {
-                        x |= ((pawnPosBoard & (~FILE_7)) << 8) & blockBB;
-                        x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & blockBB;
+                        x |= ((pawnPosBoard & (~RANK_7)) << 8) & blockBB;
+                        x |= ((((pawnPosBoard & RANK_2) << 8) & (~p)) << 8) & blockBB;
                     }
                     else
                     {
-                        x |= ((pawnPosBoard & (~FILE_2)) >> 8) & blockBB;
-                        x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & blockBB;
+                        x |= ((pawnPosBoard & (~RANK_2)) >> 8) & blockBB;
+                        x |= ((((pawnPosBoard & RANK_7) >> 8) & (~p)) >> 8) & blockBB;
                     }
 
                     while (x) {appendQuiet(_nPawns+(int)(side), pos, popLSB(x), true);}
@@ -1482,12 +1411,12 @@ class Board {
             if (side==0)
             {
                 x |= (temp << 8) & ~p;
-                x |= ((((temp & FILE_2) << 8) & (~p)) << 8) & (~p);
+                x |= ((((temp & RANK_2) << 8) & (~p)) << 8) & (~p);
             }
             else
             {
                 x |= (temp >> 8) & ~p;
-                x |= ((((temp & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+                x |= ((((temp & RANK_7) >> 8) & (~p)) >> 8) & (~p);
             }
             if (x) {return false;}
             //capture.
@@ -1545,12 +1474,12 @@ class Board {
                 if (side == 0)
                 {
                     x |= (pawnPosBoard << 8) & (~p);
-                    x |= ((((pawnPosBoard & FILE_2) << 8) & (~p)) << 8) & (~p);
+                    x |= ((((pawnPosBoard & RANK_2) << 8) & (~p)) << 8) & (~p);
                 }
                 else
                 {
                     x |= (pawnPosBoard >> 8 & (~p));
-                    x |= ((((pawnPosBoard & FILE_7) >> 8) & (~p)) >> 8) & (~p);
+                    x |= ((((pawnPosBoard & RANK_7) >> 8) & (~p)) >> 8) & (~p);
                 }
 
                 while (x)
@@ -1766,6 +1695,13 @@ class Board {
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
 
+            //irrev move.
+            if (currentMove.pieceType >> 1 == _nPawns >> 1 || currentMove.capturedPieceType != 15 ||
+                (currentMove.pieceType >> 1 == _nKing >> 1 && abs((int)currentMove.finishSquare - (int)currentMove.startSquare) == 2))
+            {
+                irrevMoveInd.push_back(moveHistory.size() - 1);
+            }
+
             //if double-pawn push, set en-passant square.
             //otherwise, set en-passant square to -1.
             if (currentMove.pieceType >> 1 == _nPawns >> 1 && abs((int)(currentMove.finishSquare)-(int)(currentMove.startSquare)) == 16)
@@ -1839,6 +1775,11 @@ class Board {
             stateHistory.pop_back();
             moveHistory.pop_back();
             hashHistory.pop_back();
+
+            if (irrevMoveInd.size() && irrevMoveInd.back() >= (int)moveHistory.size())
+            {
+                irrevMoveInd.pop_back();
+            }
         }
 
         void makeNullMove()
@@ -1849,6 +1790,8 @@ class Board {
 
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+
+            irrevMoveInd.push_back(moveHistory.size() - 1);
 
             current.enPassantSquare = -1;
 
@@ -1865,6 +1808,8 @@ class Board {
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
 
+            irrevMoveInd.pop_back();
+
             if (current.enPassantSquare != -1)
             {
                 zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];
@@ -1878,77 +1823,6 @@ class Board {
             stateHistory.pop_back();
             moveHistory.pop_back();
             hashHistory.pop_back();
-        }
-
-        U64 getLeastValuableAttacker(bool side, U64 attackersBB, U32 &attackingPieceType)
-        {
-            for (int i=_nPawns+(int)(side); i >= (int)_nKing+(int)(side); i-=2)
-            {
-                U64 x = attackersBB & pieces[i];
-                if (x)
-                {
-                    attackingPieceType = i >> 1;
-                    return x & (-x);
-                }
-            }
-            return 0; // no attacker found.
-        }
-
-        int seeCaptures(U32 chessMove)
-        {
-            //perform static evaluation exchange (SEE).
-            U32 finishSquare = (chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-            U32 attackingPieceType = (chessMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
-            U32 capturedPieceType = (chessMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-
-            bool side = attackingPieceType & 1;
-            int d = 0;
-            gain[0] = (capturedPieceType != 15 ? seeValues[capturedPieceType >> 1] : 0)
-            + (attackingPieceType == ((chessMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET) ? 0 : seeValues[attackingPieceType >> 1] - seeValues[_nPawns >> 1]);
-            U64 attackingPieceBB = 1ull << ((chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET);
-            U64 occ = occupied[0] | occupied[1];
-            if (chessMove & MOVEINFO_ENPASSANT_MASK) {occ ^= 1ull << (finishSquare - 8 + side * 16);}
-
-            U64 attackersBB = attackingPieceBB;
-            attackersBB |= kingAttacks(1ull << finishSquare) & (pieces[_nKing] | pieces[_nKing+1]);
-            attackersBB |= pawnAttacks(1ull << finishSquare, 0) & pieces[_nPawns+1];
-            attackersBB |= pawnAttacks(1ull << finishSquare, 1) & pieces[_nPawns];
-            attackersBB |= knightAttacks(1ull << finishSquare) & (pieces[_nKnights] | pieces[_nKnights+1]);
-            attackersBB |= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]);
-            attackersBB |= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]);
-
-            attackingPieceType = attackingPieceType >> 1;
-
-            do
-            {
-                d++; side = !side;
-                gain[d] = -gain[d-1] + seeValues[attackingPieceType];
-                attackersBB ^= attackingPieceBB;
-                occ ^= attackingPieceBB;
-
-                //update possible x-ray attacks.
-                if (attackingPieceType == (_nRooks >> 1) || attackingPieceType == (_nQueens >> 1) || d == 1)
-                {
-                    //rook-like xray.
-                    attackersBB |= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
-                }
-                if (attackingPieceType == (_nPawns >> 1) || attackingPieceType == (_nBishops >> 1) || attackingPieceType == (_nQueens >> 1))
-                {
-                    //bishop-like xray.
-                    attackersBB |= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
-                }
-
-                attackingPieceBB = getLeastValuableAttacker(side, attackersBB, attackingPieceType);
-                if (((finishSquare >> 3) == 0 || (finishSquare >> 3) == 7) && (attackingPieceType == _nPawns >> 1))
-                {
-                    gain[d] += seeValues[_nQueens >> 1] - seeValues[_nPawns >> 1];
-                    attackingPieceType = _nQueens >> 1;
-                }
-                if (gain[d] < 0) {break;}
-            } while (attackingPieceBB);
-            while (--d) {gain[d-1] = -std::max(-gain[d-1], gain[d]);}
-
-            return gain[0];
         }
 
         int regularEval()
@@ -1978,7 +1852,7 @@ class Board {
 
                 if (pieceType < capturedPieceType && pieceType >= _nQueens)
                 {
-                    int seeCheck = seeCaptures(move);
+                    int seeCheck = seeCaptures(move, pieces, occupied);
                     if (seeCheck < 0) {score = seeCheck;}
                 }
 
@@ -2000,7 +1874,7 @@ class Board {
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                 U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                 U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                int moveScore = history[pieceType][finishSquare];
+                int moveScore = history.scores[pieceType][finishSquare];
                 if (pieceType & 1)
                 {
                     moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare] - PIECE_TABLES_START[pieceType >> 1][startSquare];
@@ -2026,7 +1900,7 @@ class Board {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
 
-                if (pieceType >= capturedPieceType || pieceType < _nQueens || seeCaptures(move) >= 0)
+                if (pieceType >= capturedPieceType || pieceType < _nQueens || seeCaptures(move, pieces, occupied) >= 0)
                 {
                     int score = 16 * (15 - capturedPieceType) + pieceType;
                     scoredMoves.push_back(std::pair<U32, int>(move, score));
@@ -2049,7 +1923,7 @@ class Board {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 if (capturedPieceType != 15 || pieceType != finishPieceType)
                 {
-                    int score = seeCaptures(move);
+                    int score = seeCaptures(move, pieces, occupied);
                     scoredMoves.push_back(std::pair<U32,int>(move, score));
                 }
                 else
@@ -2062,91 +1936,6 @@ class Board {
             //sort the moves.
             sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
             return scoredMoves;
-        }
-
-        void ageHistory(const int factor = 16)
-        {
-            for (int i=0;i<12;i++)
-            {
-                for (int j=0;j<64;j++) {history[i][j] /= factor;}
-            }
-        }
-
-        void clearHistory()
-        {
-            for (int i=0;i<12;i++)
-            {
-                for (int j=0;j<64;j++) {history[i][j] = 0;}
-            }
-        }
-
-        void updateKiller(U32 killer, int ply)
-        {
-            if (killerMoves[ply][0] != killer)
-            {
-                killerMoves[ply][1] = killerMoves[ply][0];
-                killerMoves[ply][0] = killer;
-            }
-        }
-
-        void updateHistory(const std::unordered_set<U32> &singles, U32 cutMove, int depth)
-        {
-            bool shouldAge = false;
-
-            int delta = depth * depth;
-
-            //decrement history for single moves.
-            for (const auto &move: singles)
-            {
-                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                history[pieceType][finishSquare] -= delta;
-                if (history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
-            }
-
-            //increment history for cut move.
-            U32 pieceType = (cutMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-            U32 finishSquare = (cutMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-            history[pieceType][finishSquare] += delta;
-            if (history[pieceType][finishSquare] > HISTORY_MAX) {shouldAge = true;}
-
-            //age history if necessary.
-            if (shouldAge) {ageHistory();}
-        }
-
-        void updateHistory(const std::unordered_set<U32> &singles, const std::vector<std::pair<U32,int> > &quiets, int index, U32 cutMove, int depth)
-        {
-            bool shouldAge = false;
-
-            int delta = depth * depth;
-
-            //decrement history for single moves.
-            for (const auto &move: singles)
-            {
-                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                history[pieceType][finishSquare] -= delta;
-                if (history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
-            }
-
-            //decrement history for quiets.
-            for (int i=0;i<index;i++)
-            {
-                if (singles.contains(quiets[i].first)) {continue;}
-                U32 pieceType = (quiets[i].first & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                U32 finishSquare = (quiets[i].first & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                history[pieceType][finishSquare] -= delta;
-                if (history[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
-            }
-
-            //increment history for cut move.
-            U32 pieceType = (cutMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-            U32 finishSquare = (cutMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-            history[pieceType][finishSquare] += delta;
-            if (history[pieceType][finishSquare] > HISTORY_MAX) {shouldAge = true;}
-
-            //age history if necessary.
-            if (shouldAge) {ageHistory();}
         }
 };
 
