@@ -16,6 +16,7 @@
 
 #include "killer.h"
 #include "history.h"
+#include "see.h"
 
 #include "evaluation.h"
 #include "nnue.h"
@@ -35,16 +36,6 @@ struct moveInfo
     U32 capturedPieceType;
     U32 finishPieceType;
 };
-
-static const std::array<int,6> seeValues = 
-{{
-    20000,
-    1000,
-    525,
-    350,
-    350,
-    100,
-}};
 
 class Board {
     public:
@@ -82,9 +73,6 @@ class Board {
         //overall zHash is XOR of these two.
         U64 zHashPieces = 0;
         U64 zHashState = 0;
-
-        //SEE.
-        int gain[32]={};
 
         //history table, history.scores[pieceType][to_square]
         History history;
@@ -1685,77 +1673,6 @@ class Board {
             hashHistory.pop_back();
         }
 
-        U64 getLeastValuableAttacker(bool side, U64 attackersBB, U32 &attackingPieceType)
-        {
-            for (int i=_nPawns+(int)(side); i >= (int)_nKing+(int)(side); i-=2)
-            {
-                U64 x = attackersBB & pieces[i];
-                if (x)
-                {
-                    attackingPieceType = i >> 1;
-                    return x & (-x);
-                }
-            }
-            return 0; // no attacker found.
-        }
-
-        int seeCaptures(U32 chessMove)
-        {
-            //perform static evaluation exchange (SEE).
-            U32 finishSquare = (chessMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-            U32 attackingPieceType = (chessMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
-            U32 capturedPieceType = (chessMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-
-            bool side = attackingPieceType & 1;
-            int d = 0;
-            gain[0] = (capturedPieceType != 15 ? seeValues[capturedPieceType >> 1] : 0)
-            + (attackingPieceType == ((chessMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET) ? 0 : seeValues[attackingPieceType >> 1] - seeValues[_nPawns >> 1]);
-            U64 attackingPieceBB = 1ull << ((chessMove & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET);
-            U64 occ = occupied[0] | occupied[1];
-            if (chessMove & MOVEINFO_ENPASSANT_MASK) {occ ^= 1ull << (finishSquare - 8 + side * 16);}
-
-            U64 attackersBB = attackingPieceBB;
-            attackersBB |= kingAttacks(1ull << finishSquare) & (pieces[_nKing] | pieces[_nKing+1]);
-            attackersBB |= pawnAttacks(1ull << finishSquare, 0) & pieces[_nPawns+1];
-            attackersBB |= pawnAttacks(1ull << finishSquare, 1) & pieces[_nPawns];
-            attackersBB |= knightAttacks(1ull << finishSquare) & (pieces[_nKnights] | pieces[_nKnights+1]);
-            attackersBB |= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]);
-            attackersBB |= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]);
-
-            attackingPieceType = attackingPieceType >> 1;
-
-            do
-            {
-                d++; side = !side;
-                gain[d] = -gain[d-1] + seeValues[attackingPieceType];
-                attackersBB ^= attackingPieceBB;
-                occ ^= attackingPieceBB;
-
-                //update possible x-ray attacks.
-                if (attackingPieceType == (_nRooks >> 1) || attackingPieceType == (_nQueens >> 1) || d == 1)
-                {
-                    //rook-like xray.
-                    attackersBB |= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
-                }
-                if (attackingPieceType == (_nPawns >> 1) || attackingPieceType == (_nBishops >> 1) || attackingPieceType == (_nQueens >> 1))
-                {
-                    //bishop-like xray.
-                    attackersBB |= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
-                }
-
-                attackingPieceBB = getLeastValuableAttacker(side, attackersBB, attackingPieceType);
-                if (((finishSquare >> 3) == 0 || (finishSquare >> 3) == 7) && (attackingPieceType == _nPawns >> 1))
-                {
-                    gain[d] += seeValues[_nQueens >> 1] - seeValues[_nPawns >> 1];
-                    attackingPieceType = _nQueens >> 1;
-                }
-                if (gain[d] < 0) {break;}
-            } while (attackingPieceBB);
-            while (--d) {gain[d-1] = -std::max(-gain[d-1], gain[d]);}
-
-            return gain[0];
-        }
-
         int regularEval()
         {
             return nnue.forward() * (1-2*(int)(moveHistory.size() & 1));
@@ -1783,7 +1700,7 @@ class Board {
 
                 if (pieceType < capturedPieceType && pieceType >= _nQueens)
                 {
-                    int seeCheck = seeCaptures(move);
+                    int seeCheck = seeCaptures(move, pieces, occupied);
                     if (seeCheck < 0) {score = seeCheck;}
                 }
 
@@ -1831,7 +1748,7 @@ class Board {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
 
-                if (pieceType >= capturedPieceType || pieceType < _nQueens || seeCaptures(move) >= 0)
+                if (pieceType >= capturedPieceType || pieceType < _nQueens || seeCaptures(move, pieces, occupied) >= 0)
                 {
                     int score = 16 * (15 - capturedPieceType) + pieceType;
                     scoredMoves.push_back(std::pair<U32, int>(move, score));
@@ -1854,7 +1771,7 @@ class Board {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 if (capturedPieceType != 15 || pieceType != finishPieceType)
                 {
-                    int score = seeCaptures(move);
+                    int score = seeCaptures(move, pieces, occupied);
                     scoredMoves.push_back(std::pair<U32,int>(move, score));
                 }
                 else
