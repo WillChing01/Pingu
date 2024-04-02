@@ -119,7 +119,7 @@ void seeCommand(Board &b, const std::vector<std::string> &words)
     if (words[1] != "move") {return;}
     U32 chessMove = stringToMove(b, words[2]);
     if (!chessMove) {return;}
-    std::cout << "info score " << b.seeCaptures(chessMove) << std::endl;
+    std::cout << "info score " << seeCaptures(chessMove, b.pieces, b.occupied) << std::endl;
 }
 
 void helpCommand(const std::vector<std::string> &words)
@@ -352,7 +352,7 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
             if (!b.isInCheck(b.moveHistory.size() & 1) &&
                 ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15)
             {
-                output.push_back(std::pair<std::string, int>(b.positionToFen(), score));
+                output.push_back(std::pair<std::string, int>(positionToFen(b.pieces, b.current, b.moveHistory.size() & 1), score));
             }
 
             b.makeMove(storedBestMove);
@@ -421,7 +421,7 @@ void uciLoop()
         else if (commands[0] == "eval") {evalCommand(b, commands);}
         else if (commands[0] == "see") {seeCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
-        else if (commands[0] == "display") {b.display(); std::cout << b.positionToFen() << std::endl;}
+        else if (commands[0] == "display") {b.display(); std::cout << positionToFen(b.pieces, b.current, b.moveHistory.size() & 1) << std::endl;}
         else if (commands[0] == "gensfen") {gensfenCommand(b, commands);}
         else if (commands[0] == "bench") {benchCommand(b); break;}
         else if (commands[0] == "test") {testCommand(b, commands);}
