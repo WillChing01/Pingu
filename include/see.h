@@ -42,6 +42,7 @@ class SEE
 
     public:
         SEE() {}
+
         SEE(const U64* _pieces, const U64* _occupied)
         {
             pieces = _pieces;

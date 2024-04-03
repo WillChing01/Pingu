@@ -82,10 +82,12 @@ class Board {
 
         Board()
         {
+            //connect modules.
+            see = SEE(this->pieces, this->occupied);
+            nnue = NNUE(this->pieces);
+
             //start position default.
             setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
-            see = SEE(this->pieces, this->occupied);
         };
 
         void zHashHardUpdate()
@@ -126,10 +128,7 @@ class Board {
             }
         }
 
-        void nnueHardUpdate()
-        {
-            nnue.refreshInput(positionToFen(pieces, current, side));
-        }
+        void nnueHardUpdate() {nnue.refreshInput();}
 
         void setPositionFen(const std::string &fen)
         {
@@ -196,7 +195,7 @@ class Board {
 
             zHashHardUpdate();
             phaseHardUpdate();
-            nnue.refreshInput(fen);
+            nnueHardUpdate();
 
             //hash and state history.
             stateHistory.push_back(current);
