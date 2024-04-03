@@ -119,7 +119,7 @@ void seeCommand(Board &b, const std::vector<std::string> &words)
     if (words[1] != "move") {return;}
     U32 chessMove = stringToMove(b, words[2]);
     if (!chessMove) {return;}
-    std::cout << "info score " << seeCaptures(chessMove, b.pieces, b.occupied) << std::endl;
+    std::cout << "info score " << b.see.evaluate(chessMove) << std::endl;
 }
 
 void helpCommand(const std::vector<std::string> &words)

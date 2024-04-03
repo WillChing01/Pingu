@@ -55,8 +55,6 @@ class Board {
         std::vector<U32> moveBuffer;
         std::vector<std::pair<U32,int> > scoredMoves;
 
-        Killer killer;
-
         gameState current = {
             .canKingCastle = {true,true},
             .canQueenCastle = {true,true},
@@ -64,8 +62,6 @@ class Board {
         };
 
         moveInfo currentMove = {};
-
-        NNUE nnue;
 
         const int piecePhases[6] = {0,4,2,1,1,0};
 
@@ -75,8 +71,11 @@ class Board {
         U64 zHashPieces = 0;
         U64 zHashState = 0;
 
-        //history table, history.scores[pieceType][to_square]
+        //modules.
+        Killer killer;
         History history;
+        SEE see;
+        NNUE nnue;
 
         //temp variable for move appending.
         U32 newMove;
@@ -85,6 +84,8 @@ class Board {
         {
             //start position default.
             setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+            see = SEE(this->pieces, this->occupied);
         };
 
         void zHashHardUpdate()
@@ -1705,7 +1706,7 @@ class Board {
 
                 if (pieceType < capturedPieceType && pieceType >= _nQueens)
                 {
-                    int seeCheck = seeCaptures(move, pieces, occupied);
+                    int seeCheck = see.evaluate(move);
                     if (seeCheck < 0) {score = seeCheck;}
                 }
 
@@ -1753,7 +1754,7 @@ class Board {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
 
-                if (pieceType >= capturedPieceType || pieceType < _nQueens || seeCaptures(move, pieces, occupied) >= 0)
+                if (pieceType >= capturedPieceType || pieceType < _nQueens || see.evaluate(move) >= 0)
                 {
                     int score = 16 * (15 - capturedPieceType) + pieceType;
                     scoredMoves.push_back(std::pair<U32, int>(move, score));
@@ -1776,7 +1777,7 @@ class Board {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 if (capturedPieceType != 15 || pieceType != finishPieceType)
                 {
-                    int score = seeCaptures(move, pieces, occupied);
+                    int score = see.evaluate(move);
                     scoredMoves.push_back(std::pair<U32,int>(move, score));
                 }
                 else
