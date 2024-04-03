@@ -43,6 +43,7 @@ class Board {
 
         U64 occupied[2]={0,0};
         U64 attacked[2]={0,0};
+        bool side = 0;
 
         std::vector<gameState> stateHistory;
         std::vector<U32> moveHistory;
@@ -100,7 +101,7 @@ class Board {
                 }
             }
 
-            if (moveHistory.size() & 1) {zHashPieces ^= randomNums[ZHASH_TURN];}
+            if (side) {zHashPieces ^= randomNums[ZHASH_TURN];}
 
             if (current.enPassantSquare != -1) {zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];}
 
@@ -126,7 +127,7 @@ class Board {
 
         void nnueHardUpdate()
         {
-            nnue.refreshInput(positionToFen(pieces, current, moveHistory.size() & 1));
+            nnue.refreshInput(positionToFen(pieces, current, side));
         }
 
         void setPositionFen(const std::string &fen)
@@ -171,7 +172,8 @@ class Board {
 
             //side to move.
             moveHistory.push_back(0);
-            if (temp[1] == "w") {moveHistory.push_back(0);}
+            if (temp[1] == "w") {moveHistory.push_back(0); side = 0;}
+            else {side = 1;}
 
             current = {
                 .canKingCastle = {false,false},
@@ -323,7 +325,7 @@ class Board {
             unpackMove(chessMove);
 
             //check for correct side-to-move.
-            if ((currentMove.pieceType & 1) != (moveHistory.size() & 1)) {return false;}
+            if ((currentMove.pieceType & 1) != (side)) {return false;}
 
             //check that startSquare contains piece.
             if (!(bool)(pieces[currentMove.pieceType] & (1ull << currentMove.startSquare))) {return false;}
@@ -1542,6 +1544,7 @@ class Board {
             //turn increment can be done in zHashPieces.
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+            side = !side;
 
             //irrev move.
             if (currentMove.pieceType >> 1 == _nPawns >> 1 || currentMove.capturedPieceType != 15 ||
@@ -1609,6 +1612,7 @@ class Board {
             //revert zhash for gamestate.
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+            side = !side;
 
             if (current.enPassantSquare != -1)
             {
@@ -1638,6 +1642,7 @@ class Board {
 
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+            side = !side;
 
             irrevMoveInd.push_back(moveHistory.size() - 1);
 
@@ -1655,6 +1660,7 @@ class Board {
 
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+            side = !side;
 
             irrevMoveInd.pop_back();
 
@@ -1675,13 +1681,12 @@ class Board {
 
         int regularEval()
         {
-            return nnue.forward() * (1-2*(int)(moveHistory.size() & 1));
+            return nnue.forward() * (1-2*(int)(side));
         }
 
         int evaluateBoard()
         {
             //assume we are not in check.
-            bool side = moveHistory.size() & 1;
             bool stalemate = stalemateCheck(side);
 
             return stalemate ? 0 : regularEval();

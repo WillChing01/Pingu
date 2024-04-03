@@ -233,8 +233,8 @@ void goCommand(Board &b, const std::vector<std::string> &words)
 
         depth = 100;
 
-        double timeLeft = (b.moveHistory.size() & 1) ? blackTime : whiteTime;
-        double increment = (b.moveHistory.size() & 1) ? blackInc : whiteInc;
+        double timeLeft = b.side ? blackTime : whiteTime;
+        double increment = b.side ? blackInc : whiteInc;
 
         moveTime = timeLeft / std::max(movesToGo, 20) + 0.5 * increment;
         if (moveTime > timeLeft) {moveTime = 0.8 * timeLeft;}
@@ -323,7 +323,7 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
         for (int i=0;i<randomply;i++)
         {
             b.moveBuffer.clear();
-            b.generatePseudoMoves(b.moveHistory.size() & 1);
+            b.generatePseudoMoves(b.side);
 
             //if no moves left we abort the game.
             if (b.moveBuffer.size() == 0) {gameover = true; break;}
@@ -345,14 +345,14 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
             if (isGameOver) {break;}
 
             //check that score within bounds.
-            if (b.moveHistory.size() & 1) {score *= -1;}
+            if (b.side) {score *= -1;}
             if (abs(score) > evalbound) {break;}
 
             //update output.
-            if (!b.isInCheck(b.moveHistory.size() & 1) &&
+            if (!b.isInCheck(b.side) &&
                 ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15)
             {
-                output.push_back(std::pair<std::string, int>(positionToFen(b.pieces, b.current, b.moveHistory.size() & 1), score));
+                output.push_back(std::pair<std::string, int>(positionToFen(b.pieces, b.current, b.side), score));
             }
 
             b.makeMove(storedBestMove);
@@ -421,7 +421,7 @@ void uciLoop()
         else if (commands[0] == "eval") {evalCommand(b, commands);}
         else if (commands[0] == "see") {seeCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
-        else if (commands[0] == "display") {b.display(); std::cout << positionToFen(b.pieces, b.current, b.moveHistory.size() & 1) << std::endl;}
+        else if (commands[0] == "display") {b.display(); std::cout << positionToFen(b.pieces, b.current, b.side) << std::endl;}
         else if (commands[0] == "gensfen") {gensfenCommand(b, commands);}
         else if (commands[0] == "bench") {benchCommand(b); break;}
         else if (commands[0] == "test") {testCommand(b, commands);}

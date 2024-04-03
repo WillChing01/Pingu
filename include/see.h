@@ -9,6 +9,8 @@
 #include "pawn.h"
 #include "magic.h"
 
+class Board;
+
 const std::array<int,6> seeValues = 
 {{
     20000,
@@ -18,6 +20,15 @@ const std::array<int,6> seeValues =
     350,
     100,
 }};
+
+class SEE
+{
+    public:
+        int gain[32] = {};
+        const U64 Board::* pieces;
+        const U64 Board::* occupied;
+        
+};
 
 int SEE_gain[32] = {};
 
