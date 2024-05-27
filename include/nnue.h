@@ -7,6 +7,8 @@
 #include <immintrin.h>
 #include <string>
 
+#include "constants.h"
+#include "bitboard.h"
 #include "weights.h"
 
 //activation is implicitly ReLU, except for L2 -> Out which is linear.
@@ -51,7 +53,9 @@ inline int hsum_8x32(__m256i v)
 
 class NNUE
 {
-    public:
+    private:
+        const U64* pieces;
+
         short input_layer[INPUT_COUNT] = {};
         short input_weights[INPUT_COUNT][L1_COUNT] = {};
         short input_bias[L1_COUNT] = {};
@@ -67,7 +71,7 @@ class NNUE
 
         int output_layer[OUTPUT_COUNT] = {};
 
-        NNUE()
+        void readWeights()
         {
             //read weights and biases.
 
@@ -102,22 +106,27 @@ class NNUE
             }
         }
 
-        void refreshInput(const std::string &fen)
+    public:
+        NNUE() {}
+
+        NNUE(const U64* _pieces)
         {
-            //fully refresh input layer with fen string.
+            pieces = _pieces;
+            readWeights();
+        }
+
+        void refreshInput()
+        {
+            //refresh the input layer.
             for (int i=0;i<INPUT_COUNT;i++) {input_layer[i] = 0;}
 
-            int square = 56;
-            std::string pieceTypes = "KkQqRrBbNnPp";
-
-            for (int i=0;i<(int)fen.length();i++)
+            for (int i=0;i<12;i++)
             {
-                if (fen[i] == ' ') {break;}
-                else if (fen[i] == '/') {square -= 16;}
-                else if ((int)(fen[i] - '0') < 9) {square += (int)(fen[i] - '0');}
-                else {input_layer[64*pieceTypes.find(fen[i]) + square++] = 1;}
+                U64 x = pieces[i];
+                while (x) {input_layer[64 * i + popLSB(x)] = 1;}
             }
 
+            //update l1 layer.
             for (int i=0;i<L1_COUNT;i++)
             {
                 l1_layer[i] = input_bias[i];

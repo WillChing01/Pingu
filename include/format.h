@@ -76,12 +76,12 @@ inline U32 stringToMove(Board &b, const std::string &input)
 
     if (input.length() == 5)
     {
-        finishPiece = promotionLetters.find(input[4]) * 2 + (b.moveHistory.size() & 1);
+        finishPiece = promotionLetters.find(input[4]) * 2 + (b.side);
         if (finishPiece == std::string::npos) {return 0;}
     }
 
     //check if move is legal.
-    b.generatePseudoMoves(b.moveHistory.size() & 1);
+    b.generatePseudoMoves(b.side);
 
     for (int i=0;i<(int)b.moveBuffer.size();i++)
     {
