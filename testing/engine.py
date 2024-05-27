@@ -1,5 +1,5 @@
 """
-Expects to find 'Pingu.exe' in /build folder
+Expects to find 'Pingu.exe' in parent folder.
 
 """
 
