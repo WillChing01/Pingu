@@ -18,6 +18,7 @@
 #include "search.h"
 #include "board.h"
 #include "bench.h"
+#include "gensfen.h"
 
 const std::string ENGINE_NAME = "Pingu 3.0.0";
 const std::string ENGINE_AUTHOR = "William Ching";
@@ -290,7 +291,8 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
     int maxply = std::stoi(words[8]);
     int evalbound = std::stoi(words[10]);
 
-    std::vector<std::pair<std::string, int> > output = {};
+    std::vector<gensfenData> output = {};
+    std::vector<gensfenData> outputBuffer = {};
 
     //set up random device.
     std::random_device _rd;
@@ -313,8 +315,10 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
     {
         //start a new game.
         bool gameover = false;
+        double result = 0.5;
         prepareForNewGame(b);
         b.setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        outputBuffer.clear();
 
         //track zHash for draw by repetition.
         std::set<U64> zHash;
@@ -337,29 +341,50 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
         }
 
         if (gameover) {continue;}
-        
+
         //fixed-depth search.
-        while ((int)b.moveHistory.size() < maxply)
+        while (true)
         {
             int score = alphaBetaRoot(b, depth, true);
-            if (isGameOver) {break;}
 
             //check that score within bounds.
             if (b.side) {score *= -1;}
-            if (abs(score) > evalbound) {break;}
-
-            //update output.
-            if (!b.isInCheck(b.side) &&
-                ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15)
+            if (abs(score) > evalbound || isGameOver)
             {
-                output.push_back(std::pair<std::string, int>(positionToFen(b.pieces, b.current, b.side), score));
+                result = score == 0 ? 0.5 :
+                         score > evalbound ? 1. : 0.;
+                break;
             }
 
+            //exit if maxply exceeded.
+            if ((int)b.moveHistory.size() > maxply)
+            {
+                result = score > 400 ? 1. :
+                         score < -400 ? 0. : 0.5;
+                break;
+            }
+
+            //update output buffer.
+            bool isQuiet = !b.isInCheck(b.side) && ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15;
+            if (isQuiet) {outputBuffer.push_back(gensfenData(positionToFen(b.pieces, b.current, b.side), score, 0.5));}
+
             b.makeMove(storedBestMove);
+
             //check if position is repeated and remove last output if so.
-            if (zHash.find(b.zHashPieces ^ b.zHashState) != zHash.end()) {output.pop_back(); break;}
+            if (zHash.find(b.zHashPieces ^ b.zHashState) != zHash.end())
+            {
+                if (isQuiet) {outputBuffer.pop_back();}
+                result = 0.5;
+                break;
+            }
             zHash.insert(b.zHashPieces ^ b.zHashState);
         }
+
+        //update contents of buffer with game result.
+        for (auto &x: outputBuffer) {x.result = result;}
+
+        //add contents of buffer to output.
+        for (const auto &x: outputBuffer) {output.push_back(x);}
 
         std::cout << "Finished game " << numGames << "; " << output.size() << " positions overall" << std::endl;
         numGames++;
@@ -383,7 +408,7 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
 
     for (const auto &x: output)
     {
-        file << x.first << "; " << x.second << std::endl;
+        file << x.fen << "; " << x.eval << "; " << x.result << std::endl;
     }
 
     file.close();
