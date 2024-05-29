@@ -4,6 +4,7 @@ int main()
 {
     populateMagicTables();
     populateRandomNums();
+    cacheKnightAttacks();
     clearTT();
 
     uciLoop();

@@ -3,7 +3,9 @@
 
 #include "constants.h"
 
-inline U64 knightAttacks(U64 b)
+U64 _knightAttacks[64] = {};
+
+U64 aggregateKnightAttacks(U64 b)
 {
     U64 r1 = (b & NOT_A_FILE) >> 1;
     r1 |= (b & NOT_H_FILE) << 1;
@@ -16,5 +18,15 @@ inline U64 knightAttacks(U64 b)
 
     return res;
 }
+
+void cacheKnightAttacks()
+{
+    for (int i=0;i<64;i++)
+    {
+        _knightAttacks[i] = aggregateKnightAttacks(1ull << i);
+    }
+}
+
+inline U64 knightAttacks(int square) {return _knightAttacks[square];}
 
 #endif // KNIGHT_H_INCLUDED

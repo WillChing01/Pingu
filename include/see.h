@@ -68,7 +68,7 @@ class SEE
             attackersBB |= kingAttacks(1ull << finishSquare) & (pieces[_nKing] | pieces[_nKing+1]);
             attackersBB |= pawnAttacks(1ull << finishSquare, 0) & pieces[_nPawns+1];
             attackersBB |= pawnAttacks(1ull << finishSquare, 1) & pieces[_nPawns];
-            attackersBB |= knightAttacks(1ull << finishSquare) & (pieces[_nKnights] | pieces[_nKnights+1]);
+            attackersBB |= knightAttacks(finishSquare) & (pieces[_nKnights] | pieces[_nKnights+1]);
             attackersBB |= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]);
             attackersBB |= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]);
 

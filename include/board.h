@@ -425,7 +425,7 @@ class Board {
                     if (magicBishopAttacks(occupied[0] | occupied[1], finishSquare) & pieces[_nKing+(int)(!side)]) {return true;}
                     break;
                 case _nKnights >> 1:
-                    if (knightAttacks(1ull << finishSquare) & pieces[_nKing+(int)(!side)]) {return true;}
+                    if (knightAttacks(finishSquare) & pieces[_nKing+(int)(!side)]) {return true;}
                     break;
                 case _nPawns >> 1:
                     if (pawnAttacks(1ull << finishSquare, side) & pieces[_nKing+(int)(!side)]) {return true;}
@@ -745,7 +745,7 @@ class Board {
             }
 
             //knights.
-            attacked[(int)(side)] |= knightAttacks(pieces[_nKnights+(int)(side)]);
+            attacked[(int)(side)] |= aggregateKnightAttacks(pieces[_nKnights+(int)(side)]);
 
             //pawns.
             attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
@@ -760,7 +760,7 @@ class Board {
             return
                 (bool)(magicRookAttacks(b,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) ||
                 (bool)(magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) ||
-                (bool)(knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)]) ||
+                (bool)(aggregateKnightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)]) ||
                 (bool)(pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)]);
         }
 
@@ -772,7 +772,7 @@ class Board {
 
             U64 inCheck = magicRookAttacks(b,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
             inCheck |= magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            inCheck |= knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)];
+            inCheck |= aggregateKnightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)];
             inCheck |= pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)];
 
             return __builtin_popcountll(inCheck);
@@ -785,7 +785,7 @@ class Board {
 
             if (U64 bishop = magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return bishop;}
             else if (U64 rook = magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return rook;}
-            else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)]) {return knight;}
+            else if (U64 knight = knightAttacks(square) & pieces[_nKnights+(int)(!side)]) {return knight;}
             else {return pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];}
         }
 
@@ -902,7 +902,7 @@ class Board {
                 while (temp)
                 {
                     pos = popLSB(temp);
-                    x = knightAttacks(1ull << pos) & occupied[(int)(!side)];
+                    x = knightAttacks(pos) & occupied[(int)(!side)];
                     while (x) {appendCapture(_nKnights+(int)(side), pos, popLSB(x), false);}
                 }
 
@@ -983,7 +983,7 @@ class Board {
                 while (temp)
                 {
                     pos = popLSB(temp);
-                    x = knightAttacks(1ull << pos) & target;
+                    x = knightAttacks(pos) & target;
                     while (x) {appendCapture(_nKnights+(int)(side), pos, popLSB(x), true);}
                 }
 
@@ -1061,7 +1061,7 @@ class Board {
                 while (temp)
                 {
                     pos = popLSB(temp);
-                    x = knightAttacks(1ull << pos) & ~p;
+                    x = knightAttacks(pos) & ~p;
                     while (x) {appendQuiet(_nKnights+(int)(side), pos, popLSB(x), false);}
                 }
 
@@ -1171,7 +1171,7 @@ class Board {
                 while (temp)
                 {
                     pos = popLSB(temp);
-                    x = knightAttacks(1ull << pos) & blockBB;
+                    x = knightAttacks(pos) & blockBB;
                     while (x) {appendQuiet(_nKnights+(int)(side), pos, popLSB(x), true);}
                 }
 
@@ -1224,7 +1224,7 @@ class Board {
 
             //knight - not pinned.
             temp = pieces[_nKnights+(int)(side)] & ~pinned;
-            x = knightAttacks(temp) & ~occupied[(int)(side)];
+            x = aggregateKnightAttacks(temp) & ~occupied[(int)(side)];
             if (x) {return false;}
 
             //bishop - not pinned.
