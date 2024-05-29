@@ -324,6 +324,8 @@ class Board {
         {
             //verifies if a move is valid in this position.
             //move is assumed to be legal from some other arbitrary position in the search tree.
+            if (chessMove == 0) {return false;}
+
             unpackMove(chessMove);
 
             //check for correct side-to-move.
