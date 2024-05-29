@@ -6,7 +6,7 @@
 class CounterMove
 {
     public:
-        U64 counterMoves[12][64] = {};
+        U32 counterMoves[12][64] = {};
 
         CounterMove() {}
 
