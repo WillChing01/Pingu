@@ -241,7 +241,11 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             if (isQuiet)
             {
                 b.killer.update(hashMove, ply);
-                if (depth >= 5) {b.history.update(singleQuiets, hashMove, depth);}
+                if (depth >= 5)
+                {
+                    b.history.update(singleQuiets, hashMove, depth);
+                    if (b.moveHistory.back() != 0) {b.countermove.update(hashMove, b.moveHistory.back());}
+                }
             }
 
             //update transposition table.
@@ -308,10 +312,17 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         }
     }
 
-    //try killers.
-    for (int i=0;i<2;i++)
+    //try killers and countermove.
+    for (int i=0;i<3;i++)
     {
-        move = b.killer.killerMoves[ply][i];
+        if (i < 2) {move = b.killer.killerMoves[ply][i];}
+        else
+        {
+            if (b.moveHistory.back() == 0) {break;}
+            U32 pieceType = (b.moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            U32 finishSquare = (b.moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+            move = b.countermove.counterMoves[pieceType][finishSquare];
+        }
         //check if move was played before.
         if (singleQuiets.contains(move)) {continue;}
         //check if killer is valid.
@@ -348,7 +359,11 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             {
                 //beta cutoff.
                 b.killer.update(move, ply);
-                if (depth >= 5) {b.history.update(singleQuiets, move, depth);}
+                if (depth >= 5)
+                {
+                    b.history.update(singleQuiets, move, depth);
+                    if (b.moveHistory.back() != 0) {b.countermove.update(move, b.moveHistory.back());}
+                }
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
@@ -454,7 +469,11 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             {
                 //beta cutoff.
                 b.killer.update(move, ply);
-                if (depth >= 5) {b.history.update(singleQuiets, moveCache, i, move, depth);}
+                if (depth >= 5)
+                {
+                    b.history.update(singleQuiets, moveCache, i, move, depth);
+                    if (b.moveHistory.back() != 0) {b.countermove.update(move, b.moveHistory.back());}
+                }
 
                 //update transposition table.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}

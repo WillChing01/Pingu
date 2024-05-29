@@ -259,6 +259,9 @@ void prepareForNewGame(Board &b)
 
     //clear history.
     b.history.clear();
+
+    //clear countermoves.
+    b.countermove.clear();
 }
 
 void gensfenCommand(Board &b, const std::vector<std::string> &words)

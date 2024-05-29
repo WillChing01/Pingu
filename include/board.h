@@ -16,6 +16,7 @@
 
 #include "killer.h"
 #include "history.h"
+#include "countermove.h"
 #include "see.h"
 
 #include "evaluation.h"
@@ -74,6 +75,7 @@ class Board {
         //modules.
         Killer killer;
         History history;
+        CounterMove countermove;
         SEE see;
         NNUE nnue;
 
