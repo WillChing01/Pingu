@@ -21,7 +21,7 @@ ARGS = (HASH, DEPTH, POSITIONS, RANDOMPLY, MAXPLY, EVALBOUND)
 
 def gensfen_worker(hash, depth, positions, randomply, maxply, evalbound):
     import engine
-    e = engine.Engine("Pingu.exe", "\\..\\..\\build\\")
+    e = engine.Engine("Pingu.exe", "\\..\\..\\")
     e.stdin("setoption name Hash value " + str(hash))
     time.sleep(0.5)
 

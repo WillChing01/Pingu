@@ -18,6 +18,7 @@
 #include "search.h"
 #include "board.h"
 #include "bench.h"
+#include "gensfen.h"
 
 const std::string ENGINE_NAME = "Pingu 3.0.0";
 const std::string ENGINE_AUTHOR = "William Ching";
@@ -119,7 +120,7 @@ void seeCommand(Board &b, const std::vector<std::string> &words)
     if (words[1] != "move") {return;}
     U32 chessMove = stringToMove(b, words[2]);
     if (!chessMove) {return;}
-    std::cout << "info score " << seeCaptures(chessMove, b.pieces, b.occupied) << std::endl;
+    std::cout << "info score " << b.see.evaluate(chessMove) << std::endl;
 }
 
 void helpCommand(const std::vector<std::string> &words)
@@ -233,8 +234,8 @@ void goCommand(Board &b, const std::vector<std::string> &words)
 
         depth = 100;
 
-        double timeLeft = (b.moveHistory.size() & 1) ? blackTime : whiteTime;
-        double increment = (b.moveHistory.size() & 1) ? blackInc : whiteInc;
+        double timeLeft = b.side ? blackTime : whiteTime;
+        double increment = b.side ? blackInc : whiteInc;
 
         moveTime = timeLeft / std::max(movesToGo, 20) + 0.5 * increment;
         if (moveTime > timeLeft) {moveTime = 0.8 * timeLeft;}
@@ -290,7 +291,8 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
     int maxply = std::stoi(words[8]);
     int evalbound = std::stoi(words[10]);
 
-    std::vector<std::pair<std::string, int> > output = {};
+    std::vector<gensfenData> output = {};
+    std::vector<gensfenData> outputBuffer = {};
 
     //set up random device.
     std::random_device _rd;
@@ -313,8 +315,10 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
     {
         //start a new game.
         bool gameover = false;
+        double result = 0.5;
         prepareForNewGame(b);
         b.setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        outputBuffer.clear();
 
         //track zHash for draw by repetition.
         std::set<U64> zHash;
@@ -323,7 +327,7 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
         for (int i=0;i<randomply;i++)
         {
             b.moveBuffer.clear();
-            b.generatePseudoMoves(b.moveHistory.size() & 1);
+            b.generatePseudoMoves(b.side);
 
             //if no moves left we abort the game.
             if (b.moveBuffer.size() == 0) {gameover = true; break;}
@@ -337,29 +341,50 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
         }
 
         if (gameover) {continue;}
-        
+
         //fixed-depth search.
-        while ((int)b.moveHistory.size() < maxply)
+        while (true)
         {
             int score = alphaBetaRoot(b, depth, true);
-            if (isGameOver) {break;}
 
             //check that score within bounds.
-            if (b.moveHistory.size() & 1) {score *= -1;}
-            if (abs(score) > evalbound) {break;}
-
-            //update output.
-            if (!b.isInCheck(b.moveHistory.size() & 1) &&
-                ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15)
+            if (b.side) {score *= -1;}
+            if (abs(score) > evalbound || isGameOver)
             {
-                output.push_back(std::pair<std::string, int>(positionToFen(b.pieces, b.current, b.moveHistory.size() & 1), score));
+                result = score == 0 ? 0.5 :
+                         score > evalbound ? 1. : 0.;
+                break;
             }
 
+            //exit if maxply exceeded.
+            if ((int)b.moveHistory.size() > maxply)
+            {
+                result = score > 400 ? 1. :
+                         score < -400 ? 0. : 0.5;
+                break;
+            }
+
+            //update output buffer.
+            bool isQuiet = !b.isInCheck(b.side) && ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15;
+            if (isQuiet) {outputBuffer.push_back(gensfenData(positionToFen(b.pieces, b.current, b.side), score, 0.5));}
+
             b.makeMove(storedBestMove);
+
             //check if position is repeated and remove last output if so.
-            if (zHash.find(b.zHashPieces ^ b.zHashState) != zHash.end()) {output.pop_back(); break;}
+            if (zHash.find(b.zHashPieces ^ b.zHashState) != zHash.end())
+            {
+                if (isQuiet) {outputBuffer.pop_back();}
+                result = 0.5;
+                break;
+            }
             zHash.insert(b.zHashPieces ^ b.zHashState);
         }
+
+        //update contents of buffer with game result.
+        for (auto &x: outputBuffer) {x.result = result;}
+
+        //add contents of buffer to output.
+        for (const auto &x: outputBuffer) {output.push_back(x);}
 
         std::cout << "Finished game " << numGames << "; " << output.size() << " positions overall" << std::endl;
         numGames++;
@@ -383,7 +408,7 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
 
     for (const auto &x: output)
     {
-        file << x.first << "; " << x.second << std::endl;
+        file << x.fen << "; " << x.eval << "; " << x.result << std::endl;
     }
 
     file.close();
@@ -421,7 +446,7 @@ void uciLoop()
         else if (commands[0] == "eval") {evalCommand(b, commands);}
         else if (commands[0] == "see") {seeCommand(b, commands);}
         else if (commands[0] == "perft") {perftCommand(b, commands);}
-        else if (commands[0] == "display") {b.display(); std::cout << positionToFen(b.pieces, b.current, b.moveHistory.size() & 1) << std::endl;}
+        else if (commands[0] == "display") {b.display(); std::cout << positionToFen(b.pieces, b.current, b.side) << std::endl;}
         else if (commands[0] == "gensfen") {gensfenCommand(b, commands);}
         else if (commands[0] == "bench") {benchCommand(b); break;}
         else if (commands[0] == "test") {testCommand(b, commands);}

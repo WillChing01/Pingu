@@ -45,6 +45,7 @@ class Board {
 
         U64 occupied[2]={0,0};
         U64 attacked[2]={0,0};
+        bool side = 0;
 
         std::vector<gameState> stateHistory;
         std::vector<U32> moveHistory;
@@ -56,8 +57,6 @@ class Board {
         std::vector<U32> moveBuffer;
         std::vector<std::pair<U32,int> > scoredMoves;
 
-        Killer killer;
-
         gameState current = {
             .canKingCastle = {true,true},
             .canQueenCastle = {true,true},
@@ -65,8 +64,6 @@ class Board {
         };
 
         moveInfo currentMove = {};
-
-        NNUE nnue;
 
         const int piecePhases[6] = {0,4,2,1,1,0};
 
@@ -76,14 +73,21 @@ class Board {
         U64 zHashPieces = 0;
         U64 zHashState = 0;
 
-        //history table, history.scores[pieceType][to_square]
+        //modules.
+        Killer killer;
         History history;
+        SEE see;
+        NNUE nnue;
 
         //temp variable for move appending.
         U32 newMove;
 
         Board()
         {
+            //connect modules.
+            see = SEE(this->pieces, this->occupied);
+            nnue = NNUE(this->pieces);
+
             //start position default.
             setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         };
@@ -102,7 +106,7 @@ class Board {
                 }
             }
 
-            if (moveHistory.size() & 1) {zHashPieces ^= randomNums[ZHASH_TURN];}
+            if (side) {zHashPieces ^= randomNums[ZHASH_TURN];}
 
             if (current.enPassantSquare != -1) {zHashState ^= randomNums[ZHASH_ENPASSANT[current.enPassantSquare & 7]];}
 
@@ -126,10 +130,7 @@ class Board {
             }
         }
 
-        void nnueHardUpdate()
-        {
-            nnue.refreshInput(positionToFen(pieces, current, moveHistory.size() & 1));
-        }
+        void nnueHardUpdate() {nnue.refreshInput();}
 
         void setPositionFen(const std::string &fen)
         {
@@ -173,7 +174,8 @@ class Board {
 
             //side to move.
             moveHistory.push_back(0);
-            if (temp[1] == "w") {moveHistory.push_back(0);}
+            if (temp[1] == "w") {moveHistory.push_back(0); side = 0;}
+            else {side = 1;}
 
             current = {
                 .canKingCastle = {false,false},
@@ -195,7 +197,7 @@ class Board {
 
             zHashHardUpdate();
             phaseHardUpdate();
-            nnue.refreshInput(fen);
+            nnueHardUpdate();
 
             //hash and state history.
             stateHistory.push_back(current);
@@ -325,7 +327,7 @@ class Board {
             unpackMove(chessMove);
 
             //check for correct side-to-move.
-            if ((currentMove.pieceType & 1) != (moveHistory.size() & 1)) {return false;}
+            if ((currentMove.pieceType & 1) != (side)) {return false;}
 
             //check that startSquare contains piece.
             if (!(bool)(pieces[currentMove.pieceType] & (1ull << currentMove.startSquare))) {return false;}
@@ -1544,6 +1546,7 @@ class Board {
             //turn increment can be done in zHashPieces.
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+            side = !side;
 
             //irrev move.
             if (currentMove.pieceType >> 1 == _nPawns >> 1 || currentMove.capturedPieceType != 15 ||
@@ -1611,6 +1614,7 @@ class Board {
             //revert zhash for gamestate.
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+            side = !side;
 
             if (current.enPassantSquare != -1)
             {
@@ -1640,6 +1644,7 @@ class Board {
 
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+            side = !side;
 
             irrevMoveInd.push_back(moveHistory.size() - 1);
 
@@ -1657,6 +1662,7 @@ class Board {
 
             zHashPieces ^= randomNums[ZHASH_TURN];
             zHashState = 0;
+            side = !side;
 
             irrevMoveInd.pop_back();
 
@@ -1677,13 +1683,12 @@ class Board {
 
         int regularEval()
         {
-            return nnue.forward() * (1-2*(int)(moveHistory.size() & 1));
+            return nnue.forward() * (1-2*(int)(side));
         }
 
         int evaluateBoard()
         {
             //assume we are not in check.
-            bool side = moveHistory.size() & 1;
             bool stalemate = stalemateCheck(side);
 
             return stalemate ? 0 : regularEval();
@@ -1702,7 +1707,7 @@ class Board {
 
                 if (pieceType < capturedPieceType && pieceType >= _nQueens)
                 {
-                    int seeCheck = seeCaptures(move, pieces, occupied);
+                    int seeCheck = see.evaluate(move);
                     if (seeCheck < 0) {score = seeCheck;}
                 }
 
@@ -1750,7 +1755,7 @@ class Board {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
 
-                if (pieceType >= capturedPieceType || pieceType < _nQueens || seeCaptures(move, pieces, occupied) >= 0)
+                if (pieceType >= capturedPieceType || pieceType < _nQueens || see.evaluate(move) >= 0)
                 {
                     int score = 16 * (15 - capturedPieceType) + pieceType;
                     scoredMoves.push_back(std::pair<U32, int>(move, score));
@@ -1773,7 +1778,7 @@ class Board {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 if (capturedPieceType != 15 || pieceType != finishPieceType)
                 {
-                    int score = seeCaptures(move, pieces, occupied);
+                    int score = see.evaluate(move);
                     scoredMoves.push_back(std::pair<U32,int>(move, score));
                 }
                 else

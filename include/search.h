@@ -108,8 +108,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     //draw by insufficient material.
     if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
-    bool side = b.moveHistory.size() & 1;
-    bool inCheck = b.isInCheck(side);
+    bool inCheck = b.isInCheck(b.side);
 
     int bestScore = -MATE_SCORE + ply;
 
@@ -125,15 +124,15 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
 
         //generate regular tactical moves.
         b.moveBuffer.clear();
-        b.generateCaptures(side, 0);
+        b.generateCaptures(b.side, 0);
     }
     else
     {
         //generate check evasion.
-        U32 numChecks = b.isInCheckDetailed(side);
+        U32 numChecks = b.isInCheckDetailed(b.side);
         b.moveBuffer.clear();
-        b.generateCaptures(side, numChecks);
-        b.generateQuiets(side, numChecks);
+        b.generateCaptures(b.side, numChecks);
+        b.generateQuiets(b.side, numChecks);
     }
 
     std::vector<std::pair<U32,int> > moveCache = inCheck ? b.orderQMovesInCheck() : b.orderQMoves();
@@ -191,8 +190,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
 
     //main search.
-    bool side = b.moveHistory.size() & 1;
-    bool inCheck = b.isInCheck(side);
+    bool inCheck = b.isInCheck(b.side);
 
     //get static evaluation.
     int staticEval = 0;
@@ -210,7 +208,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //null move pruning.
     if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
-        (b.occupied[side] ^ b.pieces[_nKing+side] ^ b.pieces[_nPawns+side]))
+        (b.occupied[b.side] ^ b.pieces[_nKing+b.side] ^ b.pieces[_nPawns+b.side]))
     {
         b.makeNullMove();
         int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR-depth/6, ply+1, false);
@@ -262,11 +260,11 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //get number of checks for move-gen.
     U32 numChecks = 0;
-    if (inCheck) {numChecks = b.isInCheckDetailed(side);}
+    if (inCheck) {numChecks = b.isInCheckDetailed(b.side);}
 
     //generate tactical moves and play them.
     b.moveBuffer.clear();
-    b.generateCaptures(side, numChecks);
+    b.generateCaptures(b.side, numChecks);
     std::vector<std::pair<U32,int> > moveCache = b.orderCaptures();
 
     //good captures and promotions.
@@ -402,7 +400,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //generate quiets and try them.
     b.moveBuffer.clear();
-    b.generateQuiets(side, numChecks);
+    b.generateQuiets(b.side, numChecks);
     moveCache = b.orderQuiets();
 
     int numQuiets = 0;
@@ -489,8 +487,7 @@ int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
     isGameOver = false;
 
     //generate moves.
-    bool side = b.moveHistory.size() & 1;
-    bool inCheck = b.generatePseudoMoves(side);
+    bool inCheck = b.generatePseudoMoves(b.side);
 
     //checkmate or stalemate.
     if (b.moveBuffer.size() == 0) {storedBestMove = 0; isGameOver = true; return inCheck ? -MATE_SCORE : 0;}
