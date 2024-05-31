@@ -318,7 +318,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         if (i < 2) {move = b.killer.killerMoves[ply][i];}
         else
         {
-            if (b.moveHistory.back() == 0) {break;}
+            if (depth < 5 || b.moveHistory.back() == 0) {continue;}
             U32 pieceType = (b.moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
             U32 finishSquare = (b.moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
             move = b.countermove.counterMoves[pieceType][finishSquare];
