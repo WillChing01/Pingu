@@ -32,6 +32,17 @@ namespace util
 
         return __builtin_popcountll(inCheck);
     }
+
+    inline U64 getCheckPiece(bool side, U32 square, const U64* pieces, const U64* occupied)
+    {
+        //assumes a single piece is giving check.
+        U64 b = occupied[0] | occupied[1];
+
+        if (U64 bishop = magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return bishop;}
+        else if (U64 rook = magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return rook;}
+        else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)]) {return knight;}
+        else {return pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];}
+    }
 }
 
 #endif // UTIL_H_INCLUDED

@@ -753,17 +753,6 @@ class Board {
             attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
         }
 
-        U64 getCheckPiece(bool side, U32 square)
-        {
-            //assumes a single piece is giving check.
-            U64 b = occupied[0] | occupied[1];
-
-            if (U64 bishop = magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return bishop;}
-            else if (U64 rook = magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return rook;}
-            else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)]) {return knight;}
-            else {return pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];}
-        }
-
         U64 getBlockSquares(bool side, U32 square)
         {
             //assumes a single piece is giving check.
@@ -920,7 +909,7 @@ class Board {
                 U64 p = (occupied[0] | occupied[1]);
 
                 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                U64 target = getCheckPiece(side, pos);
+                U64 target = util::getCheckPiece(side, pos, pieces, occupied);
 
                 //king.
                 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & occupied[(int)(!side)];
