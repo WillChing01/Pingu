@@ -753,20 +753,6 @@ class Board {
             attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
         }
 
-        U32 isInCheckDetailed(bool side)
-        {
-            //check if the king's square is attacked.
-            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-            U64 b = occupied[0] | occupied[1];
-
-            U64 inCheck = magicRookAttacks(b,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            inCheck |= magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            inCheck |= knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)];
-            inCheck |= pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)];
-
-            return __builtin_popcountll(inCheck);
-        }
-
         U64 getCheckPiece(bool side, U32 square)
         {
             //assumes a single piece is giving check.
@@ -1196,7 +1182,7 @@ class Board {
             moveBuffer.clear();
             bool inCheck = util::isInCheck(side, pieces, occupied);
             U32 numChecks = 0;
-            if (inCheck) {numChecks = isInCheckDetailed(side);}
+            if (inCheck) {numChecks = util::isInCheckDetailed(side, pieces, occupied);}
             generateCaptures(side, numChecks);
             generateQuiets(side, numChecks);
             return inCheck;

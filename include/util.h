@@ -8,7 +8,7 @@
 
 namespace util
 {
-    inline bool isInCheck(bool side, U64 *pieces, U64 *occupied)
+    inline bool isInCheck(bool side, const U64* pieces, const U64* occupied)
     {
         int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
         U64 b = occupied[0] | occupied[1];
@@ -18,6 +18,19 @@ namespace util
             (bool)(magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) ||
             (bool)(knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)]) ||
             (bool)(pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)]);
+    }
+
+    inline U32 isInCheckDetailed(bool side, const U64* pieces, const U64* occupied)
+    {
+        int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+        U64 b = occupied[0] | occupied[1];
+
+        U64 inCheck = magicRookAttacks(b,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+        inCheck |= magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+        inCheck |= knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)];
+        inCheck |= pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)];
+
+        return __builtin_popcountll(inCheck);
     }
 }
 
