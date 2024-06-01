@@ -108,7 +108,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     //draw by insufficient material.
     if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
-    bool inCheck = b.isInCheck(b.side);
+    bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
 
     int bestScore = -MATE_SCORE + ply;
 
@@ -190,7 +190,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
 
     //main search.
-    bool inCheck = b.isInCheck(b.side);
+    bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
 
     //get static evaluation.
     int staticEval = 0;

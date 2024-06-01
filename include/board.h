@@ -14,6 +14,8 @@
 #include "pawn.h"
 #include "magic.h"
 
+#include "util.h"
+
 #include "killer.h"
 #include "history.h"
 #include "see.h"
@@ -267,7 +269,7 @@ class Board {
                     pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(side)));
                     occupied[(int)(!side)] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(side)));
                 }
-                bool isBad = isInCheck(side);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[currentMove.pieceType] += start;
@@ -386,7 +388,7 @@ class Board {
                     pieces[currentMove.capturedPieceType] -= finish;
                     occupied[(int)(!side)] -= finish;
                 }
-                bool isBad = isInCheck(side);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[currentMove.pieceType] += start;
@@ -531,7 +533,7 @@ class Board {
                     pieces[capturedPieceType] -= 1ull << (finishSquare+(int)(enPassant)*(-8+16*(side)));
                     occupied[(int)(!side)] -= 1ull << (finishSquare+(int)(enPassant)*(-8+16*(side)));
                 }
-                bool isBad = isInCheck(side);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[pieceType] += start;
@@ -593,7 +595,7 @@ class Board {
                 occupied[(int)(side)] -= start;
                 occupied[(int)(side)] += finish;
                 occupied[(int)(!side)] -= finish;
-                bool isBad = isInCheck(side);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[pieceType] += start;
@@ -630,7 +632,7 @@ class Board {
                 pieces[pieceType] += finish;
                 occupied[(int)(side)] -= start;
                 occupied[(int)(side)] += finish;
-                bool isBad = isInCheck(pieceType & 1);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[pieceType] += start;
@@ -692,7 +694,7 @@ class Board {
                 pieces[capturedPieceType] -= captured;
                 occupied[capturedPieceType & 1] -= captured;
             }
-            bool isBad = isInCheck(pieceType & 1);
+            bool isBad = util::isInCheck(pieceType & 1, pieces, occupied);
 
             //unmove pieces.
             pieces[pieceType] += start;
@@ -749,19 +751,6 @@ class Board {
 
             //pawns.
             attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
-        }
-
-        bool isInCheck(bool side)
-        {
-            //check if the king's square is attacked.
-            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-            U64 b = occupied[0] | occupied[1];
-
-            return
-                (bool)(magicRookAttacks(b,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) ||
-                (bool)(magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) ||
-                (bool)(knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)]) ||
-                (bool)(pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)]);
         }
 
         U32 isInCheckDetailed(bool side)
@@ -1205,7 +1194,7 @@ class Board {
         bool generatePseudoMoves(bool side)
         {
             moveBuffer.clear();
-            bool inCheck = isInCheck(side);
+            bool inCheck = util::isInCheck(side, pieces, occupied);
             U32 numChecks = 0;
             if (inCheck) {numChecks = isInCheckDetailed(side);}
             generateCaptures(side, numChecks);
