@@ -753,22 +753,6 @@ class Board {
             attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
         }
 
-        U64 getBlockSquares(bool side, U32 square)
-        {
-            //assumes a single piece is giving check.
-            U64 b = occupied[0] | occupied[1];
-
-            if (U64 bishop = magicBishopAttacks(b, square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
-            {
-                return magicBishopAttacks(b, square) & magicBishopAttacks(b, __builtin_ctzll(bishop));
-            }
-            if (U64 rook = magicRookAttacks(b, square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
-            {
-                return magicRookAttacks(b, square) & magicRookAttacks(b, __builtin_ctzll(rook));
-            }
-            return 0;
-        }
-
         U64 getPinnedPieces(bool side)
         {
             //generate attacks to the king.
@@ -1092,7 +1076,7 @@ class Board {
                 U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & ~p;
                 while (x) {appendQuiet(_nKing+(int)(side), pos, popLSB(x), true);}
 
-                U64 blockBB = getBlockSquares(side, pos);
+                U64 blockBB = util::getBlockSquares(side, pos, pieces, occupied);
                 if (!blockBB) {return;}
 
                 U64 temp;

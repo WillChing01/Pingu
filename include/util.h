@@ -43,6 +43,22 @@ namespace util
         else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)]) {return knight;}
         else {return pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];}
     }
+
+    inline U64 getBlockSquares(bool side, U32 square, const U64* pieces, const U64* occupied)
+    {
+        //assumes a single piece is giving check.
+        U64 b = occupied[0] | occupied[1];
+
+        if (U64 bishop = magicBishopAttacks(b, square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
+        {
+            return magicBishopAttacks(b, square) & magicBishopAttacks(b, __builtin_ctzll(bishop));
+        }
+        if (U64 rook = magicRookAttacks(b, square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
+        {
+            return magicRookAttacks(b, square) & magicRookAttacks(b, __builtin_ctzll(rook));
+        }
+        return 0;
+    }
 }
 
 #endif // UTIL_H_INCLUDED
