@@ -59,6 +59,32 @@ namespace util
         }
         return 0;
     }
+
+    inline U64 getPinnedPieces(bool side, const U64* pieces, const U64* occupied)
+    {
+        //generate attacks to the king.
+        int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+        U64 b = occupied[0] | occupied[1];
+
+        U64 pinned = 0;
+        U64 attackers;
+
+        //check for rook-like pins.
+        attackers = magicRookAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+        while (attackers)
+        {
+            pinned |= magicRookAttacks(b, popLSB(attackers)) & magicRookAttacks(b, kingPos);
+        }
+
+        //check for bishop-like pins.
+        attackers = magicBishopAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
+        while (attackers)
+        {
+            pinned |= magicBishopAttacks(b, popLSB(attackers)) & magicBishopAttacks(b, kingPos);
+        }
+
+        return pinned;
+    }
 }
 
 #endif // UTIL_H_INCLUDED

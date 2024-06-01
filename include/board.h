@@ -252,7 +252,7 @@ class Board {
             }
 
             //check if piece is pinned or if enPassant.
-            U64 pinned = getPinnedPieces(currentMove.pieceType & 1);
+            U64 pinned = util::getPinnedPieces(currentMove.pieceType & 1, pieces, occupied);
             if ((pinned & (1ull << currentMove.startSquare)) ||
                 currentMove.enPassant ||
                 inCheck)
@@ -371,7 +371,7 @@ class Board {
             }
 
             //check if the piece to move is pinned and verify the move if necessary.
-            U64 pinned = getPinnedPieces(currentMove.pieceType & 1);
+            U64 pinned = util::getPinnedPieces(currentMove.pieceType & 1, pieces, occupied);
             if ((pinned & (1ull << currentMove.startSquare)) ||
                 ((currentMove.pieceType >> 1) == (_nKing >> 1)) ||
                 inCheck)
@@ -753,32 +753,6 @@ class Board {
             attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
         }
 
-        U64 getPinnedPieces(bool side)
-        {
-            //generate attacks to the king.
-            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-            U64 b = occupied[0] | occupied[1];
-
-            U64 pinned = 0;
-            U64 attackers;
-
-            //check for rook-like pins.
-            attackers = magicRookAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            while (attackers)
-            {
-                pinned |= magicRookAttacks(b, popLSB(attackers)) & magicRookAttacks(b, kingPos);
-            }
-
-            //check for bishop-like pins.
-            attackers = magicBishopAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            while (attackers)
-            {
-                pinned |= magicBishopAttacks(b, popLSB(attackers)) & magicBishopAttacks(b, kingPos);
-            }
-
-            return pinned;
-        }
-
         void display()
         {
             //display the current position in console.
@@ -815,7 +789,7 @@ class Board {
             {
                 //regular captures.
                 U32 pos; U64 x; U64 temp;
-                U64 pinned = getPinnedPieces(side);
+                U64 pinned = util::getPinnedPieces(side, pieces, occupied);
                 U64 p = (occupied[0] | occupied[1]);
 
                 //pawns.
@@ -1002,7 +976,7 @@ class Board {
                     }
                 }
 
-                U64 pinned = getPinnedPieces(side);
+                U64 pinned = util::getPinnedPieces(side, pieces, occupied);
 
                 //knights.
                 temp = pieces[_nKnights+(int)(side)] & ~pinned;
@@ -1165,7 +1139,7 @@ class Board {
         {
             //we assume we are not in check.
             U64 p = (occupied[0] | occupied[1]);
-            U64 pinned = getPinnedPieces(side);
+            U64 pinned = util::getPinnedPieces(side, pieces, occupied);
 
             //check for ordinary moves.
             U32 pos; U64 x; U64 temp;
