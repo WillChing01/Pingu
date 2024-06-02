@@ -14,6 +14,8 @@
 #include "pawn.h"
 #include "magic.h"
 
+#include "util.h"
+
 #include "killer.h"
 #include "history.h"
 #include "see.h"
@@ -250,7 +252,7 @@ class Board {
             }
 
             //check if piece is pinned or if enPassant.
-            U64 pinned = getPinnedPieces(currentMove.pieceType & 1);
+            U64 pinned = util::getPinnedPieces(currentMove.pieceType & 1, pieces, occupied);
             if ((pinned & (1ull << currentMove.startSquare)) ||
                 currentMove.enPassant ||
                 inCheck)
@@ -267,7 +269,7 @@ class Board {
                     pieces[currentMove.capturedPieceType] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(side)));
                     occupied[(int)(!side)] -= 1ull << (currentMove.finishSquare+(int)(currentMove.enPassant)*(-8+16*(side)));
                 }
-                bool isBad = isInCheck(side);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[currentMove.pieceType] += start;
@@ -369,7 +371,7 @@ class Board {
             }
 
             //check if the piece to move is pinned and verify the move if necessary.
-            U64 pinned = getPinnedPieces(currentMove.pieceType & 1);
+            U64 pinned = util::getPinnedPieces(currentMove.pieceType & 1, pieces, occupied);
             if ((pinned & (1ull << currentMove.startSquare)) ||
                 ((currentMove.pieceType >> 1) == (_nKing >> 1)) ||
                 inCheck)
@@ -386,7 +388,7 @@ class Board {
                     pieces[currentMove.capturedPieceType] -= finish;
                     occupied[(int)(!side)] -= finish;
                 }
-                bool isBad = isInCheck(side);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[currentMove.pieceType] += start;
@@ -531,7 +533,7 @@ class Board {
                     pieces[capturedPieceType] -= 1ull << (finishSquare+(int)(enPassant)*(-8+16*(side)));
                     occupied[(int)(!side)] -= 1ull << (finishSquare+(int)(enPassant)*(-8+16*(side)));
                 }
-                bool isBad = isInCheck(side);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[pieceType] += start;
@@ -593,7 +595,7 @@ class Board {
                 occupied[(int)(side)] -= start;
                 occupied[(int)(side)] += finish;
                 occupied[(int)(!side)] -= finish;
-                bool isBad = isInCheck(side);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[pieceType] += start;
@@ -630,7 +632,7 @@ class Board {
                 pieces[pieceType] += finish;
                 occupied[(int)(side)] -= start;
                 occupied[(int)(side)] += finish;
-                bool isBad = isInCheck(pieceType & 1);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[pieceType] += start;
@@ -692,7 +694,7 @@ class Board {
                 pieces[capturedPieceType] -= captured;
                 occupied[capturedPieceType & 1] -= captured;
             }
-            bool isBad = isInCheck(pieceType & 1);
+            bool isBad = util::isInCheck(pieceType & 1, pieces, occupied);
 
             //unmove pieces.
             pieces[pieceType] += start;
@@ -751,86 +753,6 @@ class Board {
             attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
         }
 
-        bool isInCheck(bool side)
-        {
-            //check if the king's square is attacked.
-            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-            U64 b = occupied[0] | occupied[1];
-
-            return
-                (bool)(magicRookAttacks(b,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) ||
-                (bool)(magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) ||
-                (bool)(knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)]) ||
-                (bool)(pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)]);
-        }
-
-        U32 isInCheckDetailed(bool side)
-        {
-            //check if the king's square is attacked.
-            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-            U64 b = occupied[0] | occupied[1];
-
-            U64 inCheck = magicRookAttacks(b,kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            inCheck |= magicBishopAttacks(b,kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            inCheck |= knightAttacks(pieces[_nKing+(int)(side)]) & pieces[_nKnights+(int)(!side)];
-            inCheck |= pawnAttacks(pieces[_nKing+(int)(side)],side) & pieces[_nPawns+(int)(!side)];
-
-            return __builtin_popcountll(inCheck);
-        }
-
-        U64 getCheckPiece(bool side, U32 square)
-        {
-            //assumes a single piece is giving check.
-            U64 b = occupied[0] | occupied[1];
-
-            if (U64 bishop = magicBishopAttacks(b,square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return bishop;}
-            else if (U64 rook = magicRookAttacks(b,square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)])) {return rook;}
-            else if (U64 knight = knightAttacks(1ull << square) & pieces[_nKnights+(int)(!side)]) {return knight;}
-            else {return pawnAttacks(1ull << square,side) & pieces[_nPawns+(int)(!side)];}
-        }
-
-        U64 getBlockSquares(bool side, U32 square)
-        {
-            //assumes a single piece is giving check.
-            U64 b = occupied[0] | occupied[1];
-
-            if (U64 bishop = magicBishopAttacks(b, square) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
-            {
-                return magicBishopAttacks(b, square) & magicBishopAttacks(b, __builtin_ctzll(bishop));
-            }
-            if (U64 rook = magicRookAttacks(b, square) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]))
-            {
-                return magicRookAttacks(b, square) & magicRookAttacks(b, __builtin_ctzll(rook));
-            }
-            return 0;
-        }
-
-        U64 getPinnedPieces(bool side)
-        {
-            //generate attacks to the king.
-            int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-            U64 b = occupied[0] | occupied[1];
-
-            U64 pinned = 0;
-            U64 attackers;
-
-            //check for rook-like pins.
-            attackers = magicRookAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            while (attackers)
-            {
-                pinned |= magicRookAttacks(b, popLSB(attackers)) & magicRookAttacks(b, kingPos);
-            }
-
-            //check for bishop-like pins.
-            attackers = magicBishopAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-            while (attackers)
-            {
-                pinned |= magicBishopAttacks(b, popLSB(attackers)) & magicBishopAttacks(b, kingPos);
-            }
-
-            return pinned;
-        }
-
         void display()
         {
             //display the current position in console.
@@ -867,7 +789,7 @@ class Board {
             {
                 //regular captures.
                 U32 pos; U64 x; U64 temp;
-                U64 pinned = getPinnedPieces(side);
+                U64 pinned = util::getPinnedPieces(side, pieces, occupied);
                 U64 p = (occupied[0] | occupied[1]);
 
                 //pawns.
@@ -945,7 +867,7 @@ class Board {
                 U64 p = (occupied[0] | occupied[1]);
 
                 pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-                U64 target = getCheckPiece(side, pos);
+                U64 target = util::getCheckPiece(side, pos, pieces, occupied);
 
                 //king.
                 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & occupied[(int)(!side)];
@@ -1054,7 +976,7 @@ class Board {
                     }
                 }
 
-                U64 pinned = getPinnedPieces(side);
+                U64 pinned = util::getPinnedPieces(side, pieces, occupied);
 
                 //knights.
                 temp = pieces[_nKnights+(int)(side)] & ~pinned;
@@ -1128,7 +1050,7 @@ class Board {
                 U64 x = kingAttacks(pieces[_nKing+(int)(side)]) & ~kingAttacks(pieces[_nKing+(int)(!side)]) & ~p;
                 while (x) {appendQuiet(_nKing+(int)(side), pos, popLSB(x), true);}
 
-                U64 blockBB = getBlockSquares(side, pos);
+                U64 blockBB = util::getBlockSquares(side, pos, pieces, occupied);
                 if (!blockBB) {return;}
 
                 U64 temp;
@@ -1205,9 +1127,9 @@ class Board {
         bool generatePseudoMoves(bool side)
         {
             moveBuffer.clear();
-            bool inCheck = isInCheck(side);
+            bool inCheck = util::isInCheck(side, pieces, occupied);
             U32 numChecks = 0;
-            if (inCheck) {numChecks = isInCheckDetailed(side);}
+            if (inCheck) {numChecks = util::isInCheckDetailed(side, pieces, occupied);}
             generateCaptures(side, numChecks);
             generateQuiets(side, numChecks);
             return inCheck;
@@ -1217,7 +1139,7 @@ class Board {
         {
             //we assume we are not in check.
             U64 p = (occupied[0] | occupied[1]);
-            U64 pinned = getPinnedPieces(side);
+            U64 pinned = util::getPinnedPieces(side, pieces, occupied);
 
             //check for ordinary moves.
             U32 pos; U64 x; U64 temp;
