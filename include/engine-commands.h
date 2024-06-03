@@ -154,12 +154,6 @@ const std::vector<engineCommand> COMMANDS = {
         }
     ),
     engineCommand(
-        "bench",
-        "calculate local engine speed and then quit the program",
-        {},
-        {}
-    ),
-    engineCommand(
         "display",
         "display the position of the internal board",
         {},
