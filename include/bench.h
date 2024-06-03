@@ -42,7 +42,7 @@ void benchCommand(Board &b)
 
     double nps = 1000. * (double)(nodes) / (double)(time);
 
-    std::cout << "info nodes " << nodes << " nps " << (int)(nps) << std::endl;
+    std::cout << nodes << " nodes " << (int)(nps) << " nps" << std::endl;
 }
 
 #endif // BENCH_H_INCLUDED
