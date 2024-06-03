@@ -448,7 +448,6 @@ void uciLoop()
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display(); std::cout << positionToFen(b.pieces, b.current, b.side) << std::endl;}
         else if (commands[0] == "gensfen") {gensfenCommand(b, commands);}
-        else if (commands[0] == "bench") {benchCommand(b); break;}
         else if (commands[0] == "test") {testCommand(b, commands);}
         else if (commands[0] == "help") {helpCommand(commands);}
     }
