@@ -44,7 +44,6 @@ class Board {
         U64 pieces[12]={};
 
         U64 occupied[2]={0,0};
-        U64 attacked[2]={0,0};
         bool side = 0;
 
         std::vector<gameState> stateHistory;
@@ -300,10 +299,10 @@ class Board {
                 if (!current.canKingCastle[(int)(side)]) {return false;}
                 
                 //castling squares not occupied or attacked.
-                updateAttacked(!side);
+                U64 attacked = util::updateAttacked(!side, pieces, occupied);
                 U64 p = occupied[0] | occupied[1];
                 if ((KING_CASTLE_OCCUPIED[(int)(side)] & p) ||
-                    (KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)])) {return false;}
+                    (KING_CASTLE_ATTACKED[(int)(side)] & attacked)) {return false;}
             }
             else
             {
@@ -311,10 +310,10 @@ class Board {
                 if (!current.canQueenCastle[(int)(side)]) {return false;}
 
                 //castling squares not occupied or attacked.
-                updateAttacked(!side);
+                U64 attacked = util::updateAttacked(!side, pieces, occupied);
                 U64 p = occupied[0] | occupied[1];
                 if ((QUEEN_CASTLE_OCCUPIED[(int)(side)] & p) ||
-                    (QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)])) {return false;}
+                    (QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked)) {return false;}
             }
 
             return true;
@@ -719,40 +718,6 @@ class Board {
             occupied[1] = pieces[_nKing+1] | pieces[_nQueens+1] | pieces[_nRooks+1] | pieces[_nBishops+1] | pieces[_nKnights+1] | pieces[_nPawns+1];
         }
 
-        void updateAttacked(bool side)
-        {
-            //king.
-            attacked[(int)(side)] = kingAttacks(pieces[_nKing+(int)(side)]);
-
-            //queen.
-            U64 b = occupied[0] | occupied[1];
-            U64 temp = pieces[_nQueens+(int)(side)];
-            while (temp)
-            {
-                attacked[(int)(side)] |= magicQueenAttacks(b,popLSB(temp));
-            }
-
-            //rooks.
-            temp = pieces[_nRooks+(int)(side)];
-            while (temp)
-            {
-                attacked[(int)(side)] |= magicRookAttacks(b,popLSB(temp));
-            }
-
-            //bishops.
-            temp = pieces[_nBishops+(int)(side)];
-            while (temp)
-            {
-                attacked[(int)(side)] |= magicBishopAttacks(b,popLSB(temp));
-            }
-
-            //knights.
-            attacked[(int)(side)] |= knightAttacks(pieces[_nKnights+(int)(side)]);
-
-            //pawns.
-            attacked[(int)(side)] |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
-        }
-
         void display()
         {
             //display the current position in console.
@@ -957,10 +922,10 @@ class Board {
 
                 if (current.canKingCastle[(int)(side)] || current.canQueenCastle[(int)(side)])
                 {
-                    updateAttacked(!side);
+                    U64 attacked = util::updateAttacked(!side, pieces, occupied);
                     if (current.canKingCastle[(int)(side)] &&
                         !(bool)(KING_CASTLE_OCCUPIED[(int)(side)] & p) &&
-                        !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                        !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked))
                     {
                         //kingside castle.
                         pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
@@ -968,7 +933,7 @@ class Board {
                     }
                     if (current.canQueenCastle[(int)(side)] &&
                         !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & p) &&
-                        !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                        !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked))
                     {
                         //queenside castle.
                         pos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
@@ -1282,17 +1247,17 @@ class Board {
             //castling.
             if (current.canKingCastle[(int)(side)] || current.canQueenCastle[(int)(side)])
             {
-                updateAttacked(!side);
+                U64 attacked = util::updateAttacked(!side, pieces, occupied);
                 if (current.canKingCastle[(int)(side)] &&
                     !(bool)(KING_CASTLE_OCCUPIED[(int)(side)] & p) &&
-                    !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                    !(bool)(KING_CASTLE_ATTACKED[(int)(side)] & attacked))
                 {
                     //kingside castle.
                     return false;
                 }
                 if (current.canQueenCastle[(int)(side)] &&
                     !(bool)(QUEEN_CASTLE_OCCUPIED[(int)(side)] & p) &&
-                    !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked[(int)(!side)]))
+                    !(bool)(QUEEN_CASTLE_ATTACKED[(int)(side)] & attacked))
                 {
                     //queenside castle.
                     return false;

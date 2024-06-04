@@ -85,6 +85,45 @@ namespace util
 
         return pinned;
     }
+
+    inline U64 updateAttacked(bool side, const U64* pieces, const U64* occupied)
+    {
+        //get the bitboard of squares attacked by side.
+        U64 attacked = 0;
+
+        //king.
+        attacked = kingAttacks(pieces[_nKing+(int)(side)]);
+
+        //queen.
+        U64 b = occupied[0] | occupied[1];
+        U64 temp = pieces[_nQueens+(int)(side)];
+        while (temp)
+        {
+            attacked |= magicQueenAttacks(b,popLSB(temp));
+        }
+
+        //rooks.
+        temp = pieces[_nRooks+(int)(side)];
+        while (temp)
+        {
+            attacked |= magicRookAttacks(b,popLSB(temp));
+        }
+
+        //bishops.
+        temp = pieces[_nBishops+(int)(side)];
+        while (temp)
+        {
+            attacked |= magicBishopAttacks(b,popLSB(temp));
+        }
+
+        //knights.
+        attacked |= knightAttacks(pieces[_nKnights+(int)(side)]);
+
+        //pawns.
+        attacked |= pawnAttacks(pieces[_nPawns+(int)(side)],side);
+
+        return attacked;
+    }
 }
 
 #endif // UTIL_H_INCLUDED
