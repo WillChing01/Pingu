@@ -25,6 +25,16 @@ const int QUEEN_ROOK_SQUARE[2]={0,56};
 
 //MOVE INFO - unsigned int (U32)
 
+struct moveInfo
+{
+    U32 pieceType;
+    U32 startSquare;
+    U32 finishSquare;
+    bool enPassant;
+    U32 capturedPieceType;
+    U32 finishPieceType;
+};
+
 const U32 MOVEINFO_PIECETYPE_MASK = 15;
 const U32 MOVEINFO_PIECETYPE_OFFSET = 0;
 

@@ -12,6 +12,7 @@
 #include "evaluation.h"
 #include "format.h"
 #include "board.h"
+#include "validate.h"
 
 const int maximumPruningDepth = 8;
 
@@ -226,7 +227,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     std::unordered_set<U32> singleQuiets;
 
     //try hash move.
-    if (hashHit && b.isValidMove(hashMove, inCheck))
+    if (hashHit && validate::isValidMove(hashMove, inCheck, b.side, b.current, b.pieces, b.occupied))
     {
         b.makeMove(hashMove);
         bestScore = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
@@ -315,7 +316,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         //check if move was played before.
         if (singleQuiets.contains(move)) {continue;}
         //check if killer is valid.
-        if (!b.isValidMove(move, inCheck)) {continue;}
+        if (!validate::isValidMove(move, inCheck, b.side, b.current, b.pieces, b.occupied)) {continue;}
 
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
