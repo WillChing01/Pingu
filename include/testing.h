@@ -8,6 +8,7 @@
 #include "format.h"
 #include "board.h"
 #include "nnue.h"
+#include "validate.h"
 
 U64 perft(Board &b, int depth, bool verbose = true)
 {
@@ -69,7 +70,7 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
         for (const auto &move: cache[depth])
         {
             if (move == 0) {continue;}
-            bool isValid = b.isValidMove(move, inCheck);
+            bool isValid = validate::isValidMove(move, inCheck, b.side, b.current, b.pieces, b.occupied);
             //check if move in the list.
             bool isInList = std::find(moveCache.begin(), moveCache.end(), move) != moveCache.end();
             if (isValid != isInList)
@@ -92,7 +93,7 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
         for (const auto &move: moveCache)
         {
             //check if move is valid.
-            bool isValid = b.isValidMove(move, inCheck);
+            bool isValid = validate::isValidMove(move, inCheck, b.side, b.current, b.pieces, b.occupied);
             if (!isValid)
             {
                 //error!
