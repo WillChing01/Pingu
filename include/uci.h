@@ -365,7 +365,7 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
             }
 
             //update output buffer.
-            bool isQuiet = !b.isInCheck(b.side) && ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15;
+            bool isQuiet = !util::isInCheck(b.side, b.pieces, b.occupied) && ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15;
             if (isQuiet) {outputBuffer.push_back(gensfenData(positionToFen(b.pieces, b.current, b.side), score, 0.5));}
 
             b.makeMove(storedBestMove);
@@ -448,7 +448,6 @@ void uciLoop()
         else if (commands[0] == "perft") {perftCommand(b, commands);}
         else if (commands[0] == "display") {b.display(); std::cout << positionToFen(b.pieces, b.current, b.side) << std::endl;}
         else if (commands[0] == "gensfen") {gensfenCommand(b, commands);}
-        else if (commands[0] == "bench") {benchCommand(b); break;}
         else if (commands[0] == "test") {testCommand(b, commands);}
         else if (commands[0] == "help") {helpCommand(commands);}
     }

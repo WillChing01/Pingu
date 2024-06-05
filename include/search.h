@@ -12,6 +12,7 @@
 #include "evaluation.h"
 #include "format.h"
 #include "board.h"
+#include "validate.h"
 
 const int maximumPruningDepth = 8;
 
@@ -108,7 +109,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     //draw by insufficient material.
     if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
-    bool inCheck = b.isInCheck(b.side);
+    bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
 
     int bestScore = -MATE_SCORE + ply;
 
@@ -129,7 +130,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     else
     {
         //generate check evasion.
-        U32 numChecks = b.isInCheckDetailed(b.side);
+        U32 numChecks = util::isInCheckDetailed(b.side, b.pieces, b.occupied);
         b.moveBuffer.clear();
         b.generateCaptures(b.side, numChecks);
         b.generateQuiets(b.side, numChecks);
@@ -190,7 +191,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
 
     //main search.
-    bool inCheck = b.isInCheck(b.side);
+    bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
 
     //get static evaluation.
     int staticEval = 0;
@@ -226,7 +227,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     std::unordered_set<U32> singleQuiets;
 
     //try hash move.
-    if (hashHit && b.isValidMove(hashMove, inCheck))
+    if (hashHit && validate::isValidMove(hashMove, inCheck, b.side, b.current, b.pieces, b.occupied))
     {
         b.makeMove(hashMove);
         bestScore = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
@@ -260,7 +261,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //get number of checks for move-gen.
     U32 numChecks = 0;
-    if (inCheck) {numChecks = b.isInCheckDetailed(b.side);}
+    if (inCheck) {numChecks = util::isInCheckDetailed(b.side, b.pieces, b.occupied);}
 
     //generate tactical moves and play them.
     b.moveBuffer.clear();
@@ -315,7 +316,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         //check if move was played before.
         if (singleQuiets.contains(move)) {continue;}
         //check if killer is valid.
-        if (!b.isValidMove(move, inCheck)) {continue;}
+        if (!validate::isValidMove(move, inCheck, b.side, b.current, b.pieces, b.occupied)) {continue;}
 
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
