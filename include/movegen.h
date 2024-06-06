@@ -1,88 +1,54 @@
 #ifndef MOVEGEN_H_INCLUDED
 #define MOVEGEN_H_INCLUDED
 
+#include <vector>
+
 #include "constants.h"
 #include "king.h"
 #include "pawn.h"
 #include "knight.h"
 #include "magic.h"
+#include "util.h"
 
-class Board;
-
-inline bool isInCheck(bool side)
+class CaptureGenerator
 {
-    return false;
-}
-
-inline U64 getPinnedPieces(const U64* pieces, const U64* occupied, bool side)
-{
-    //generate attacks to the king.
-    int kingPos = __builtin_ctzll(pieces[_nKing+(int)(side)]);
-    U64 b = occupied[0] | occupied[1];
-
-    U64 pinned = 0;
-    U64 attackers;
-
-    //check for rook-like pins.
-    attackers = magicRookAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nRooks+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-    while (attackers)
-    {
-        pinned |= magicRookAttacks(b, popLSB(attackers)) & magicRookAttacks(b, kingPos);
-    }
-
-    //check for bishop-like pins.
-    attackers = magicBishopAttacks(occupied[(int)(!side)], kingPos) & (pieces[_nBishops+(int)(!side)] | pieces[_nQueens+(int)(!side)]);
-    while (attackers)
-    {
-        pinned |= magicBishopAttacks(b, popLSB(attackers)) & magicBishopAttacks(b, kingPos);
-    }
-
-    return pinned;
-}
-
-//class to generate obviously winning captures/promotions (no need for SEE check).
-class ObviousCaptureGenerator
-{
-    public:
+    private:
         U64* pieces;
         U64* occupied;
-        U64* pinned;
-        int* enPassantSquare;
-        bool side;
-        int numChecks;
+        const int* enPassantSquare;
+        const bool* side;
+        bool isQSearch;
+
         U64 pinned;
-        bool enPassant;
+        int numChecks;
+
+        bool isEnPassant;
+        std::vector<U32> promotionMoveBuffer;
+
         int victimPieceType;
         U64 victimsBB;
         int currentVictimSquare;
         int attackerPieceType;
         U64 attackerBB;
 
-        ObviousCaptureGenerator(U64* _pieces, U64* _occupied, U64* _pinned, int* _enPassantSquare)
-        {
-            pieces = _pieces;
-            occupied = _occupied;
-            pinned = _pinned;
-            enPassantSquare = _enPassantSquare;
-        }
-
-        void reset(int _side, int _numChecks)
-        {
-            side = _side;
-            numChecks = _numChecks;
-            enPassant = false;
-            victimPieceType = _nKing + (int)(!side);
-            victimsBB = 0;
-            attackerPieceType = _nKing + (int)(side);
-            attackerBB = 0;
-            update();
-        }
-
-        void updateCheck() {}
         void update()
         {
-            if (numChecks > 0) {updateCheck(); return;}
-            
+            switch(numChecks)
+            {
+                case 0:
+                    updateNoCheck();
+                    break;
+                case 1:
+                    updateSingleCheck();
+                    break;
+                case 2:
+                    updateDoubleCheck();
+                    break;
+            }
+        }
+
+        void updateNoCheck()
+        {
             //check if we update the victim.
             if (attackerPieceType >> 1 == victimPieceType >> 1)
             {
@@ -92,9 +58,9 @@ class ObviousCaptureGenerator
                     //check if all captures exhausted.
                     if (victimPieceType == _nPawns + (int)(!side))
                     {
-                        if (enPassant) {attackerBB = 0; return;}
+                        if (isEnPassant) {attackerBB = 0; return;}
 
-                        enPassant = true;
+                        isEnPassant = true;
                         //test for enpassant.
                         if (*enPassantSquare != -1)
                         {
@@ -147,33 +113,69 @@ class ObviousCaptureGenerator
             attackerBB &= pieces[attackerPieceType];
 
             //if no valid attacks, iterate again.
-            if (!attackerBB) {update();}
+            if (!attackerBB) {updateNoCheck();}
+        }
+
+        void updateSingleCheck()
+        {
+            //only consider captures of the checking piece.
+        }
+
+        void updateDoubleCheck()
+        {
+            //only consider king captures.
+        }
+
+    public:
+        CaptureGenerator() {}
+
+        CaptureGenerator(U64* _pieces, U64* _occupied, const bool* side, const int* _enPassantSquare, bool _isQSearch)
+        {
+            pieces = _pieces;
+            occupied = _occupied;
+            side = side;
+            enPassantSquare = _enPassantSquare;
+            isQSearch = _isQSearch;
+        }
+
+        void reset(int _numChecks, U64 _pinned)
+        {
+            numChecks = _numChecks;
+            pinned = _pinned;
+
+            isEnPassant = false;
+            promotionMoveBuffer.clear();
+
+            victimPieceType = _nKing + (int)(!side);
+            victimsBB = 0;
+            attackerPieceType = _nPawns + (int)(side);
+            attackerBB = 0;
+
+            update();
         }
 
         U32 getNext()
         {
+            if (!isQSearch && promotionMoveBuffer.size() != 0)
+            {
+                U32 move = promotionMoveBuffer.back();
+                promotionMoveBuffer.pop_back();
+                return move;
+            }
+
             if (!attackerBB)
             {
                 update();
                 if (!attackerBB) {return 0;}
             }
 
-            int finishSquare = currentVictimSquare;
             int startSquare = popLSB(attackerBB);
-            int pieceType = attackerPieceType;
-            int finishPieceType = attackerPieceType;
-            //check for promotion. only consider queen promotion for qsearch.
-            if ((pieceType == _nPawns + (int)(side)) &&
-                ((side && ((1ull << startSquare) & RANK_2)) ||
-                (!side && ((1ull << startSquare) & RANK_7))))
-            {
-                finishPieceType = _nQueens + (int)(side);
-            }
+            int finishSquare = currentVictimSquare;
             int capturedPieceType = victimPieceType;
-            bool enPassant = enPassant;
+            int pieceType = attackerPieceType;
 
             //check if the piece is pinned.
-            if ((*pinned & (1ull << startSquare)) || enPassant || pieceType >> 1 == _nKing >> 1)
+            if ((pinned & (1ull << startSquare)) || isEnPassant || pieceType >> 1 == _nKing >> 1)
             {
                 U64 start = 1ull << startSquare;
                 U64 finish = 1ull << finishSquare;
@@ -183,7 +185,7 @@ class ObviousCaptureGenerator
                 occupied[(int)(side)] -= start;
                 occupied[(int)(side)] += finish;
                 occupied[(int)(!side)] -= finish;
-                bool isBad = isInCheck(side);
+                bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[pieceType] += start;
@@ -196,11 +198,30 @@ class ObviousCaptureGenerator
                 if (isBad) {return getNext();}
             }
 
+            //check for promotions.
+            bool isPromotion = (pieceType == _nPawns + (int)(side)) && ((side && ((1ull << startSquare) & RANK_2)) || (!side && ((1ull << startSquare) & RANK_7)));
+            int finishPieceType = isPromotion ? _nQueens + (int)(side) : pieceType;
+
+            if (isPromotion && !isQSearch)
+            {
+                for (int i=_nKnights+(int)(side);i<=_nRooks+(int)(side);i+=2)
+                {
+                    promotionMoveBuffer.push_back(
+                        (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
+                        (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
+                        (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
+                        (isEnPassant << MOVEINFO_ENPASSANT_OFFSET) |
+                        (capturedPieceType << MOVEINFO_CAPTUREDPIECETYPE_OFFSET) |
+                        (i << MOVEINFO_FINISHPIECETYPE_OFFSET)
+                    );
+                }
+            }
+
             //return the move.
             return (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
             (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
             (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
-            (enPassant << MOVEINFO_ENPASSANT_OFFSET) |
+            (isEnPassant << MOVEINFO_ENPASSANT_OFFSET) |
             (capturedPieceType << MOVEINFO_CAPTUREDPIECETYPE_OFFSET) |
             (pieceType << MOVEINFO_FINISHPIECETYPE_OFFSET);
         }
