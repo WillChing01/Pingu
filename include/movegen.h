@@ -153,7 +153,58 @@ class CaptureGenerator
 
         void updateSingleCheck()
         {
-            //only consider captures of the checking piece.
+            //single check - only one victim can be captured.
+
+            while (!finishedRegularCaptures)
+            {
+                while (attackerPieceType >= _nKing + 2)
+                {
+                    //update attacker and try again.
+                    attackerPieceType -= 2;
+                    attackerBB = pieces[attackerPieceType];
+                    if (!attackerBB) {continue;}
+
+                    //intersect pieces with attacks.
+                    switch(attackerPieceType >> 1)
+                    {
+                        case _nPawns >> 1:
+                            attackerBB &= pawnAttacks(1ull << currentVictimSquare, !side);
+                            break;
+                        case _nKnights >> 1:
+                            attackerBB &= knightAttacks(1ull << currentVictimSquare);
+                            break;
+                        case _nBishops >> 1:
+                            attackerBB &= magicBishopAttacks(occupied[0] | occupied[1], currentVictimSquare);
+                            break;
+                        case _nRooks >> 1:
+                            attackerBB &= magicRookAttacks(occupied[0] | occupied[1], currentVictimSquare);
+                            break;
+                        case _nQueens >> 1:
+                            attackerBB &= magicQueenAttacks(occupied[0] | occupied[1], currentVictimSquare);
+                            break;
+                        case _nKing >> 1:
+                            attackerBB &= kingAttacks(1ull << currentVictimSquare) & ~kingAttacks(pieces[_nKing + (int)(!side)]);
+                            break;
+                    }
+
+                    //found some attackers. time to exit.
+                    if (attackerBB) {return;}
+                }
+
+                finishedRegularCaptures = true;
+                break;
+            }
+
+            if (!finishedEnPassant)
+            {
+                finishedEnPassant = true;
+                if (currentVictimSquare != *enPassantSquare) {return;}
+
+                attackerPieceType = _nPawns + (int)(side);
+                attackerBB = pawnAttacks(1ull << currentVictimSquare, !side) & pieces[_nPawns+(int)(side)];
+
+                if (attackerBB) {return;}
+            }
         }
 
         void updateDoubleCheck()
