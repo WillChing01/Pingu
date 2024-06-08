@@ -1,6 +1,7 @@
 #ifndef BITBOARD_H_INCLUDED
 #define BITBOARD_H_INCLUDED
 
+#include <iostream>
 #include <string>
 #include <bitset>
 

@@ -15,6 +15,7 @@
 #include "magic.h"
 
 #include "util.h"
+#include "movegen.h"
 
 #include "killer.h"
 #include "history.h"
@@ -887,7 +888,9 @@ class Board {
             bool inCheck = util::isInCheck(side, pieces, occupied);
             U32 numChecks = 0;
             if (inCheck) {numChecks = util::isInCheckDetailed(side, pieces, occupied);}
-            generateCaptures(side, numChecks);
+            CaptureGenerator generator = CaptureGenerator(pieces, occupied, false);
+            generator.reset(side, numChecks, current.enPassantSquare);
+            while (U32 move = generator.getNext()) {moveBuffer.push_back(move);}
             generateQuiets(side, numChecks);
             return inCheck;
         }
