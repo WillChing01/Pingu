@@ -327,7 +327,7 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
         for (int i=0;i<randomply;i++)
         {
             b.moveBuffer.clear();
-            b.generatePseudoMoves(b.side);
+            b.generatePseudoMoves();
 
             //if no moves left we abort the game.
             if (b.moveBuffer.size() == 0) {gameover = true; break;}

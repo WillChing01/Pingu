@@ -81,7 +81,7 @@ inline U32 stringToMove(Board &b, const std::string &input)
     }
 
     //check if move is legal.
-    b.generatePseudoMoves(b.side);
+    b.generatePseudoMoves();
 
     for (int i=0;i<(int)b.moveBuffer.size();i++)
     {

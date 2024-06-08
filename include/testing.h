@@ -18,7 +18,7 @@ U64 perft(Board &b, int depth, bool verbose = true)
     }
     else if (depth == 1)
     {
-        b.generatePseudoMoves(b.side);
+        b.generatePseudoMoves();
         if (verbose)
         {
             for (const auto &move: b.moveBuffer)
@@ -34,7 +34,7 @@ U64 perft(Board &b, int depth, bool verbose = true)
     else
     {
         U64 total = 0;
-        b.generatePseudoMoves(b.side);
+        b.generatePseudoMoves();
         std::vector<U32> moveCache = b.moveBuffer;
 
         for (const auto &move: moveCache)
@@ -62,7 +62,7 @@ bool testMoveValidation(Board &b, int depth, U32 (&cache)[10][128])
     else
     {
         bool res = true;
-        bool inCheck = b.generatePseudoMoves(b.side);
+        bool inCheck = b.generatePseudoMoves();
         std::vector<U32> moveCache = b.moveBuffer;
 
         //validate moves at the same ply.
@@ -125,7 +125,7 @@ bool testIncrementalUpdate(Board &b, int depth, auto Board::* param, void (Board
     if ((depth == 0) || (oldParam != b.*param)) {return (oldParam == b.*param);}
 
     //make moves recursively.
-    b.generatePseudoMoves(b.side);
+    b.generatePseudoMoves();
     std::vector<U32> moveCache = b.moveBuffer;
     for (const auto &move: moveCache)
     {
@@ -145,7 +145,7 @@ bool testIncrementalUpdateNNUE(Board &b, int depth, void (Board::* hardUpdate)()
     if ((depth == 0) || (oldEval != newEval)) {return (oldEval == newEval);}
 
     //make moves recursively.
-    b.generatePseudoMoves(b.side);
+    b.generatePseudoMoves();
     std::vector<U32> moveCache = b.moveBuffer;
     for (const auto &move: moveCache)
     {
