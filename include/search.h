@@ -196,7 +196,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //get static evaluation.
     int staticEval = 0;
     bool canPrune = (alpha == beta - 1) && !inCheck && abs(alpha) < MATE_BOUND;
-    if (canPrune && depth <= maximumPruningDepth) {staticEval = b.regularEval();}
+    if (canPrune && depth <= maximumPruningDepth) {staticEval = b.evaluateBoard();}
 
     //inverse futility pruning.
     if (canPrune && depth <= inverseFutilityDepthLimit)
