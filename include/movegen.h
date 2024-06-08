@@ -236,7 +236,7 @@ class CaptureGenerator
             promotionMoveBuffer.clear();
 
             finishedRegularCaptures = false;
-            finishedEnPassant = numChecks == 2 || *enPassantSquare == -1 || (numChecks == 1 && (*enPassantSquare - 8 + 16 * (side) != checkingPieceSquare)) ? true : false;
+            finishedEnPassant = numChecks == 2 || *enPassantSquare == -1 ? true : false;
             finishedPromotions = numChecks == 2 ? true : false;
             promotionPieceType = _nQueens + (int)(side) - 2;
 
