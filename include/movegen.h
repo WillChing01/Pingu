@@ -16,11 +16,14 @@ class CaptureGenerator
         U64* pieces;
         U64* occupied;
         const int* enPassantSquare;
-        const bool* side;
         bool isQSearch;
 
+        bool side;
         U64 pinned;
         int numChecks;
+
+        int checkingPieceSquare;
+        U64 blockSquares;
 
         bool finishedRegularCaptures;
         bool finishedEnPassant;
@@ -36,22 +39,6 @@ class CaptureGenerator
 
         void update()
         {
-            switch(numChecks)
-            {
-                case 0:
-                    updateNoCheck();
-                    break;
-                case 1:
-                    updateSingleCheck();
-                    break;
-                case 2:
-                    updateDoubleCheck();
-                    break;
-            }
-        }
-
-        void updateNoCheck()
-        {
             //regular captures.
             while (!finishedRegularCaptures)
             {
@@ -65,7 +52,7 @@ class CaptureGenerator
                         if (!attackerBB) {continue;}
 
                         //intersect pieces with attacks.
-                        switch(attackerPieceType >> 1)
+                        switch (attackerPieceType >> 1)
                         {
                             case _nPawns >> 1:
                                 attackerBB &= pawnAttacks(1ull << currentVictimSquare, !side);
@@ -94,7 +81,18 @@ class CaptureGenerator
                     //update current victim square and try again.
                     if (!victimsBB) {break;}
                     currentVictimSquare = popLSB(victimsBB);
-                    attackerPieceType = _nPawns + 2 + (int)(side);
+                    switch(numChecks)
+                    {
+                        case 0:
+                            attackerPieceType = _nPawns + 2 + (int)(side);
+                            break;
+                        case 1:
+                            attackerPieceType = currentVictimSquare == checkingPieceSquare ? _nPawns + 2 + (int)(side) : _nKing + 2 + (int)(side);
+                            break;
+                        case 2:
+                            attackerPieceType = _nKing + 2 + (int)(side);
+                            break;
+                    }
                 }
 
                 //update victim piece type.
@@ -107,7 +105,18 @@ class CaptureGenerator
                 if (victimsBB)
                 {
                     currentVictimSquare = popLSB(victimsBB);
-                    attackerPieceType = _nPawns + 2 + (int)(side);
+                    switch (numChecks)
+                    {
+                        case 0:
+                            attackerPieceType = _nPawns + 2 + (int)(side);
+                            break;
+                        case 1:
+                            attackerPieceType = currentVictimSquare == checkingPieceSquare ? _nPawns + 2 + (int)(side) : _nKing + 2 + (int)(side);
+                            break;
+                        case 2:
+                            attackerPieceType = _nKing + 2 + (int)(side);
+                            break;
+                    }
                     continue;
                 }
 
@@ -139,6 +148,7 @@ class CaptureGenerator
                 U64 p = occupied[0] | occupied[1];
                 attackerBB = side ? (RANK_1 & (~p)) << 1 : (RANK_8 & (~p)) >> 1;
                 attackerBB &= pieces[_nPawns + (int)(side)];
+                if (numChecks == 1) {attackerBB &= blockSquares;}
 
                 if (attackerBB)
                 {
@@ -149,67 +159,6 @@ class CaptureGenerator
                 finishedPromotions = true;
                 break;
             }
-        }
-
-        void updateSingleCheck()
-        {
-            //single check - only one victim can be captured.
-
-            while (!finishedRegularCaptures)
-            {
-                while (attackerPieceType >= _nKing + 2)
-                {
-                    //update attacker and try again.
-                    attackerPieceType -= 2;
-                    attackerBB = pieces[attackerPieceType];
-                    if (!attackerBB) {continue;}
-
-                    //intersect pieces with attacks.
-                    switch(attackerPieceType >> 1)
-                    {
-                        case _nPawns >> 1:
-                            attackerBB &= pawnAttacks(1ull << currentVictimSquare, !side);
-                            break;
-                        case _nKnights >> 1:
-                            attackerBB &= knightAttacks(1ull << currentVictimSquare);
-                            break;
-                        case _nBishops >> 1:
-                            attackerBB &= magicBishopAttacks(occupied[0] | occupied[1], currentVictimSquare);
-                            break;
-                        case _nRooks >> 1:
-                            attackerBB &= magicRookAttacks(occupied[0] | occupied[1], currentVictimSquare);
-                            break;
-                        case _nQueens >> 1:
-                            attackerBB &= magicQueenAttacks(occupied[0] | occupied[1], currentVictimSquare);
-                            break;
-                        case _nKing >> 1:
-                            attackerBB &= kingAttacks(1ull << currentVictimSquare) & ~kingAttacks(pieces[_nKing + (int)(!side)]);
-                            break;
-                    }
-
-                    //found some attackers. time to exit.
-                    if (attackerBB) {return;}
-                }
-
-                finishedRegularCaptures = true;
-                break;
-            }
-
-            if (!finishedEnPassant)
-            {
-                finishedEnPassant = true;
-                if (currentVictimSquare != *enPassantSquare) {return;}
-
-                attackerPieceType = _nPawns + (int)(side);
-                attackerBB = pawnAttacks(1ull << currentVictimSquare, !side) & pieces[_nPawns+(int)(side)];
-
-                if (attackerBB) {return;}
-            }
-        }
-
-        void updateDoubleCheck()
-        {
-            //only consider king captures.
         }
 
         U32 getNextPromotion()
@@ -266,16 +215,35 @@ class CaptureGenerator
             isQSearch = _isQSearch;
         }
 
-        void reset(int _numChecks, U64 _pinned)
+        void reset(bool _side, int _numChecks)
         {
+            side = _side;
             numChecks = _numChecks;
-            pinned = _pinned;
+            pinned = util::getPinnedPieces(side, pieces, occupied);
+
+            if (numChecks == 1)
+            {
+                int kingSquare = __builtin_ctzll(pieces[_nKing+(int)(side)]);
+                checkingPieceSquare = __builtin_ctzll(util::getCheckPiece(side, kingSquare, pieces, occupied));
+                blockSquares = util::getBlockSquares(side, kingSquare, pieces, occupied);
+            }
+            else
+            {
+                checkingPieceSquare = -1;
+                blockSquares = 0;
+            }
 
             promotionMoveBuffer.clear();
 
-            victimPieceType = _nKing + (int)(!side);
+            finishedRegularCaptures = false;
+            finishedEnPassant = numChecks == 2 || *enPassantSquare == -1 || (numChecks == 1 && (*enPassantSquare - 8 + 16 * (side) != checkingPieceSquare)) ? true : false;
+            finishedPromotions = numChecks == 2 ? true : false;
+            promotionPieceType = _nQueens + (int)(side) - 2;
+
+            victimPieceType = _nKing + (int)(!(side));
             victimsBB = 0;
-            attackerPieceType = _nPawns + (int)(side);
+            currentVictimSquare = -1;
+            attackerPieceType = _nKing + (int)(side);
             attackerBB = 0;
 
             update();
@@ -303,26 +271,28 @@ class CaptureGenerator
             int capturedPieceType = victimPieceType;
             int pieceType = attackerPieceType;
 
+            bool isEnPassant = (pieceType >> 1 == _nPawns >> 1) && finishSquare == *enPassantSquare;
+
             //check if the piece is pinned.
-            if ((pinned & (1ull << startSquare)) || finishSquare == *enPassantSquare || pieceType >> 1 == _nKing >> 1)
+            if ((pinned & (1ull << startSquare)) || isEnPassant || pieceType >> 1 == _nKing >> 1)
             {
                 U64 start = 1ull << startSquare;
                 U64 finish = 1ull << finishSquare;
                 pieces[pieceType] -= start;
                 pieces[pieceType] += finish;
-                pieces[capturedPieceType] -= finish;
+                pieces[capturedPieceType] -= 1ull << (finishSquare+(int)(isEnPassant)*(-8+16*(side)));
                 occupied[(int)(side)] -= start;
                 occupied[(int)(side)] += finish;
-                occupied[(int)(!side)] -= finish;
+                occupied[(int)(!side)] -= 1ull << (finishSquare+(int)(isEnPassant)*(-8+16*(side)));
                 bool isBad = util::isInCheck(side, pieces, occupied);
 
                 //unmove pieces.
                 pieces[pieceType] += start;
                 pieces[pieceType] -= finish;
-                pieces[capturedPieceType] += finish;
+                pieces[capturedPieceType] += 1ull << (finishSquare+(int)(isEnPassant)*(-8+16*(side)));
                 occupied[(int)(side)] += start;
                 occupied[(int)(side)] -= finish;
-                occupied[(int)(!side)] += finish;
+                occupied[(int)(!side)] += 1ull << (finishSquare+(int)(isEnPassant)*(-8+16*(side)));
 
                 if (isBad) {return getNext();}
             }
@@ -350,7 +320,7 @@ class CaptureGenerator
             return (pieceType << MOVEINFO_PIECETYPE_OFFSET) |
             (startSquare << MOVEINFO_STARTSQUARE_OFFSET) |
             (finishSquare << MOVEINFO_FINISHSQUARE_OFFSET) |
-            (finishSquare == *enPassantSquare << MOVEINFO_ENPASSANT_OFFSET) |
+            (isEnPassant << MOVEINFO_ENPASSANT_OFFSET) |
             (capturedPieceType << MOVEINFO_CAPTUREDPIECETYPE_OFFSET) |
             (pieceType << MOVEINFO_FINISHPIECETYPE_OFFSET);
         }
