@@ -372,12 +372,25 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
         {
-            //PV search.
-            score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
-            if (score > alpha && score < beta)
+            if (depth >= 3 && (alpha == (beta - 1)) && numMoves >= 3 && !inCheck)
             {
-                //full window re-search.
-                score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
+                score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
+                if (score < alpha)
+                {
+                    score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);
+                }
+            }
+            else {score = alpha + 1;}
+
+            //PV search.
+            if (score > alpha)
+            {
+                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
+                if (score > alpha && score < beta)
+                {
+                    //full window re-search.
+                    score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
+                }
             }
         }
         else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
