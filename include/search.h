@@ -129,11 +129,20 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     b.moveBuffer.clear();
     b.generateCaptures(numChecks);
 
-    std::vector<std::pair<U32,int> > moveCache = b.orderCaptures();
+    std::vector<std::pair<U32, int> > moveCache = b.orderCaptures();
+    std::vector<std::pair<U32, int> > badCaptures = {};
 
     for (const auto &[move,moveScore]: moveCache)
     {
-        if (!inCheck && util::needToSee(move) && b.see.evaluate(move) < 0) {continue;}
+        if (util::needToSee(move))
+        {
+            int seeScore = b.see.evaluate(move);
+            if (seeScore < 0)
+            {
+                if (inCheck) {badCaptures.push_back(std::pair<U32, int>(move, seeScore));}
+                continue;
+            }
+        }
 
         b.makeMove(move);
         int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
@@ -150,9 +159,28 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
         }
     }
 
-    //if in check, generate and play quiets.
     if (inCheck)
     {
+        //play the bad captures.
+        std::sort(badCaptures.begin(), badCaptures.end(), [](auto &a, auto &b) {return a.second > b.second;});
+        for (const auto &[move, moveScore]: badCaptures)
+        {
+            b.makeMove(move);
+            int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
+            b.unmakeMove();
+
+            if (score > bestScore)
+            {
+                if (score > alpha)
+                {
+                    if (score >= beta) {return score;}
+                    alpha = score;
+                }
+                bestScore = score;
+            }
+        }
+
+        //generate and play quiets.
         b.moveBuffer.clear();
         b.generateQuiets(numChecks);
 
