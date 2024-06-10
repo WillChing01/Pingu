@@ -110,36 +110,31 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
     bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
+    int numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
 
     int bestScore = -MATE_SCORE + ply;
 
+    //stand-pat.
     if (!inCheck)
     {
-        //do stand-pat check.
         bestScore = b.evaluateBoard();
         if (bestScore > alpha)
         {
             if (bestScore >= beta) {return bestScore;}
             alpha = bestScore;
         }
-
-        //generate regular tactical moves.
-        b.moveBuffer.clear();
-        b.generateCaptures(0);
-    }
-    else
-    {
-        //generate check evasion.
-        U32 numChecks = util::isInCheckDetailed(b.side, b.pieces, b.occupied);
-        b.moveBuffer.clear();
-        b.generateCaptures(numChecks);
-        b.generateQuiets(numChecks);
     }
 
-    std::vector<std::pair<U32,int> > moveCache = inCheck ? b.orderQMovesInCheck() : b.orderQMoves();
+    //generate and play captures.
+    b.moveBuffer.clear();
+    b.generateCaptures(numChecks);
+
+    std::vector<std::pair<U32,int> > moveCache = b.orderCaptures();
 
     for (const auto &[move,moveScore]: moveCache)
     {
+        if (!inCheck && util::needToSee(move) && b.see.evaluate(move) < 0) {continue;}
+
         b.makeMove(move);
         int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
         b.unmakeMove();
@@ -152,6 +147,32 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
                 alpha = score;
             }
             bestScore = score;
+        }
+    }
+
+    //if in check, generate and play quiets.
+    if (inCheck)
+    {
+        b.moveBuffer.clear();
+        b.generateQuiets(numChecks);
+
+        moveCache = b.orderQuiets();
+
+        for (const auto &[move,moveScore]: moveCache)
+        {
+            b.makeMove(move);
+            int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
+            b.unmakeMove();
+
+            if (score > bestScore)
+            {
+                if (score > alpha)
+                {
+                    if (score >= beta) {return score;}
+                    alpha = score;
+                }
+                bestScore = score;
+            }
         }
     }
 
@@ -266,18 +287,26 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //generate tactical moves and play them.
     b.moveBuffer.clear();
     b.generateCaptures(numChecks);
-    std::vector<std::pair<U32,int> > moveCache = b.orderCaptures();
+    std::vector<std::pair<U32, int> > moveCache = b.orderCaptures();
+    std::vector<std::pair<U32, int> > badCaptures = {};
 
     //good captures and promotions.
     U32 move;
-    int ind = moveCache.size();
     for (int i=0;i<(int)(moveCache.size());i++)
     {
         move = moveCache[i].first;
         //check that capture is not hash move.
         if (hashHit && (move == hashMove)) {continue;}
-        //exit when we get to bad captures.
-        if (moveCache[i].second < 0) {ind = i; break;}
+        //skip bad captures.
+        if (util::needToSee(move))
+        {
+            int moveScore = b.see.evaluate(move);
+            if (moveScore < 0)
+            {
+                badCaptures.push_back(std::pair<U32, int>(move, moveScore));
+                continue;
+            }
+        }
 
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
@@ -363,9 +392,10 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //bad captures.
-    for (int i=ind;i<(int)(moveCache.size());i++)
+    std::sort(badCaptures.begin(), badCaptures.end(), [](auto &a, auto &b) {return a.second > b.second;});
+    for (int i=0;i<(int)(badCaptures.size());i++)
     {
-        move = moveCache[i].first;
+        move = badCaptures[i].first;
         //check that capture is not hash move.
         if (hashHit && (move == hashMove)) {continue;}
 

@@ -124,6 +124,14 @@ namespace util
 
         return attacked;
     }
+
+    inline bool needToSee(U32 move)
+    {
+        U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+
+        return (pieceType < capturedPieceType && pieceType >= _nQueens) || capturedPieceType == 15;
+    }
 }
 
 #endif // UTIL_H_INCLUDED

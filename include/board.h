@@ -41,8 +41,6 @@ class Board {
         std::vector<U32> hashHistory;
         std::vector<int> irrevMoveInd;
 
-        std::vector<U32> captureBuffer;
-        std::vector<U32> quietBuffer;
         std::vector<U32> moveBuffer;
         std::vector<std::pair<U32,int> > scoredMoves;
 
@@ -983,25 +981,25 @@ class Board {
             {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                int score = 16 * (15 - capturedPieceType) + pieceType;
 
-                if (pieceType < capturedPieceType && pieceType >= _nQueens)
+                int score = 32 * (15 - capturedPieceType) + pieceType;
+                if (capturedPieceType == 15)
                 {
-                    int seeCheck = see.evaluate(move);
-                    if (seeCheck < 0) {score = seeCheck;}
+                    U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
+                    score += 15 - finishPieceType;
                 }
 
                 scoredMoves.push_back(std::pair<U32, int>(move, score));
             }
 
-            //sort the moves.
-            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+            std::sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+
             return scoredMoves;
         }
 
         std::vector<std::pair<U32,int> > orderQuiets()
         {
-            //order quiet moves by history.
+            //order quiet moves by history + pst.
             scoredMoves.clear();
 
             for (const auto &move: moveBuffer)
@@ -1009,7 +1007,9 @@ class Board {
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                 U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                 U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+
                 int moveScore = history.scores[pieceType][finishSquare];
+
                 if (pieceType & 1)
                 {
                     moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare] - PIECE_TABLES_START[pieceType >> 1][startSquare];
@@ -1018,58 +1018,12 @@ class Board {
                 {
                     moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare ^ 56] - PIECE_TABLES_START[pieceType >> 1][startSquare ^ 56];
                 }
+
                 scoredMoves.push_back(std::pair<U32,int>(move, moveScore));
             }
 
-            //sort the moves.
-            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-            return scoredMoves;
-        }
-        
-        std::vector<std::pair<U32, int> > orderQMoves()
-        {
-            scoredMoves.clear();
+            std::sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
 
-            for (const auto &move: moveBuffer)
-            {
-                U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-
-                if (pieceType >= capturedPieceType || pieceType < _nQueens || see.evaluate(move) >= 0)
-                {
-                    int score = 16 * (15 - capturedPieceType) + pieceType;
-                    scoredMoves.push_back(std::pair<U32, int>(move, score));
-                }
-            }
-
-            //sort the moves.
-            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-            return scoredMoves;
-        }
-
-        std::vector<std::pair<U32,int> > orderQMovesInCheck()
-        {
-            scoredMoves.clear();
-
-            for (const auto &move: moveBuffer)
-            {
-                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
-                U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                if (capturedPieceType != 15 || pieceType != finishPieceType)
-                {
-                    int score = see.evaluate(move);
-                    scoredMoves.push_back(std::pair<U32,int>(move, score));
-                }
-                else
-                {
-                    //non-capture moves.
-                    scoredMoves.push_back(std::pair<U32,int>(move, 0));
-                }
-            }
-
-            //sort the moves.
-            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
             return scoredMoves;
         }
 };
