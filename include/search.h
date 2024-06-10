@@ -156,9 +156,9 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
         b.moveBuffer.clear();
         b.generateQuiets(numChecks);
 
-        moveCache = b.orderQuiets();
+        std::vector<U32> quietCache = b.moveBuffer;
 
-        for (const auto &[move,moveScore]: moveCache)
+        for (const auto &move: quietCache)
         {
             b.makeMove(move);
             int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
