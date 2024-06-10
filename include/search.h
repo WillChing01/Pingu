@@ -424,6 +424,18 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     bool canFutilityPrune = canPrune && depth <= futilityDepthLimit &&
                             staticEval + futilityMargins[depth-1] <= alpha;
 
+    U64 checkingSquares[5] = {};
+    if (canFutilityPrune)
+    {
+        U64 p = b.occupied[0] | b.occupied[1];
+        int kingPos = __builtin_ctzll(b.pieces[_nKing+(int)(b.side)]);
+        if (b.pieces[_nQueens+(int)(b.side)]) {checkingSquares[0] = magicQueenAttacks(p, kingPos);}
+        if (b.pieces[_nRooks+(int)(b.side)]) {checkingSquares[1] = magicRookAttacks(p, kingPos);}
+        if (b.pieces[_nBishops+(int)(b.side)]) {checkingSquares[2] = magicBishopAttacks(p, kingPos);}
+        if (b.pieces[_nKnights+(int)(b.side)]) {checkingSquares[3] = knightAttacks(1ull << kingPos);}
+        if (b.pieces[_nPawns+(int)(b.side)]) {checkingSquares[4] = pawnAttacks(1ull << kingPos, b.side);}
+    }
+
     for (int i=0;i<(int)(moveCache.size());i++)
     {
         //late move pruning.
@@ -434,7 +446,15 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         if (singleQuiets.contains(move)) {continue;}
 
         //futility pruning.
-        if (canFutilityPrune && numMoves > 0 && !b.isCheckingMove(move)) {continue;}
+        if (canFutilityPrune && numMoves > 0)
+        {
+            //check if move gives check. discovered checks are ignored since we are low depth anyway.
+            U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+
+            bool isCheckingMove = (pieceType >> 1 != _nKing >> 1) && ((1ull << finishSquare) & checkingSquares[(pieceType >> 1) - 1]);
+            if (!isCheckingMove) {continue;}
+        }
 
         b.makeMove(move);
         if (depth >= 2 && numMoves > 0)
