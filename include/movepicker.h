@@ -114,11 +114,15 @@ class MovePicker
                         U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
 
-                        int score = 32 * (15 - capturedPieceType) + pieceType;
-                        if (capturedPieceType == 15)
+                        int score = capturedPieceType != 15 ? seeValues[capturedPieceType >> 1] + pieceType : pieceType;
+                        if (pieceType >> 1 == _nPawns >> 1)
                         {
                             U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
-                            score += (15 - finishPieceType);
+                            if (finishPieceType < _nPawns)
+                            {
+                                if (finishPieceType >> 1 != _nQueens >> 1 && node == Q_NODE) {continue;}
+                                score += seeValues[finishPieceType >> 1];
+                            }
                         }
 
                         b->scoredMoves.push_back(std::pair<U32, int>(move, score));
@@ -137,28 +141,39 @@ class MovePicker
                 case QUIET_MOVES:
                 {
                     //order by history + pst.
-                    b->scoredMoves.clear();
-                    for (const auto &move: b->moveBuffer)
+                    if (numChecks == 0)
                     {
-                        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
-                        U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-
-                        int moveScore = b->history.scores[pieceType][finishSquare];
-                        switch(pieceType & 1)
+                        b->scoredMoves.clear();
+                        for (const auto &move: b->moveBuffer)
                         {
-                            case 0:
-                                moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare ^ 56] - PIECE_TABLES_START[pieceType >> 1][startSquare ^ 56];
-                                break;
-                            case 1:
-                                moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare] - PIECE_TABLES_START[pieceType >> 1][startSquare];
-                                break;
-                        }
+                            U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                            U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
+                            U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
 
-                        b->scoredMoves.push_back(std::pair<U32,int>(move, moveScore));
+                            int moveScore = b->history.scores[pieceType][finishSquare];
+                            switch(pieceType & 1)
+                            {
+                                case 0:
+                                    moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare ^ 56] - PIECE_TABLES_START[pieceType >> 1][startSquare ^ 56];
+                                    break;
+                                case 1:
+                                    moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare] - PIECE_TABLES_START[pieceType >> 1][startSquare];
+                                    break;
+                            }
+
+                            b->scoredMoves.push_back(std::pair<U32,int>(move, moveScore));
+                        }
+                        std::sort(b->scoredMoves.begin(), b->scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+                        scoredMoves = b->scoredMoves;
                     }
-                    std::sort(b->scoredMoves.begin(), b->scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-                    scoredMoves = b->scoredMoves;
+                    else
+                    {
+                        scoredMoves.clear();
+                        for (const auto &move: b->moveBuffer)
+                        {
+                            scoredMoves.push_back(std::pair<U32, int>(move, 0));
+                        }
+                    }
                     break;
                 }
                 case END:
@@ -233,7 +248,7 @@ class MovePicker
                     U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                     U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
 
-                    bool needToSee = ((pieceType >= _nQueens) && (pieceType < capturedPieceType)) || (capturedPieceType == 15);
+                    bool needToSee = (capturedPieceType == 15) || ((pieceType >= _nQueens) && (seeValues[pieceType >> 1] > seeValues[capturedPieceType >> 1]));
                     if (needToSee)
                     {
                         int seeScore = b->see.evaluate(move);
