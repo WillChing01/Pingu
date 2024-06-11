@@ -5,10 +5,6 @@
 
 /*
 
-Root Node:
-    - PV move from previous iter
-    - Remaining moves in descending order of node count
-
 Regular Node:
     - Hash move
     - Good captures/promotions
@@ -166,16 +162,9 @@ class MovePicker
         std::unordered_set<U32> singleQuiets;
         std::vector<std::pair<U32, int> > scoredMoves;
 
-        MovePicker(
-            Board &_b,
-            int _ply,
-            int _depth,
-            int _numChecks,
-            U32 _hashMove,
-            nodeType _node
-        )
+        MovePicker(Board* _b, int _ply, int _depth, int _numChecks, U32 _hashMove, nodeType _node)
         {
-            b = &_b;
+            b = _b;
             ply = _ply;
             depth = _depth;
             numChecks = _numChecks;
