@@ -49,7 +49,7 @@ class MovePicker
         Board* b;
         int ply;
         int numChecks;
-        U32 hashMove;
+        U32 hashMove = 0;
 
         nodeType node;
 
@@ -169,27 +169,27 @@ class MovePicker
         std::unordered_set<U32> singleQuiets = {};
         std::vector<std::pair<U32, int> > scoredMoves = {};
 
-        MovePicker(Board* _b, int _ply, int _numChecks, U32 _hashMove, nodeType _node)
+        MovePicker(Board* _b, int _ply, int _numChecks, U32 _hashMove)
         {
+            //initializer for main nodes.
             b = _b;
             ply = _ply;
             numChecks = _numChecks;
             hashMove = _hashMove;
 
-            node = _node;
-            switch(node)
-            {
-                case MAIN_NODE:
-                {
-                    stage = HASH_MOVE;
-                    break;
-                }
-                case Q_NODE:
-                {
-                    stage = GOOD_CAPTURES;
-                    break;
-                }
-            }
+            node = MAIN_NODE;
+            stage = HASH_MOVE;
+        }
+
+        MovePicker(Board* _b, int _numChecks)
+        {
+            //initializer for q nodes.
+            b = _b;
+            numChecks = _numChecks;
+
+            node = Q_NODE;
+            stage = HASH_MOVE;
+            updateStage();
         }
 
         U32 getNext()

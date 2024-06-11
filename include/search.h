@@ -111,9 +111,9 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
     bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
-
     int bestScore = -MATE_SCORE + ply;
 
+    //stand pat.
     if (!inCheck)
     {
         bestScore = b.evaluateBoard();
@@ -122,23 +122,13 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
             if (bestScore >= beta) {return bestScore;}
             alpha = bestScore;
         }
-
-        //generate regular tactical moves.
-        b.moveBuffer.clear();
-        b.generateCaptures(0);
-    }
-    else
-    {
-        //generate check evasion.
-        U32 numChecks = util::isInCheckDetailed(b.side, b.pieces, b.occupied);
-        b.moveBuffer.clear();
-        b.generateCaptures(numChecks);
-        b.generateQuiets(numChecks);
     }
 
-    std::vector<std::pair<U32,int> > moveCache = inCheck ? b.orderQMovesInCheck() : b.orderQMoves();
+    U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
+    MovePicker movePicker = MovePicker(&b, numChecks);
 
-    for (const auto &[move,moveScore]: moveCache)
+    //loop through moves and search them.
+    while (U32 move = movePicker.getNext())
     {
         b.makeMove(move);
         int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
@@ -227,7 +217,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     int movesPlayed = 0; int quietsPlayed = 0;
     U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
 
-    MovePicker movePicker = MovePicker(&b, ply, numChecks, hashMove, MAIN_NODE);
+    MovePicker movePicker = MovePicker(&b, ply, numChecks, hashMove);
 
     bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
 
@@ -237,11 +227,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     bool canLateMoveReduce = (alpha == beta - 1) && !inCheck;
 
     //loop through moves and search them.
-    while (true)
+    while (U32 move = movePicker.getNext())
     {
-        U32 move = movePicker.getNext();
-        if (move == 0) {break;}
-
         //late move pruning.
         if (canLateMovePrune && quietsPlayed > lateMovePruningMargins[depth-1]) {break;}
 
