@@ -29,8 +29,8 @@ Quiescence Node:
 
 enum nodeType
 {
-    REGULAR,
-    QUIESCENCE
+    MAIN_NODE,
+    Q_NODE
 };
 
 enum moveType
@@ -48,7 +48,6 @@ class MovePicker
     private:
         Board* b;
         int ply;
-        int depth;
         int numChecks;
         U32 hashMove;
 
@@ -74,10 +73,10 @@ class MovePicker
                 case GOOD_CAPTURES:
                     switch(node)
                     {
-                        case REGULAR:
+                        case MAIN_NODE:
                             stage = KILLER_MOVES;
                             break;
-                        case QUIESCENCE:
+                        case Q_NODE:
                             stage = numChecks > 0 ? BAD_CAPTURES : END;
                             break;
                     }
@@ -170,23 +169,22 @@ class MovePicker
         std::unordered_set<U32> singleQuiets;
         std::vector<std::pair<U32, int> > scoredMoves;
 
-        MovePicker(Board* _b, int _ply, int _depth, int _numChecks, U32 _hashMove, nodeType _node)
+        MovePicker(Board* _b, int _ply, int _numChecks, U32 _hashMove, nodeType _node)
         {
             b = _b;
             ply = _ply;
-            depth = _depth;
             numChecks = _numChecks;
             hashMove = _hashMove;
 
             node = _node;
             switch(node)
             {
-                case REGULAR:
+                case MAIN_NODE:
                 {
                     stage = HASH_MOVE;
                     break;
                 }
-                case QUIESCENCE:
+                case Q_NODE:
                 {
                     stage = GOOD_CAPTURES;
                     break;
@@ -205,7 +203,7 @@ class MovePicker
             {
                 case HASH_MOVE:
                 {
-                    if (moveIndex == 1) {updateStage(); return getNext();}
+                    if (moveIndex == 1 || hashMove == 0) {updateStage(); return getNext();}
 
                     move = hashMove;
                     ++moveIndex;
@@ -241,10 +239,10 @@ class MovePicker
                         {
                             switch(node)
                             {
-                                case REGULAR:
+                                case MAIN_NODE:
                                     badCaptures.push_back(std::pair<U32, int>(move, seeScore));
                                     break;
-                                case QUIESCENCE:
+                                case Q_NODE:
                                     break;
                             }
                             return getNext();
