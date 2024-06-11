@@ -110,6 +110,7 @@ class MovePicker
                 case HASH_MOVE:
                     break;
                 case GOOD_CAPTURES:
+                {
                     //order by mvv/lva.
                     for (const auto &move: b->moveBuffer)
                     {
@@ -127,12 +128,16 @@ class MovePicker
                     }
                     std::sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
                     break;
+                }
                 case KILLER_MOVES:
                     break;
                 case BAD_CAPTURES:
+                {
                     std::sort(badCaptures.begin(), badCaptures.end(), [](auto &a, auto &b) {return a.second > b.second;});
                     break;
+                }
                 case QUIET_MOVES:
+                {
                     //order by history + pst.
                     for (const auto &move: b->moveBuffer)
                     {
@@ -155,6 +160,9 @@ class MovePicker
                     }
                     std::sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
                     break;
+                }
+                case END:
+                    break;
             }
         }
 
@@ -174,11 +182,15 @@ class MovePicker
             switch(node)
             {
                 case REGULAR:
+                {
                     stage = HASH_MOVE;
                     break;
+                }
                 case QUIESCENCE:
+                {
                     stage = GOOD_CAPTURES;
                     break;
+                }
             }
         }
 
@@ -192,6 +204,7 @@ class MovePicker
             switch(stage)
             {
                 case HASH_MOVE:
+                {
                     if (moveIndex == 1) {updateStage(); return getNext();}
 
                     move = hashMove;
@@ -199,11 +212,19 @@ class MovePicker
 
                     bool isValid = validate::isValidMove(move, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
                     if (!isValid) {return getNext();}
-                    else {singleQuiets.insert(move);}
+
+                    U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                    U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
+
+                    bool isQuiet = (capturedPieceType == 15) && (pieceType == finishPieceType);
+                    if (isQuiet) {singleQuiets.insert(move);}
 
                     break;
+                }
                 case GOOD_CAPTURES:
-                    if (moveIndex == scoredMoves.size()) {updateStage(); return getNext();}
+                {
+                    if (moveIndex == (int)scoredMoves.size()) {updateStage(); return getNext();}
 
                     move = scoredMoves[moveIndex++].first;
                     if (move == hashMove) {return getNext();}
@@ -231,7 +252,9 @@ class MovePicker
                     }
 
                     break;
+                }
                 case KILLER_MOVES:
+                {
                     if (moveIndex == 2) {updateStage(); return getNext();}
 
                     move = b->killer.killerMoves[ply][moveIndex++];
@@ -239,23 +262,29 @@ class MovePicker
 
                     bool isValid = validate::isValidMove(move, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
                     if (!isValid) {return getNext();}
-                    else {singleQuiets.insert(move);}
+
+                    singleQuiets.insert(move);
 
                     break;
+                }
                 case BAD_CAPTURES:
-                    if (moveIndex == badCaptures.size()) {updateStage(); return getNext();}
+                {
+                    if (moveIndex == (int)badCaptures.size()) {updateStage(); return getNext();}
 
-                    move = scoredMoves[moveIndex++].first;
+                    move = badCaptures[moveIndex++].first;
                     if (move == hashMove) {return getNext();}
 
                     break;
+                }
                 case QUIET_MOVES:
-                    if (moveIndex == scoredMoves.size()) {updateStage(); return getNext();}
+                {
+                    if (moveIndex == (int)scoredMoves.size()) {updateStage(); return getNext();}
 
                     move = scoredMoves[moveIndex++].first;
                     if (singleQuiets.contains(move)) {return getNext();}
 
                     break;
+                }
                 case END:
                     break;
             }
