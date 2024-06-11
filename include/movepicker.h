@@ -52,10 +52,9 @@ class MovePicker
         U32 hashMove;
 
         nodeType node;
-        moveType stage;
 
         int moveIndex = 0;
-        std::vector<std::pair<U32, int> > badCaptures;
+        std::vector<std::pair<U32, int> > badCaptures = {};
 
         void updateStage()
         {
@@ -102,8 +101,6 @@ class MovePicker
         void orderMoves()
         {
             //score and then order moves in moveBuffer.
-            scoredMoves.clear();
-
             switch(stage)
             {
                 case HASH_MOVE:
@@ -111,6 +108,7 @@ class MovePicker
                 case GOOD_CAPTURES:
                 {
                     //order by mvv/lva.
+                    scoredMoves.clear();
                     for (const auto &move: b->moveBuffer)
                     {
                         U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
@@ -138,6 +136,7 @@ class MovePicker
                 case QUIET_MOVES:
                 {
                     //order by history + pst.
+                    scoredMoves.clear();
                     for (const auto &move: b->moveBuffer)
                     {
                         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
@@ -166,8 +165,9 @@ class MovePicker
         }
 
     public:
-        std::unordered_set<U32> singleQuiets;
-        std::vector<std::pair<U32, int> > scoredMoves;
+        moveType stage;
+        std::unordered_set<U32> singleQuiets = {};
+        std::vector<std::pair<U32, int> > scoredMoves = {};
 
         MovePicker(Board* _b, int _ply, int _numChecks, U32 _hashMove, nodeType _node)
         {
