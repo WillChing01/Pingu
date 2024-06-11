@@ -41,8 +41,6 @@ class Board {
         std::vector<U32> hashHistory;
         std::vector<int> irrevMoveInd;
 
-        std::vector<U32> captureBuffer;
-        std::vector<U32> quietBuffer;
         std::vector<U32> moveBuffer;
         std::vector<std::pair<U32,int> > scoredMoves;
 

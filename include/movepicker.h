@@ -108,7 +108,7 @@ class MovePicker
                 case GOOD_CAPTURES:
                 {
                     //order by mvv/lva.
-                    scoredMoves.clear();
+                    b->scoredMoves.clear();
                     for (const auto &move: b->moveBuffer)
                     {
                         U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
@@ -121,9 +121,10 @@ class MovePicker
                             score += (15 - finishPieceType);
                         }
 
-                        scoredMoves.push_back(std::pair<U32, int>(move, score));
+                        b->scoredMoves.push_back(std::pair<U32, int>(move, score));
                     }
-                    std::sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+                    std::sort(b->scoredMoves.begin(), b->scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+                    scoredMoves = b->scoredMoves;
                     break;
                 }
                 case KILLER_MOVES:
@@ -136,7 +137,7 @@ class MovePicker
                 case QUIET_MOVES:
                 {
                     //order by history + pst.
-                    scoredMoves.clear();
+                    b->scoredMoves.clear();
                     for (const auto &move: b->moveBuffer)
                     {
                         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
@@ -154,9 +155,10 @@ class MovePicker
                                 break;
                         }
 
-                        scoredMoves.push_back(std::pair<U32,int>(move, moveScore));
+                        b->scoredMoves.push_back(std::pair<U32,int>(move, moveScore));
                     }
-                    std::sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+                    std::sort(b->scoredMoves.begin(), b->scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
+                    scoredMoves = b->scoredMoves;
                     break;
                 }
                 case END:
