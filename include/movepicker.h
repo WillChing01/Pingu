@@ -40,6 +40,9 @@ enum moveType
     KILLER_MOVES,
     BAD_CAPTURES,
     QUIET_MOVES,
+
+    Q_MOVES,
+
     END
 };
 
@@ -53,44 +56,37 @@ class MovePicker
 
         nodeType node;
 
-        int moveIndex = 0;
-        std::vector<std::pair<U32, int> > badCaptures = {};
+        int killerIndex = 0;
 
         void updateStage()
         {
             //generate and order moves on demand for the next stage.
-
-            moveIndex = 0;
             switch(stage)
             {
                 case HASH_MOVE:
+                    moveIndex = 0;
                     stage = GOOD_CAPTURES;
                     b->moveBuffer.clear();
                     b->generateCaptures(numChecks);
-                    orderMoves();
+                    scoredMoves = b->orderCaptures();
                     break;
                 case GOOD_CAPTURES:
-                    switch(node)
-                    {
-                        case MAIN_NODE:
-                            stage = KILLER_MOVES;
-                            break;
-                        case Q_NODE:
-                            stage = numChecks > 0 ? BAD_CAPTURES : END;
-                            break;
-                    }
+                    stage = KILLER_MOVES;
                     break;
                 case KILLER_MOVES:
                     stage = BAD_CAPTURES;
-                    orderMoves();
                     break;
                 case BAD_CAPTURES:
+                    moveIndex = 0;
                     stage = QUIET_MOVES;
                     b->moveBuffer.clear();
                     b->generateQuiets(numChecks);
-                    orderMoves();
+                    scoredMoves = b->orderQuiets();
                     break;
                 case QUIET_MOVES:
+                    stage = END;
+                    break;
+                case Q_MOVES:
                     stage = END;
                     break;
                 case END:
@@ -98,90 +94,8 @@ class MovePicker
             }
         }
 
-        void orderMoves()
-        {
-            //score and then order moves in moveBuffer.
-            switch(stage)
-            {
-                case HASH_MOVE:
-                    break;
-                case GOOD_CAPTURES:
-                {
-                    //order by mvv/lva.
-                    b->scoredMoves.clear();
-                    for (const auto &move: b->moveBuffer)
-                    {
-                        U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-
-                        int score = capturedPieceType != 15 ? seeValues[capturedPieceType >> 1] + pieceType : pieceType;
-                        if (pieceType >> 1 == _nPawns >> 1)
-                        {
-                            U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
-                            if (finishPieceType < _nPawns)
-                            {
-                                if (finishPieceType >> 1 != _nQueens >> 1 && node == Q_NODE) {continue;}
-                                score += seeValues[finishPieceType >> 1];
-                            }
-                        }
-
-                        b->scoredMoves.push_back(std::pair<U32, int>(move, score));
-                    }
-                    std::sort(b->scoredMoves.begin(), b->scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-                    scoredMoves = b->scoredMoves;
-                    break;
-                }
-                case KILLER_MOVES:
-                    break;
-                case BAD_CAPTURES:
-                {
-                    std::sort(badCaptures.begin(), badCaptures.end(), [](auto &a, auto &b) {return a.second > b.second;});
-                    break;
-                }
-                case QUIET_MOVES:
-                {
-                    //order by history + pst.
-                    if (numChecks == 0)
-                    {
-                        b->scoredMoves.clear();
-                        for (const auto &move: b->moveBuffer)
-                        {
-                            U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                            U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
-                            U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-
-                            int moveScore = b->history.scores[pieceType][finishSquare];
-                            switch(pieceType & 1)
-                            {
-                                case 0:
-                                    moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare ^ 56] - PIECE_TABLES_START[pieceType >> 1][startSquare ^ 56];
-                                    break;
-                                case 1:
-                                    moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare] - PIECE_TABLES_START[pieceType >> 1][startSquare];
-                                    break;
-                            }
-
-                            b->scoredMoves.push_back(std::pair<U32,int>(move, moveScore));
-                        }
-                        std::sort(b->scoredMoves.begin(), b->scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-                        scoredMoves = b->scoredMoves;
-                    }
-                    else
-                    {
-                        scoredMoves.clear();
-                        for (const auto &move: b->moveBuffer)
-                        {
-                            scoredMoves.push_back(std::pair<U32, int>(move, 0));
-                        }
-                    }
-                    break;
-                }
-                case END:
-                    break;
-            }
-        }
-
     public:
+        int moveIndex = 0;
         moveType stage;
         std::unordered_set<U32> singleQuiets = {};
         std::vector<std::pair<U32, int> > scoredMoves = {};
@@ -205,8 +119,21 @@ class MovePicker
             numChecks = _numChecks;
 
             node = Q_NODE;
-            stage = HASH_MOVE;
-            updateStage();
+            stage = Q_MOVES;
+            
+            if (numChecks == 0)
+            {
+                b->moveBuffer.clear();
+                b->generateCaptures(0);
+                scoredMoves = b->orderQMoves();
+            }
+            else
+            {
+                b->moveBuffer.clear();
+                b->generateCaptures(numChecks);
+                b->generateQuiets(numChecks);
+                scoredMoves = b->orderQMovesInCheck();
+            }
         }
 
         U32 getNext()
@@ -240,39 +167,18 @@ class MovePicker
                 case GOOD_CAPTURES:
                 {
                     if (moveIndex == (int)scoredMoves.size()) {updateStage(); return getNext();}
+                    if (scoredMoves[moveIndex].second < 0) {updateStage(); return getNext();}
 
                     move = scoredMoves[moveIndex++].first;
                     if (move == hashMove) {return getNext();}
-
-                    //see if necessary.
-                    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-
-                    bool needToSee = (capturedPieceType == 15) || ((pieceType >= _nQueens) && (seeValues[pieceType >> 1] > seeValues[capturedPieceType >> 1]));
-                    if (needToSee)
-                    {
-                        int seeScore = b->see.evaluate(move);
-                        if (seeScore < 0)
-                        {
-                            switch(node)
-                            {
-                                case MAIN_NODE:
-                                    badCaptures.push_back(std::pair<U32, int>(move, seeScore));
-                                    break;
-                                case Q_NODE:
-                                    break;
-                            }
-                            return getNext();
-                        }
-                    }
 
                     break;
                 }
                 case KILLER_MOVES:
                 {
-                    if (moveIndex == 2) {updateStage(); return getNext();}
+                    if (killerIndex == 2) {updateStage(); return getNext();}
 
-                    move = b->killer.killerMoves[ply][moveIndex++];
+                    move = b->killer.killerMoves[ply][killerIndex++];
                     if (singleQuiets.contains(move)) {return getNext();}
 
                     bool isValid = validate::isValidMove(move, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
@@ -284,9 +190,9 @@ class MovePicker
                 }
                 case BAD_CAPTURES:
                 {
-                    if (moveIndex == (int)badCaptures.size()) {updateStage(); return getNext();}
+                    if (moveIndex == (int)scoredMoves.size()) {updateStage(); return getNext();}
 
-                    move = badCaptures[moveIndex++].first;
+                    move = scoredMoves[moveIndex++].first;
                     if (move == hashMove) {return getNext();}
 
                     break;
@@ -298,6 +204,13 @@ class MovePicker
                     move = scoredMoves[moveIndex++].first;
                     if (singleQuiets.contains(move)) {return getNext();}
 
+                    break;
+                }
+                case Q_MOVES:
+                {
+                    if (moveIndex == (int)scoredMoves.size()) {updateStage(); return getNext();}
+
+                    move = scoredMoves[moveIndex++].first;
                     break;
                 }
                 case END:
