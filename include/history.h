@@ -52,7 +52,7 @@ class History
             //increment history for cut move.
             U32 pieceType = (cutMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
             U32 finishSquare = (cutMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-            scores[pieceType][finishSquare] -= delta;
+            scores[pieceType][finishSquare] += delta;
             if (scores[pieceType][finishSquare] > HISTORY_MAX) {shouldAge = true;}
 
             //age history if necessary.
