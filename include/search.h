@@ -242,13 +242,13 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
                 if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3) {reduction = 1;}
                 break;
             case BAD_CAPTURES:
-                // if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
-                // {
-                //     b.makeMove(move);
-                //     score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
-                //     b.unmakeMove();
-                //     if (score <= alpha) {reduction = 1;}
-                // }
+                if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
+                {
+                    b.makeMove(move);
+                    score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
+                    b.unmakeMove();
+                    if (score <= alpha) {reduction = 1;}
+                }
                 break;
             case QUIET_MOVES:
                 if (canLateMoveReduce && movesPlayed > 0) {reduction = int(0.5 * std::log((double)depth) * std::log((double)(movesPlayed+1)));}
@@ -262,11 +262,6 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         if (depth >= 2 && movesPlayed > 0)
         {
             if (reduction > 0) {score = -alphaBeta(b, -beta, -alpha, depth-1-reduction, ply+1, true);}
-            else if (movePicker.stage == BAD_CAPTURES && canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
-            {
-                score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
-                if (score < alpha) {score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);}
-            }
             else {score = alpha + 1;}
 
             if (score > alpha)
