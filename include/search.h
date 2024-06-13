@@ -294,10 +294,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
                     //update history.
                     if (depth >= 5)
                     {
-                        if (movePicker.stage == QUIET_MOVES)
-                        {
-                            b.history.update(movePicker.singleQuiets, movePicker.scoredMoves, movePicker.moveIndex - 1, move, depth);
-                        }
+                        if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, movePicker.scoredMoves, movePicker.moveIndex - 1, move, depth);}
                         else {b.history.update(movePicker.singleQuiets, move, depth);}
                     }
                 }
