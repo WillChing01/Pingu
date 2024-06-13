@@ -269,10 +269,6 @@ class QMovePicker
                     break;
                 }
             }
-            while (moveIndex != scoredMoves.size())
-            {
-                return scoredMoves[moveIndex++].first;
-            }
 
             return 0;
         }
