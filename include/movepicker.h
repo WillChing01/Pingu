@@ -55,7 +55,6 @@ class MovePicker
         nodeType node;
 
         int killerIndex = 0;
-        int sizeLimit = 0;
 
     public:
         int moveIndex = 0;
@@ -89,7 +88,6 @@ class MovePicker
                 b->moveBuffer.clear();
                 b->generateCaptures(0);
                 scoredMoves = b->orderQMoves();
-                sizeLimit = scoredMoves.size();
             }
             else
             {
@@ -97,7 +95,6 @@ class MovePicker
                 b->generateCaptures(numChecks);
                 b->generateQuiets(numChecks);
                 scoredMoves = b->orderQMovesInCheck();
-                sizeLimit = scoredMoves.size();
             }
         }
 
@@ -131,14 +128,13 @@ class MovePicker
                     b->moveBuffer.clear();
                     b->generateCaptures(numChecks);
                     scoredMoves = b->orderCaptures();
-                    sizeLimit = scoredMoves.size();
 
                     stage = GOOD_CAPTURES;
                     [[fallthrough]];
                 }
                 case GOOD_CAPTURES:
                 {
-                    while (moveIndex != sizeLimit && scoredMoves[moveIndex].second >= 0)
+                    while (moveIndex != (int)scoredMoves.size() && scoredMoves[moveIndex].second >= 0)
                     {
                         U32 move = scoredMoves[moveIndex++].first;
                         if (move == hashMove) {continue;}
@@ -168,7 +164,7 @@ class MovePicker
                 }
                 case BAD_CAPTURES:
                 {
-                    while (moveIndex != sizeLimit)
+                    while (moveIndex != (int)scoredMoves.size())
                     {
                         U32 move = scoredMoves[moveIndex++].first;
 
@@ -180,14 +176,13 @@ class MovePicker
                     b->moveBuffer.clear();
                     b->generateQuiets(numChecks);
                     scoredMoves = b->orderQuiets();
-                    sizeLimit = scoredMoves.size();
 
                     stage = QUIET_MOVES;
                     [[fallthrough]];
                 }
                 case QUIET_MOVES:
                 {
-                    while (moveIndex != sizeLimit)
+                    while (moveIndex != (int)scoredMoves.size())
                     {
                         U32 move = scoredMoves[moveIndex++].first;
 
@@ -200,7 +195,7 @@ class MovePicker
                 }
                 case Q_MOVES:
                 {
-                    while (moveIndex != sizeLimit)
+                    while (moveIndex != (int)scoredMoves.size())
                     {
                         return scoredMoves[moveIndex++].first;
                     }
