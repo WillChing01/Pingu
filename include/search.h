@@ -125,7 +125,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     }
 
     U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
-    MovePicker movePicker = MovePicker(&b, numChecks);
+    QMovePicker movePicker(&b, numChecks);
 
     //loop through moves and search them.
     while (U32 move = movePicker.getNext())

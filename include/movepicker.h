@@ -29,13 +29,11 @@ Quiescence Node:
 
 enum moveType
 {
-    HASH_MOVE,
-    GOOD_CAPTURES,
-    KILLER_MOVES,
-    BAD_CAPTURES,
-    QUIET_MOVES,
-
-    Q_MOVES
+    HASH_MOVE = 0,
+    GOOD_CAPTURES = 1,
+    KILLER_MOVES = 2,
+    BAD_CAPTURES = 3,
+    QUIET_MOVES = 4
 };
 
 class MovePicker
@@ -63,29 +61,6 @@ class MovePicker
             hashMove = _hashMove;
 
             stage = HASH_MOVE;
-        }
-
-        MovePicker(Board* _b, U32 _numChecks)
-        {
-            //initializer for q nodes.
-            b = _b;
-            numChecks = _numChecks;
-
-            stage = Q_MOVES;
-            
-            if (numChecks == 0)
-            {
-                b->moveBuffer.clear();
-                b->generateCaptures(0);
-                scoredMoves = b->orderQMoves();
-            }
-            else
-            {
-                b->moveBuffer.clear();
-                b->generateCaptures(numChecks);
-                b->generateQuiets(numChecks);
-                scoredMoves = b->orderQMovesInCheck();
-            }
         }
 
         U32 getNext()
@@ -183,16 +158,48 @@ class MovePicker
                     return 0;
                     break;
                 }
-                case Q_MOVES:
-                {
-                    while (moveIndex != scoredMoves.size())
-                    {
-                        return scoredMoves[moveIndex++].first;
-                    }
+            }
 
-                    return 0;
-                    break;
-                }
+            return 0;
+        }
+};
+
+class QMovePicker
+{
+    private:
+        Board *b;
+        U32 numChecks;
+        size_t moveIndex = 0;
+        std::vector<std::pair<U32, int> > scoredMoves = {};
+
+    public:
+        QMovePicker() {}
+
+        QMovePicker(Board* _b, U32 _numChecks)
+        {
+            b = _b;
+            numChecks = _numChecks;
+
+            if (numChecks == 0)
+            {
+                b->moveBuffer.clear();
+                b->generateCaptures(numChecks);
+                scoredMoves = b->orderQMoves();
+            }
+            else
+            {
+                b->moveBuffer.clear();
+                b->generateCaptures(numChecks);
+                b->generateQuiets(numChecks);
+                scoredMoves = b->orderQMovesInCheck();
+            }
+        }
+
+        U32 getNext()
+        {
+            while (moveIndex != scoredMoves.size())
+            {
+                return scoredMoves[moveIndex++].first;
             }
 
             return 0;
