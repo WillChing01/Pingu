@@ -375,7 +375,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             if (depth >= 3 && (alpha == (beta - 1)) && numMoves >= 3 && !inCheck)
             {
                 score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
-                if (score < alpha)
+                if (score <= alpha)
                 {
                     score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);
                 }
