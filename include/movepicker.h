@@ -41,9 +41,7 @@ enum moveType
     BAD_CAPTURES,
     QUIET_MOVES,
 
-    Q_MOVES,
-
-    END
+    Q_MOVES
 };
 
 class MovePicker
@@ -57,42 +55,7 @@ class MovePicker
         nodeType node;
 
         int killerIndex = 0;
-
-        void updateStage()
-        {
-            //generate and order moves on demand for the next stage.
-            switch(stage)
-            {
-                case HASH_MOVE:
-                    moveIndex = 0;
-                    stage = GOOD_CAPTURES;
-                    b->moveBuffer.clear();
-                    b->generateCaptures(numChecks);
-                    scoredMoves = b->orderCaptures();
-                    break;
-                case GOOD_CAPTURES:
-                    stage = KILLER_MOVES;
-                    break;
-                case KILLER_MOVES:
-                    stage = BAD_CAPTURES;
-                    break;
-                case BAD_CAPTURES:
-                    moveIndex = 0;
-                    stage = QUIET_MOVES;
-                    b->moveBuffer.clear();
-                    b->generateQuiets(numChecks);
-                    scoredMoves = b->orderQuiets();
-                    break;
-                case QUIET_MOVES:
-                    stage = END;
-                    break;
-                case Q_MOVES:
-                    stage = END;
-                    break;
-                case END:
-                    break;
-            }
-        }
+        int sizeLimit = 0;
 
     public:
         int moveIndex = 0;
@@ -126,6 +89,7 @@ class MovePicker
                 b->moveBuffer.clear();
                 b->generateCaptures(0);
                 scoredMoves = b->orderQMoves();
+                sizeLimit = scoredMoves.size();
             }
             else
             {
@@ -133,6 +97,7 @@ class MovePicker
                 b->generateCaptures(numChecks);
                 b->generateQuiets(numChecks);
                 scoredMoves = b->orderQMovesInCheck();
+                sizeLimit = scoredMoves.size();
             }
         }
 
@@ -141,83 +106,111 @@ class MovePicker
             //get the next move to be played.
             //return 0 if no moves left.
 
-            U32 move = 0;
-
             switch(stage)
             {
                 case HASH_MOVE:
                 {
-                    if (moveIndex == 1 || hashMove == 0) {updateStage(); return getNext();}
+                    while (moveIndex == 0 && hashMove != 0)
+                    {
+                        ++moveIndex;
 
-                    move = hashMove;
-                    ++moveIndex;
+                        bool isValid = validate::isValidMove(hashMove, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
+                        if (!isValid) {break;}
 
-                    bool isValid = validate::isValidMove(move, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
-                    if (!isValid) {return getNext();}
+                        U32 capturedPieceType = (hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                        U32 pieceType = (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                        U32 finishPieceType = (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
 
-                    U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
+                        bool isQuiet = (capturedPieceType == 15) && (pieceType == finishPieceType);
+                        if (isQuiet) {singleQuiets.insert(hashMove);}
 
-                    bool isQuiet = (capturedPieceType == 15) && (pieceType == finishPieceType);
-                    if (isQuiet) {singleQuiets.insert(move);}
+                        return hashMove;
+                    }
 
-                    break;
+                    moveIndex = 0;
+                    b->moveBuffer.clear();
+                    b->generateCaptures(numChecks);
+                    scoredMoves = b->orderCaptures();
+                    sizeLimit = scoredMoves.size();
+
+                    stage = GOOD_CAPTURES;
+                    [[fallthrough]];
                 }
                 case GOOD_CAPTURES:
                 {
-                    if (moveIndex == (int)scoredMoves.size()) {updateStage(); return getNext();}
-                    if (scoredMoves[moveIndex].second < 0) {updateStage(); return getNext();}
+                    while (moveIndex != sizeLimit && scoredMoves[moveIndex].second >= 0)
+                    {
+                        U32 move = scoredMoves[moveIndex++].first;
+                        if (move == hashMove) {continue;}
+                        return move;
+                    }
 
-                    move = scoredMoves[moveIndex++].first;
-                    if (move == hashMove) {return getNext();}
-
-                    break;
+                    stage = KILLER_MOVES;
+                    [[fallthrough]];
                 }
                 case KILLER_MOVES:
                 {
-                    if (killerIndex == 2) {updateStage(); return getNext();}
+                    while (killerIndex != 2)
+                    {
+                        U32 move = b->killer.killerMoves[ply][killerIndex++];
 
-                    move = b->killer.killerMoves[ply][killerIndex++];
-                    if (singleQuiets.contains(move)) {return getNext();}
+                        if (singleQuiets.contains(move)) {continue;}
 
-                    bool isValid = validate::isValidMove(move, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
-                    if (!isValid) {return getNext();}
+                        bool isValid = validate::isValidMove(move, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
+                        if (!isValid) {continue;}
 
-                    singleQuiets.insert(move);
+                        singleQuiets.insert(move);
+                        return move;
+                    }
 
-                    break;
+                    stage = BAD_CAPTURES;
+                    [[fallthrough]];
                 }
                 case BAD_CAPTURES:
                 {
-                    if (moveIndex == (int)scoredMoves.size()) {updateStage(); return getNext();}
+                    while (moveIndex != sizeLimit)
+                    {
+                        U32 move = scoredMoves[moveIndex++].first;
 
-                    move = scoredMoves[moveIndex++].first;
-                    if (move == hashMove) {return getNext();}
+                        if (move == hashMove) {continue;}
+                        return move;
+                    }
 
-                    break;
+                    moveIndex = 0;
+                    b->moveBuffer.clear();
+                    b->generateQuiets(numChecks);
+                    scoredMoves = b->orderQuiets();
+                    sizeLimit = scoredMoves.size();
+
+                    stage = QUIET_MOVES;
+                    [[fallthrough]];
                 }
                 case QUIET_MOVES:
                 {
-                    if (moveIndex == (int)scoredMoves.size()) {updateStage(); return getNext();}
+                    while (moveIndex != sizeLimit)
+                    {
+                        U32 move = scoredMoves[moveIndex++].first;
 
-                    move = scoredMoves[moveIndex++].first;
-                    if (singleQuiets.contains(move)) {return getNext();}
+                        if (singleQuiets.contains(move)) {continue;}
+                        return move;
+                    }
 
+                    return 0;
                     break;
                 }
                 case Q_MOVES:
                 {
-                    if (moveIndex == (int)scoredMoves.size()) {updateStage(); return getNext();}
+                    while (moveIndex != sizeLimit)
+                    {
+                        return scoredMoves[moveIndex++].first;
+                    }
 
-                    move = scoredMoves[moveIndex++].first;
+                    return 0;
                     break;
                 }
-                case END:
-                    break;
             }
 
-            return move;
+            return 0;
         }
 };
 
