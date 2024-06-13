@@ -27,12 +27,6 @@ Quiescence Node:
 #include "validate.h"
 #include "board.h"
 
-enum nodeType
-{
-    MAIN_NODE,
-    Q_NODE
-};
-
 enum moveType
 {
     HASH_MOVE,
@@ -49,20 +43,18 @@ class MovePicker
     private:
         Board* b;
         int ply;
-        int numChecks;
+        U32 numChecks;
         U32 hashMove = 0;
-
-        nodeType node;
 
         int killerIndex = 0;
 
     public:
-        int moveIndex = 0;
+        size_t moveIndex = 0;
         moveType stage;
         std::unordered_set<U32> singleQuiets = {};
         std::vector<std::pair<U32, int> > scoredMoves = {};
 
-        MovePicker(Board* _b, int _ply, int _numChecks, U32 _hashMove)
+        MovePicker(Board* _b, int _ply, U32 _numChecks, U32 _hashMove)
         {
             //initializer for main nodes.
             b = _b;
@@ -70,17 +62,15 @@ class MovePicker
             numChecks = _numChecks;
             hashMove = _hashMove;
 
-            node = MAIN_NODE;
             stage = HASH_MOVE;
         }
 
-        MovePicker(Board* _b, int _numChecks)
+        MovePicker(Board* _b, U32 _numChecks)
         {
             //initializer for q nodes.
             b = _b;
             numChecks = _numChecks;
 
-            node = Q_NODE;
             stage = Q_MOVES;
             
             if (numChecks == 0)
@@ -134,7 +124,7 @@ class MovePicker
                 }
                 case GOOD_CAPTURES:
                 {
-                    while (moveIndex != (int)scoredMoves.size() && scoredMoves[moveIndex].second >= 0)
+                    while (moveIndex != scoredMoves.size() && scoredMoves[moveIndex].second >= 0)
                     {
                         U32 move = scoredMoves[moveIndex++].first;
                         if (move == hashMove) {continue;}
@@ -164,7 +154,7 @@ class MovePicker
                 }
                 case BAD_CAPTURES:
                 {
-                    while (moveIndex != (int)scoredMoves.size())
+                    while (moveIndex != scoredMoves.size())
                     {
                         U32 move = scoredMoves[moveIndex++].first;
 
@@ -182,7 +172,7 @@ class MovePicker
                 }
                 case QUIET_MOVES:
                 {
-                    while (moveIndex != (int)scoredMoves.size())
+                    while (moveIndex != scoredMoves.size())
                     {
                         U32 move = scoredMoves[moveIndex++].first;
 
@@ -195,7 +185,7 @@ class MovePicker
                 }
                 case Q_MOVES:
                 {
-                    while (moveIndex != (int)scoredMoves.size())
+                    while (moveIndex != scoredMoves.size())
                     {
                         return scoredMoves[moveIndex++].first;
                     }
