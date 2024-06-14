@@ -33,11 +33,7 @@ enum moveType
     GOOD_CAPTURES = 1,
     KILLER_MOVES = 2,
     BAD_CAPTURES = 3,
-    QUIET_MOVES = 4,
-
-    Q_CAPTURES = 5,
-    Q_BAD_CAPTURES = 6,
-    Q_EVASIONS = 7
+    QUIET_MOVES = 4
 };
 
 class MovePicker
@@ -52,10 +48,9 @@ class MovePicker
 
     public:
         size_t moveIndex = 0;
-        int stage;
+        moveType stage;
         std::unordered_set<U32> singleQuiets = {};
         std::vector<std::pair<U32, int> > scoredMoves = {};
-        std::vector<std::pair<U32, int> > badCaptures = {};
 
         MovePicker(Board* _b, int _ply, U32 _numChecks, U32 _hashMove)
         {
@@ -99,31 +94,19 @@ class MovePicker
                     b->generateCaptures(numChecks);
                     scoredMoves = b->orderCaptures();
 
-                    ++stage;
+                    stage = GOOD_CAPTURES;
                     [[fallthrough]];
                 }
                 case GOOD_CAPTURES:
                 {
-                    while (moveIndex != scoredMoves.size())
+                    while (moveIndex != scoredMoves.size() && scoredMoves[moveIndex].second >= 0)
                     {
                         U32 move = scoredMoves[moveIndex++].first;
                         if (move == hashMove) {continue;}
-
-                        //check if see is necessary.
-                        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-
-                        bool mustCheck = (capturedPieceType == 15) || (pieceType >= _nQueens && seeValues[pieceType >> 1] > seeValues[capturedPieceType >> 1]);
-                        if (mustCheck)
-                        {
-                            int seeScore = b->see.evaluate(move);
-                            if (seeScore < 0) {badCaptures.push_back(std::pair<U32, int>(move, seeScore)); continue;}
-                        }
-
                         return move;
                     }
 
-                    ++stage;
+                    stage = KILLER_MOVES;
                     [[fallthrough]];
                 }
                 case KILLER_MOVES:
@@ -141,17 +124,14 @@ class MovePicker
                         return move;
                     }
 
-                    moveIndex = 0;
-                    std::sort(badCaptures.begin(), badCaptures.end(), [](auto &a, auto &b) {return a.second > b.second;});
-
-                    ++stage;
+                    stage = BAD_CAPTURES;
                     [[fallthrough]];
                 }
                 case BAD_CAPTURES:
                 {
-                    while (moveIndex != badCaptures.size())
+                    while (moveIndex != scoredMoves.size())
                     {
-                        U32 move = badCaptures[moveIndex++].first;
+                        U32 move = scoredMoves[moveIndex++].first;
 
                         if (move == hashMove) {continue;}
                         return move;
@@ -162,7 +142,7 @@ class MovePicker
                     b->generateQuiets(numChecks);
                     scoredMoves = b->orderQuiets();
 
-                    ++stage;
+                    stage = QUIET_MOVES;
                     [[fallthrough]];
                 }
                 case QUIET_MOVES:
@@ -190,9 +170,7 @@ class QMovePicker
         Board *b;
         U32 numChecks;
         size_t moveIndex = 0;
-        int stage = 0;
         std::vector<std::pair<U32, int> > scoredMoves = {};
-        std::vector<std::pair<U32, int> > badCaptures = {};
 
     public:
         QMovePicker() {}
@@ -202,73 +180,23 @@ class QMovePicker
             b = _b;
             numChecks = _numChecks;
 
-            stage = Q_CAPTURES;
-            b->moveBuffer.clear();
-            b->generateCaptures(numChecks);
-            scoredMoves = b->orderCaptures();
+            if (numChecks == 0)
+            {
+                b->moveBuffer.clear();
+                b->generateCaptures(numChecks);
+                scoredMoves = b->orderQMoves();
+            }
+            else
+            {
+                b->moveBuffer.clear();
+                b->generateCaptures(numChecks);
+                b->generateQuiets(numChecks);
+                scoredMoves = b->orderQMovesInCheck();
+            }
         }
 
         U32 getNext()
         {
-            switch(stage)
-            {
-                case Q_CAPTURES:
-                {
-                    while (moveIndex != scoredMoves.size())
-                    {
-                        U32 move = scoredMoves[moveIndex++].first;
-
-                        //check if see is necessary.
-                        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-
-                        bool mustCheck = (capturedPieceType == 15) || (pieceType >= _nQueens && seeValues[pieceType >> 1] > seeValues[capturedPieceType >> 1]);
-                        if (mustCheck)
-                        {
-                            int seeScore = b->see.evaluate(move);
-                            if (seeScore < 0)
-                            {
-                                if (numChecks > 0) {badCaptures.push_back(std::pair<U32, int>(move, seeScore));}
-                                continue;
-                            }
-                        }
-
-                        return move;
-                    }
-                    
-                    if (numChecks == 0) {return 0;}
-
-                    moveIndex = 0;
-                    std::sort(badCaptures.begin(), badCaptures.end(), [](auto &a, auto &b) {return a.second > b.second;});
-
-                    ++stage;
-                    [[fallthrough]];
-                }
-                case Q_BAD_CAPTURES:
-                {
-                    while (moveIndex != badCaptures.size())
-                    {
-                        return badCaptures[moveIndex++].first;
-                    }
-
-                    moveIndex = 0;
-                    b->moveBuffer.clear();
-                    b->generateQuiets(numChecks);
-                    scoredMoves = b->orderQuiets();
-
-                    ++stage;
-                    [[fallthrough]];
-                }
-                case Q_EVASIONS:
-                {
-                    while (moveIndex != scoredMoves.size())
-                    {
-                        return scoredMoves[moveIndex++].first;
-                    }
-                    return 0;
-                    break;
-                }
-            }
             while (moveIndex != scoredMoves.size())
             {
                 return scoredMoves[moveIndex++].first;
