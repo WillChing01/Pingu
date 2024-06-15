@@ -65,100 +65,87 @@ class MovePicker
 
         U32 getNext()
         {
-            //get the next move to be played.
-            //return 0 if no moves left.
+            static const void* stageLabels[5] = {
+                &&hash_move, &&good_captures, &&killer_moves, &&bad_captures, &&quiet_moves
+            };
 
-            switch(stage)
-            {
-                case HASH_MOVE:
+            goto *stageLabels[stage];
+
+            hash_move:
+                while (moveIndex == 0 && hashMove != 0)
                 {
-                    while (moveIndex == 0 && hashMove != 0)
-                    {
-                        ++moveIndex;
+                    ++moveIndex;
 
-                        bool isValid = validate::isValidMove(hashMove, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
-                        if (!isValid) {break;}
+                    bool isValid = validate::isValidMove(hashMove, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
+                    if (!isValid) {break;}
 
-                        U32 capturedPieceType = (hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                        U32 pieceType = (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                        U32 finishPieceType = (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
+                    U32 capturedPieceType = (hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+                    U32 pieceType = (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                    U32 finishPieceType = (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
 
-                        bool isQuiet = (capturedPieceType == 15) && (pieceType == finishPieceType);
-                        if (isQuiet) {singleQuiets.insert(hashMove);}
+                    bool isQuiet = (capturedPieceType == 15) && (pieceType == finishPieceType);
+                    if (isQuiet) {singleQuiets.insert(hashMove);}
 
-                        return hashMove;
-                    }
-
-                    moveIndex = 0;
-                    b->moveBuffer.clear();
-                    b->generateCaptures(numChecks);
-                    scoredMoves = b->orderCaptures();
-
-                    stage = GOOD_CAPTURES;
-                    [[fallthrough]];
+                    return hashMove;
                 }
-                case GOOD_CAPTURES:
+
+                moveIndex = 0;
+                b->moveBuffer.clear();
+                b->generateCaptures(numChecks);
+                scoredMoves = b->orderCaptures();
+
+                stage = GOOD_CAPTURES;
+
+            good_captures:
+                while (moveIndex != scoredMoves.size() && scoredMoves[moveIndex].second >= 0)
                 {
-                    while (moveIndex != scoredMoves.size() && scoredMoves[moveIndex].second >= 0)
-                    {
-                        U32 move = scoredMoves[moveIndex++].first;
-                        if (move == hashMove) {continue;}
-                        return move;
-                    }
-
-                    stage = KILLER_MOVES;
-                    [[fallthrough]];
+                    U32 move = scoredMoves[moveIndex++].first;
+                    if (move == hashMove) {continue;}
+                    return move;
                 }
-                case KILLER_MOVES:
+
+                stage = KILLER_MOVES;
+
+            killer_moves:
+                while (killerIndex != 2)
                 {
-                    while (killerIndex != 2)
-                    {
-                        U32 move = b->killer.killerMoves[ply][killerIndex++];
+                    U32 move = b->killer.killerMoves[ply][killerIndex++];
 
-                        if (singleQuiets.contains(move)) {continue;}
+                    if (singleQuiets.contains(move)) {continue;}
 
-                        bool isValid = validate::isValidMove(move, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
-                        if (!isValid) {continue;}
+                    bool isValid = validate::isValidMove(move, numChecks > 0, b->side, b->current, b->pieces, b->occupied);
+                    if (!isValid) {continue;}
 
-                        singleQuiets.insert(move);
-                        return move;
-                    }
-
-                    stage = BAD_CAPTURES;
-                    [[fallthrough]];
+                    singleQuiets.insert(move);
+                    return move;
                 }
-                case BAD_CAPTURES:
+
+                stage = BAD_CAPTURES;
+
+            bad_captures:
+                while (moveIndex != scoredMoves.size())
                 {
-                    while (moveIndex != scoredMoves.size())
-                    {
-                        U32 move = scoredMoves[moveIndex++].first;
+                    U32 move = scoredMoves[moveIndex++].first;
 
-                        if (move == hashMove) {continue;}
-                        return move;
-                    }
-
-                    moveIndex = 0;
-                    b->moveBuffer.clear();
-                    b->generateQuiets(numChecks);
-                    scoredMoves = b->orderQuiets();
-
-                    stage = QUIET_MOVES;
-                    [[fallthrough]];
+                    if (move == hashMove) {continue;}
+                    return move;
                 }
-                case QUIET_MOVES:
+
+                moveIndex = 0;
+                b->moveBuffer.clear();
+                b->generateQuiets(numChecks);
+                scoredMoves = b->orderQuiets();
+
+                stage = QUIET_MOVES;
+
+            quiet_moves:
+                while (moveIndex != scoredMoves.size())
                 {
-                    while (moveIndex != scoredMoves.size())
-                    {
-                        U32 move = scoredMoves[moveIndex++].first;
+                    U32 move = scoredMoves[moveIndex++].first;
 
-                        if (singleQuiets.contains(move)) {continue;}
-                        return move;
-                    }
-
-                    return 0;
-                    break;
+                    if (singleQuiets.contains(move)) {continue;}
+                    return move;
                 }
-            }
 
             return 0;
         }
