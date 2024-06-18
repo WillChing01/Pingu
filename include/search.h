@@ -13,6 +13,7 @@
 #include "format.h"
 #include "board.h"
 #include "validate.h"
+#include "movepicker.h"
 
 const int maximumPruningDepth = 8;
 
@@ -99,7 +100,7 @@ inline bool checkTime()
     else {return true;}
 }
 
-inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
+inline int alphaBetaQuiescence(Board &b, int ply, int qply, int alpha, int beta)
 {
     //check time.
     totalNodes++;
@@ -110,38 +111,27 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
 
     bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
-
     int bestScore = -MATE_SCORE + ply;
 
+    //stand pat.
     if (!inCheck)
     {
-        //do stand-pat check.
         bestScore = b.evaluateBoard();
         if (bestScore > alpha)
         {
             if (bestScore >= beta) {return bestScore;}
             alpha = bestScore;
         }
-
-        //generate regular tactical moves.
-        b.moveBuffer.clear();
-        b.generateCaptures(0);
-    }
-    else
-    {
-        //generate check evasion.
-        U32 numChecks = util::isInCheckDetailed(b.side, b.pieces, b.occupied);
-        b.moveBuffer.clear();
-        b.generateCaptures(numChecks);
-        b.generateQuiets(numChecks);
     }
 
-    std::vector<std::pair<U32,int> > moveCache = inCheck ? b.orderQMovesInCheck() : b.orderQMoves();
+    U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
+    QMovePicker movePicker(&b, qply, numChecks);
 
-    for (const auto &[move,moveScore]: moveCache)
+    //loop through moves and search them.
+    while (U32 move = movePicker.getNext())
     {
         b.makeMove(move);
-        int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
+        int score = -alphaBetaQuiescence(b, ply+1, qply+1, -beta, -alpha);
         b.unmakeMove();
 
         if (score > bestScore)
@@ -188,7 +178,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //qSearch at horizon.
-    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
+    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, 0, alpha, beta);}
 
     //main search.
     bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
@@ -205,9 +195,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         if (staticEval - margin >= beta) {return beta;}
     }
 
-    if (hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
-
     //null move pruning.
+    if (hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
     if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
         (b.occupied[b.side] ^ b.pieces[_nKing+b.side] ^ b.pieces[_nPawns+b.side]))
     {
@@ -219,258 +208,100 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         if (nullScore >= beta) {return beta;}
     }
 
-    //setup scoring variables.
-    int score; bool isExact = false;
-    int bestScore = -MATE_SCORE; U32 bestMove = 0;
-    int numMoves = 0;
-
-    std::unordered_set<U32> singleQuiets;
-
-    //try hash move.
-    if (hashHit && validate::isValidMove(hashMove, inCheck, b.side, b.current, b.pieces, b.occupied))
-    {
-        b.makeMove(hashMove);
-        bestScore = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
-        b.unmakeMove();
-        numMoves++;
-
-        if (bestScore >= beta)
-        {
-            //beta cutoff.
-            bool isQuiet = (hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET == 15 &&
-            (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET == (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-            if (isQuiet)
-            {
-                b.killer.update(hashMove, ply);
-                if (depth >= 5) {b.history.update(singleQuiets, hashMove, depth);}
-            }
-
-            //update transposition table.
-            if (!isSearchAborted) {ttSave(bHash, ply, depth, hashMove, bestScore, false, true);}
-            return bestScore;
-        }
-        if (bestScore > alpha) {alpha = bestScore; isExact = true;}
-        bestMove = hashMove;
-        bool isQuiet = (hashMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET == 15 &&
-        (hashMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET == (hashMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-        if (isQuiet) {singleQuiets.insert(hashMove);}
-    }
-
     //internal iterative reduction on hash miss.
     if (!hashHit && depth > 3) {depth--;}
 
-    //get number of checks for move-gen.
-    U32 numChecks = 0;
-    if (inCheck) {numChecks = util::isInCheckDetailed(b.side, b.pieces, b.occupied);}
+    //setup scoring variables.
+    int score = 0; bool isExact = false;
+    int bestScore = -MATE_SCORE; U32 bestMove = 0;
+    int movesPlayed = 0; int quietsPlayed = 0;
+    U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
 
-    //generate tactical moves and play them.
-    b.moveBuffer.clear();
-    b.generateCaptures(numChecks);
-    std::vector<std::pair<U32,int> > moveCache = b.orderCaptures();
-
-    //good captures and promotions.
-    U32 move;
-    int ind = moveCache.size();
-    for (int i=0;i<(int)(moveCache.size());i++)
-    {
-        move = moveCache[i].first;
-        //check that capture is not hash move.
-        if (hashHit && (move == hashMove)) {continue;}
-        //exit when we get to bad captures.
-        if (moveCache[i].second < 0) {ind = i; break;}
-
-        b.makeMove(move);
-        if (depth >= 2 && numMoves > 0)
-        {
-            //PV search.
-            score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
-            if (score > alpha && score < beta)
-            {
-                //full window re-search.
-                score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
-            }
-        }
-        else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
-        b.unmakeMove();
-        numMoves++;
-
-        if (score > bestScore)
-        {
-            if (score >= beta)
-            {
-                //beta cutoff.
-                //update transposition table.
-                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
-                return score;
-            }
-            if (score > alpha) {alpha = score; isExact = true;}
-            bestScore = score;
-            bestMove = move;
-        }
-    }
-
-    //try killers.
-    for (int i=0;i<2;i++)
-    {
-        move = b.killer.killerMoves[ply][i];
-        //check if move was played before.
-        if (singleQuiets.contains(move)) {continue;}
-        //check if killer is valid.
-        if (!validate::isValidMove(move, inCheck, b.side, b.current, b.pieces, b.occupied)) {continue;}
-
-        b.makeMove(move);
-        if (depth >= 2 && numMoves > 0)
-        {
-            //late move reductions (non pv nodes).
-            if (depth >= 3 && (alpha == (beta - 1)) && numMoves >= 3 && !inCheck)
-            {
-                score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);
-            }
-            else {score = alpha + 1;}
-
-            //PV search.
-            //if lmr above alpha then research at original depth.
-            if (score > alpha)
-            {
-                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
-                if (score > alpha && score < beta)
-                {
-                    score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
-                }
-            }
-        }
-        else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
-        b.unmakeMove();
-        numMoves++;
-
-        if (score > bestScore)
-        {
-            if (score >= beta)
-            {
-                //beta cutoff.
-                b.killer.update(move, ply);
-                if (depth >= 5) {b.history.update(singleQuiets, move, depth);}
-
-                //update transposition table.
-                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
-                return score;
-            }
-            if (score > alpha) {alpha = score; isExact = true;}
-            bestScore = score;
-            bestMove = move;
-        }
-        singleQuiets.insert(move);
-    }
-
-    //bad captures.
-    for (int i=ind;i<(int)(moveCache.size());i++)
-    {
-        move = moveCache[i].first;
-        //check that capture is not hash move.
-        if (hashHit && (move == hashMove)) {continue;}
-
-        b.makeMove(move);
-        if (depth >= 2 && numMoves > 0)
-        {
-            if (depth >= 3 && (alpha == (beta - 1)) && numMoves >= 3 && !inCheck)
-            {
-                score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
-                if (score <= alpha)
-                {
-                    score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);
-                }
-            }
-            else {score = alpha + 1;}
-
-            //PV search.
-            if (score > alpha)
-            {
-                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
-                if (score > alpha && score < beta)
-                {
-                    //full window re-search.
-                    score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
-                }
-            }
-        }
-        else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
-        b.unmakeMove();
-        numMoves++;
-
-        if (score > bestScore)
-        {
-            if (score >= beta)
-            {
-                //beta cutoff.
-                //update transposition table.
-                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
-                return score;
-            }
-            if (score > alpha) {alpha = score; isExact = true;}
-            bestScore = score;
-            bestMove = move;
-        }
-    }
-
-    //generate quiets and try them.
-    b.moveBuffer.clear();
-    b.generateQuiets(numChecks);
-    moveCache = b.orderQuiets();
-
-    int numQuiets = 0;
+    MovePicker movePicker = MovePicker(&b, ply, numChecks, hashMove);
 
     bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
 
     bool canFutilityPrune = canPrune && depth <= futilityDepthLimit &&
                             staticEval + futilityMargins[depth-1] <= alpha;
 
-    for (int i=0;i<(int)(moveCache.size());i++)
+    //loop through moves and search them.
+    while (U32 move = movePicker.getNext())
     {
         //late move pruning.
-        if (canLateMovePrune && numQuiets > lateMovePruningMargins[depth-1]) {break;}
-
-        move = moveCache[i].first;
-
-        if (singleQuiets.contains(move)) {continue;}
+        if (canLateMovePrune && quietsPlayed > lateMovePruningMargins[depth-1]) {break;}
 
         //futility pruning.
-        if (canFutilityPrune && numMoves > 0 && !b.isCheckingMove(move)) {continue;}
+        if (canFutilityPrune && movesPlayed > 0 && movePicker.stage == QUIET_MOVES && !b.isCheckingMove(move)) {continue;}
 
-        b.makeMove(move);
-        if (depth >= 2 && numMoves > 0)
+        //late move reductions.
+        int reduction = 0;
+        bool canLateMoveReduce = !inCheck && alpha == beta-1;
+        switch(movePicker.stage)
         {
-            //late move reductions (non pv nodes).
-            int LMR = int(0.5 * std::log((double)depth) * std::log((double)(numMoves+1)));
-            if (LMR && (alpha == (beta - 1)) && !inCheck)
+            case HASH_MOVE:
+                break;
+            case GOOD_CAPTURES:
+                break;
+            case KILLER_MOVES:
+                if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3) {reduction = 1;}
+                break;
+            case BAD_CAPTURES:
+                // if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
+                // {
+                //     b.makeMove(move);
+                //     score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
+                //     b.unmakeMove();
+                //     if (score <= alpha) {reduction = 1;}
+                // }
+                break;
+            case QUIET_MOVES:
+                if (canLateMoveReduce && movesPlayed > 0) {reduction = int(0.5 * std::log((double)depth) * std::log((double)(movesPlayed+1)));}
+                break;
+        }
+
+        //search with PVS. Research if reductions do not fail low.
+        b.makeMove(move);
+        if (depth >= 2 && movesPlayed > 0)
+        {
+            if (reduction > 0) {score = -alphaBeta(b, -beta, -alpha, depth-1-reduction, ply+1, true);}
+            else if (movePicker.stage == BAD_CAPTURES && canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
             {
-                score = -alphaBeta(b, -beta, -alpha, depth-1-LMR, ply+1, true);
+                score = -alphaBetaQuiescence(b, ply+1, 0, -beta, -alpha);
+                if (score < alpha) {score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);}
             }
             else {score = alpha + 1;}
 
-            //PV search.
-            //if lmr above alpha then research at original depth.
             if (score > alpha)
             {
                 score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
-                if (score > alpha && score < beta)
-                {
-                    score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);
-                }
+                if (score > alpha && score < beta) {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
             }
         }
         else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
         b.unmakeMove();
-        numMoves++; numQuiets++;
+        ++movesPlayed;
+        if (movePicker.stage == QUIET_MOVES) {++quietsPlayed;}
 
+        //update scores.
         if (score > bestScore)
         {
             if (score >= beta)
             {
-                //beta cutoff.
-                b.killer.update(move, ply);
-                if (depth >= 5) {b.history.update(singleQuiets, moveCache, i, move, depth);}
+                bool isQuiet = movePicker.stage == QUIET_MOVES || movePicker.singleQuiets.contains(move);
+                if (isQuiet)
+                {
+                    //update killers.
+                    b.killer.update(move, ply);
 
-                //update transposition table.
+                    //update history.
+                    if (depth >= 5)
+                    {
+                        if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);}
+                        else {b.history.update(movePicker.singleQuiets, move, depth);}
+                    }
+                }
+
+                //update tt.
                 if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
                 return score;
             }
@@ -481,9 +312,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //stalemate or checkmate.
-    if (numMoves == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
+    if (movesPlayed == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
 
-    //update transposition table.
     if (!isSearchAborted) {ttSave(bHash, ply, depth, bestMove, bestScore, isExact, false);}
     return bestScore;
 }
