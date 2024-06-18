@@ -50,7 +50,6 @@ class MovePicker
         size_t moveIndex = 0;
         moveType stage;
         std::unordered_set<U32> singleQuiets = {};
-        std::vector<std::pair<U32, int> > scoredMoves = {};
 
         MovePicker(Board* _b, int _ply, U32 _numChecks, U32 _hashMove)
         {
@@ -92,14 +91,14 @@ class MovePicker
                 moveIndex = 0;
                 b->moveBuffer.clear();
                 b->generateCaptures(numChecks);
-                scoredMoves = b->orderCaptures();
+                b->orderCaptures(ply);
 
                 stage = GOOD_CAPTURES;
 
             good_captures:
-                while (moveIndex != scoredMoves.size() && scoredMoves[moveIndex].second >= 0)
+                while (moveIndex != b->moveCache[ply].size() && b->moveCache[ply][moveIndex].second >= 0)
                 {
-                    U32 move = scoredMoves[moveIndex++].first;
+                    U32 move = b->moveCache[ply][moveIndex++].first;
                     if (move == hashMove) {continue;}
                     return move;
                 }
@@ -123,9 +122,9 @@ class MovePicker
                 stage = BAD_CAPTURES;
 
             bad_captures:
-                while (moveIndex != scoredMoves.size())
+                while (moveIndex != b->moveCache[ply].size())
                 {
-                    U32 move = scoredMoves[moveIndex++].first;
+                    U32 move = b->moveCache[ply][moveIndex++].first;
 
                     if (move == hashMove) {continue;}
                     return move;
@@ -134,14 +133,14 @@ class MovePicker
                 moveIndex = 0;
                 b->moveBuffer.clear();
                 b->generateQuiets(numChecks);
-                scoredMoves = b->orderQuiets();
+                b->orderQuiets(ply);
 
                 stage = QUIET_MOVES;
 
             quiet_moves:
-                while (moveIndex != scoredMoves.size())
+                while (moveIndex != b->moveCache[ply].size())
                 {
-                    U32 move = scoredMoves[moveIndex++].first;
+                    U32 move = b->moveCache[ply][moveIndex++].first;
 
                     if (singleQuiets.contains(move)) {continue;}
                     return move;
@@ -156,37 +155,38 @@ class QMovePicker
     private:
         Board *b;
         U32 numChecks;
+        int qply;
         size_t moveIndex = 0;
-        std::vector<std::pair<U32, int> > scoredMoves = {};
 
     public:
         QMovePicker() {}
 
-        QMovePicker(Board* _b, U32 _numChecks)
+        QMovePicker(Board* _b, int _qply, U32 _numChecks)
         {
             b = _b;
+            qply = _qply;
             numChecks = _numChecks;
 
             if (numChecks == 0)
             {
                 b->moveBuffer.clear();
                 b->generateCaptures(numChecks);
-                scoredMoves = b->orderQMoves();
+                b->orderQMoves(qply);
             }
             else
             {
                 b->moveBuffer.clear();
                 b->generateCaptures(numChecks);
                 b->generateQuiets(numChecks);
-                scoredMoves = b->orderQMovesInCheck();
+                b->orderQMovesInCheck(qply);
             }
         }
 
         U32 getNext()
         {
-            while (moveIndex != scoredMoves.size())
+            while (moveIndex != b->qMoveCache[qply].size())
             {
-                return scoredMoves[moveIndex++].first;
+                return b->qMoveCache[qply][moveIndex++].first;
             }
 
             return 0;

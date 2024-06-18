@@ -100,7 +100,7 @@ inline bool checkTime()
     else {return true;}
 }
 
-inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
+inline int alphaBetaQuiescence(Board &b, int ply, int qply, int alpha, int beta)
 {
     //check time.
     totalNodes++;
@@ -125,13 +125,13 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     }
 
     U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
-    QMovePicker movePicker(&b, numChecks);
+    QMovePicker movePicker(&b, qply, numChecks);
 
     //loop through moves and search them.
     while (U32 move = movePicker.getNext())
     {
         b.makeMove(move);
-        int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
+        int score = -alphaBetaQuiescence(b, ply+1, qply+1, -beta, -alpha);
         b.unmakeMove();
 
         if (score > bestScore)
@@ -178,7 +178,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //qSearch at horizon.
-    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
+    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, 0, alpha, beta);}
 
     //main search.
     bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
@@ -238,6 +238,10 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         bool canLateMoveReduce = !inCheck && alpha == beta-1;
         switch(movePicker.stage)
         {
+            case HASH_MOVE:
+                break;
+            case GOOD_CAPTURES:
+                break;
             case KILLER_MOVES:
                 if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3) {reduction = 1;}
                 break;
@@ -253,8 +257,6 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             case QUIET_MOVES:
                 if (canLateMoveReduce && movesPlayed > 0) {reduction = int(0.5 * std::log((double)depth) * std::log((double)(movesPlayed+1)));}
                 break;
-            default:
-                break;
         }
 
         //search with PVS. Research if reductions do not fail low.
@@ -264,7 +266,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             if (reduction > 0) {score = -alphaBeta(b, -beta, -alpha, depth-1-reduction, ply+1, true);}
             else if (movePicker.stage == BAD_CAPTURES && canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
             {
-                score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
+                score = -alphaBetaQuiescence(b, ply+1, 0, -beta, -alpha);
                 if (score < alpha) {score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);}
             }
             else {score = alpha + 1;}
@@ -294,7 +296,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
                     //update history.
                     if (depth >= 5)
                     {
-                        if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, movePicker.scoredMoves, movePicker.moveIndex - 1, move, depth);}
+                        if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);}
                         else {b.history.update(movePicker.singleQuiets, move, depth);}
                     }
                 }

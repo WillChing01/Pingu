@@ -42,7 +42,8 @@ class Board {
         std::vector<int> irrevMoveInd;
 
         std::vector<U32> moveBuffer;
-        std::vector<std::pair<U32,int> > scoredMoves;
+        std::vector<std::pair<U32, int> > qMoveCache[32] = {};
+        std::vector<std::pair<U32, int> > moveCache[MAXDEPTH+1] = {};
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -972,10 +973,10 @@ class Board {
             return nnue.forward() * (1-2*(int)(side));
         }
 
-        std::vector<std::pair<U32,int> > orderCaptures()
+        void orderCaptures(int ply)
         {
             //order captures/promotions.
-            scoredMoves.clear();
+            moveCache[ply].clear();
 
             for (const auto &move: moveBuffer)
             {
@@ -989,18 +990,17 @@ class Board {
                     if (seeCheck < 0) {score = seeCheck;}
                 }
 
-                scoredMoves.push_back(std::pair<U32, int>(move, score));
+                moveCache[ply].push_back(std::pair<U32, int>(move, score));
             }
 
             //sort the moves.
-            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-            return scoredMoves;
+            std::sort(moveCache[ply].begin(), moveCache[ply].end(), [](auto &a, auto &b) {return a.second > b.second;});
         }
 
-        std::vector<std::pair<U32,int> > orderQuiets()
+        void orderQuiets(int ply)
         {
             //order quiet moves by history.
-            scoredMoves.clear();
+            moveCache[ply].clear();
 
             for (const auto &move: moveBuffer)
             {
@@ -1016,17 +1016,16 @@ class Board {
                 {
                     moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare ^ 56] - PIECE_TABLES_START[pieceType >> 1][startSquare ^ 56];
                 }
-                scoredMoves.push_back(std::pair<U32,int>(move, moveScore));
+                moveCache[ply].push_back(std::pair<U32, int>(move, moveScore));
             }
 
             //sort the moves.
-            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-            return scoredMoves;
+            std::sort(moveCache[ply].begin(), moveCache[ply].end(), [](auto &a, auto &b) {return a.second > b.second;});
         }
 
-        std::vector<std::pair<U32, int> > orderQMoves()
+        void orderQMoves(int qply)
         {
-            scoredMoves.clear();
+            qMoveCache[qply].clear();
 
             for (const auto &move: moveBuffer)
             {
@@ -1036,18 +1035,17 @@ class Board {
                 if (pieceType >= capturedPieceType || pieceType < _nQueens || see.evaluate(move) >= 0)
                 {
                     int score = 16 * (15 - capturedPieceType) + pieceType;
-                    scoredMoves.push_back(std::pair<U32, int>(move, score));
+                    qMoveCache[qply].push_back(std::pair<U32, int>(move, score));
                 }
             }
 
             //sort the moves.
-            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-            return scoredMoves;
+            std::sort(qMoveCache[qply].begin(), qMoveCache[qply].end(), [](auto &a, auto &b) {return a.second > b.second;});
         }
 
-        std::vector<std::pair<U32,int> > orderQMovesInCheck()
+        void orderQMovesInCheck(int qply)
         {
-            scoredMoves.clear();
+            qMoveCache[qply].clear();
 
             for (const auto &move: moveBuffer)
             {
@@ -1057,18 +1055,17 @@ class Board {
                 if (capturedPieceType != 15 || pieceType != finishPieceType)
                 {
                     int score = see.evaluate(move);
-                    scoredMoves.push_back(std::pair<U32,int>(move, score));
+                    qMoveCache[qply].push_back(std::pair<U32, int>(move, score));
                 }
                 else
                 {
                     //non-capture moves.
-                    scoredMoves.push_back(std::pair<U32,int>(move, 0));
+                    qMoveCache[qply].push_back(std::pair<U32, int>(move, 0));
                 }
             }
 
             //sort the moves.
-            sort(scoredMoves.begin(), scoredMoves.end(), [](auto &a, auto &b) {return a.second > b.second;});
-            return scoredMoves;
+            std::sort(qMoveCache[qply].begin(), qMoveCache[qply].end(), [](auto &a, auto &b) {return a.second > b.second;});
         }
 };
 
