@@ -233,6 +233,9 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         //futility pruning.
         if (canFutilityPrune && movesPlayed > 0 && movePicker.stage == QUIET_MOVES && !b.isCheckingMove(move)) {continue;}
 
+        //search with PVS. Research if reductions do not fail low.
+        b.makeMove(move);
+
         //late move reductions.
         int reduction = 0;
         bool canLateMoveReduce = !inCheck && alpha == beta-1;
@@ -246,23 +249,20 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
                 if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3) {reduction = 1;}
                 break;
             case BAD_CAPTURES:
+                if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
+                {
+                    score = -alphaBetaQuiescence(b, ply+1, 0, -beta, -alpha);
+                    if (score <= alpha) {reduction = 1;}
+                }
                 break;
             case QUIET_MOVES:
                 if (canLateMoveReduce && movesPlayed > 0) {reduction = int(0.5 * std::log((double)depth) * std::log((double)(movesPlayed+1)));}
                 break;
         }
 
-        //search with PVS. Research if reductions do not fail low.
-        b.makeMove(move);
         if (depth >= 2 && movesPlayed > 0)
         {
             if (reduction > 0) {score = -alphaBeta(b, -beta, -alpha, depth-1-reduction, ply+1, true);}
-            else if (movePicker.stage == BAD_CAPTURES && canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
-            {
-                score = -alphaBetaQuiescence(b, ply+1, 0, -beta, -alpha);
-                if (score <= alpha) {score = -alphaBeta(b, -beta, -alpha, depth-2, ply+1, true);}
-                else {score = alpha + 1;}
-            }
             else {score = alpha + 1;}
 
             if (score > alpha)
