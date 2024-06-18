@@ -45,15 +45,10 @@ class History
             {
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                 U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                scores[pieceType][finishSquare] -= delta;
-                if (scores[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
+                if (move == cutMove) {scores[pieceType][finishSquare] += delta;}
+                else {scores[pieceType][finishSquare] -= delta;}
+                if (scores[pieceType][finishSquare] < -HISTORY_MAX || scores[pieceType][finishSquare] > HISTORY_MAX) {shouldAge = true;}
             }
-
-            //increment history for cut move.
-            U32 pieceType = (cutMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-            U32 finishSquare = (cutMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-            scores[pieceType][finishSquare] += delta;
-            if (scores[pieceType][finishSquare] > HISTORY_MAX) {shouldAge = true;}
 
             //age history if necessary.
             if (shouldAge) {age();}
