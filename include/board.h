@@ -42,7 +42,7 @@ class Board {
         std::vector<int> irrevMoveInd;
 
         std::vector<U32> moveBuffer;
-        std::vector<std::pair<U32, int> > qMoveCache[32] = {};
+        std::vector<std::pair<U32, int> > qMoveCache[64] = {};
         std::vector<std::pair<U32, int> > moveCache[MAXDEPTH+1] = {};
 
         gameState current = {
