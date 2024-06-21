@@ -36,6 +36,13 @@ enum moveType
     QUIET_MOVES = 4
 };
 
+enum qMoveType
+{
+    Q_CAPTURES = 0,
+    Q_BAD_CAPTURES = 1,
+    Q_EVASIONS = 2
+};
+
 class MovePicker
 {
     private:
@@ -176,39 +183,84 @@ class QMovePicker
     private:
         Board *b;
         U32 numChecks;
-        int qply;
+        int ply;
         size_t moveIndex = 0;
+        qMoveType stage;
 
     public:
         QMovePicker() {}
 
-        QMovePicker(Board* _b, int _qply, U32 _numChecks)
+        QMovePicker(Board* _b, int _ply, U32 _numChecks)
         {
             b = _b;
-            qply = _qply;
+            ply = _ply;
             numChecks = _numChecks;
 
-            if (numChecks == 0)
-            {
-                b->moveBuffer.clear();
-                b->generateCaptures(numChecks);
-                b->orderQMoves(qply);
-            }
-            else
-            {
-                b->moveBuffer.clear();
-                b->generateCaptures(numChecks);
-                b->generateQuiets(numChecks);
-                b->orderQMovesInCheck(qply);
-            }
+            stage = Q_CAPTURES;
+
+            b->moveBuffer.clear();
+            b->generateCaptures(numChecks);
+            b->orderCaptures(ply);
+            b->badCaptures[ply].clear();
         }
 
         U32 getNext()
         {
-            while (moveIndex != b->qMoveCache[qply].size())
-            {
-                return b->qMoveCache[qply][moveIndex++].first;
-            }
+            static const void* stageLabels[5] = {
+                &&q_captures, &&q_bad_captures, &&q_evasions
+            };
+
+            goto *stageLabels[stage];
+
+            q_captures:
+                while (moveIndex != b->moveCache[ply].size())
+                {
+                    U32 move = b->moveCache[ply][moveIndex++].first;
+                    
+                    //check if we perform SEE.
+                    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                    U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+
+                    bool shouldCheck = (capturedPieceType == 15) || (pieceType >= _nQueens && seeValues[pieceType >> 1] > seeValues[capturedPieceType >> 1]);
+
+                    if (shouldCheck)
+                    {
+                        int seeScore = b->see.evaluate(move);
+                        if (seeScore < 0)
+                        {
+                            if (numChecks > 0) {b->badCaptures[ply].push_back(std::pair<U32, int>(move, seeScore));}
+                            continue;
+                        }
+                    }
+
+                    return move;
+                }
+
+                if (numChecks == 0) {return 0;}
+
+                moveIndex = 0;
+                std::sort(b->badCaptures[ply].begin(), b->badCaptures[ply].end(), [](auto &a, auto &b) {return a.second > b.second;});
+
+                stage = Q_BAD_CAPTURES;
+
+            q_bad_captures:
+                while (moveIndex != b->badCaptures[ply].size())
+                {
+                    return b->badCaptures[ply][moveIndex++].first;
+                }
+
+                moveIndex = 0;
+                b->moveBuffer.clear();
+                b->generateQuiets(numChecks);
+                b->orderQuiets(ply);
+
+                stage = Q_EVASIONS;
+
+            q_evasions:
+                while (moveIndex != b->moveCache[ply].size())
+                {
+                    return b->moveCache[ply][moveIndex++].first;
+                }
 
             return 0;
         }

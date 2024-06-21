@@ -42,10 +42,8 @@ class Board {
         std::vector<int> irrevMoveInd;
 
         std::vector<U32> moveBuffer;
-        std::vector<std::pair<U32, int> > qMoveCache[64] = {};
-        std::vector<std::pair<U32, int> > qBadCaptures[64] = {};
-        std::vector<std::pair<U32, int> > moveCache[MAXDEPTH+1] = {};
-        std::vector<std::pair<U32, int> > badCaptures[MAXDEPTH+1] = {};
+        std::vector<std::pair<U32, int> > moveCache[MAXDEPTH+1+64] = {};
+        std::vector<std::pair<U32, int> > badCaptures[MAXDEPTH+1+64] = {};
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -1020,51 +1018,6 @@ class Board {
 
             //sort the moves.
             std::sort(moveCache[ply].begin(), moveCache[ply].end(), [](auto &a, auto &b) {return a.second > b.second;});
-        }
-
-        void orderQMoves(int qply)
-        {
-            qMoveCache[qply].clear();
-
-            for (const auto &move: moveBuffer)
-            {
-                U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-
-                if (pieceType >= capturedPieceType || pieceType < _nQueens || see.evaluate(move) >= 0)
-                {
-                    int score = 16 * (15 - capturedPieceType) + pieceType;
-                    qMoveCache[qply].push_back(std::pair<U32, int>(move, score));
-                }
-            }
-
-            //sort the moves.
-            std::sort(qMoveCache[qply].begin(), qMoveCache[qply].end(), [](auto &a, auto &b) {return a.second > b.second;});
-        }
-
-        void orderQMovesInCheck(int qply)
-        {
-            qMoveCache[qply].clear();
-
-            for (const auto &move: moveBuffer)
-            {
-                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
-                U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-                if (capturedPieceType != 15 || pieceType != finishPieceType)
-                {
-                    int score = see.evaluate(move);
-                    qMoveCache[qply].push_back(std::pair<U32, int>(move, score));
-                }
-                else
-                {
-                    //non-capture moves.
-                    qMoveCache[qply].push_back(std::pair<U32, int>(move, 0));
-                }
-            }
-
-            //sort the moves.
-            std::sort(qMoveCache[qply].begin(), qMoveCache[qply].end(), [](auto &a, auto &b) {return a.second > b.second;});
         }
 };
 
