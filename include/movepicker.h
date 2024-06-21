@@ -109,13 +109,7 @@ class MovePicker
                     U32 move = b->moveCache[ply][moveIndex++].first;
                     if (move == hashMove) {continue;}
 
-                    //check if we perform SEE.
-                    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-
-                    bool shouldCheck = (capturedPieceType == 15) || (pieceType >= _nQueens && seeValues[pieceType >> 1] > seeValues[capturedPieceType >> 1]);
-
-                    if (shouldCheck)
+                    if (shouldCheckSEE(move))
                     {
                         int seeScore = b->see.evaluate(move);
                         if (seeScore < 0)
@@ -216,14 +210,8 @@ class QMovePicker
                 while (moveIndex != b->moveCache[ply].size())
                 {
                     U32 move = b->moveCache[ply][moveIndex++].first;
-                    
-                    //check if we perform SEE.
-                    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
 
-                    bool shouldCheck = (capturedPieceType == 15) || (pieceType >= _nQueens && seeValues[pieceType >> 1] > seeValues[capturedPieceType >> 1]);
-
-                    if (shouldCheck)
+                    if (shouldCheckSEE(move))
                     {
                         int seeScore = b->see.evaluate(move);
                         if (seeScore < 0)

@@ -19,6 +19,14 @@ const std::array<int,6> seeValues =
     100,
 }};
 
+inline bool shouldCheckSEE(const U32 move)
+{
+    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+    U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+
+    return (capturedPieceType == 15) || (pieceType >= _nQueens && seeValues[pieceType >> 1] > seeValues[capturedPieceType >> 1]);
+}
+
 class SEE
 {
     private:
