@@ -92,14 +92,32 @@ class MovePicker
                 b->moveBuffer.clear();
                 b->generateCaptures(numChecks);
                 b->orderCaptures(ply);
+                b->badCaptures[ply].clear();
 
                 stage = GOOD_CAPTURES;
 
             good_captures:
-                while (moveIndex != b->moveCache[ply].size() && b->moveCache[ply][moveIndex].second >= 0)
+                while (moveIndex != b->moveCache[ply].size())
                 {
                     U32 move = b->moveCache[ply][moveIndex++].first;
                     if (move == hashMove) {continue;}
+
+                    //check if we perform SEE.
+                    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                    U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+
+                    bool shouldCheck = (capturedPieceType == 15) || (pieceType >= _nQueens && seeValues[pieceType >> 1] > seeValues[capturedPieceType >> 1]);
+
+                    if (shouldCheck)
+                    {
+                        int seeScore = b->see.evaluate(move);
+                        if (seeScore < 0)
+                        {
+                            b->badCaptures[ply].push_back(std::pair<U32, int>(move, seeScore));
+                            continue;
+                        }
+                    }
+
                     return move;
                 }
 
@@ -119,14 +137,17 @@ class MovePicker
                     return move;
                 }
 
+                moveIndex = 0;
+                std::sort(b->badCaptures[ply].begin(), b->badCaptures[ply].end(), [](auto &a, auto &b) {return a.second > b.second;});
+
                 stage = BAD_CAPTURES;
 
             bad_captures:
-                while (moveIndex != b->moveCache[ply].size())
+                while (moveIndex != b->badCaptures[ply].size())
                 {
-                    U32 move = b->moveCache[ply][moveIndex++].first;
-
+                    U32 move = b->badCaptures[ply][moveIndex++].first;
                     if (move == hashMove) {continue;}
+
                     return move;
                 }
 

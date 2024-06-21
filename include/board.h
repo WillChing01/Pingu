@@ -43,7 +43,9 @@ class Board {
 
         std::vector<U32> moveBuffer;
         std::vector<std::pair<U32, int> > qMoveCache[64] = {};
+        std::vector<std::pair<U32, int> > qBadCaptures[64] = {};
         std::vector<std::pair<U32, int> > moveCache[MAXDEPTH+1] = {};
+        std::vector<std::pair<U32, int> > badCaptures[MAXDEPTH+1] = {};
 
         gameState current = {
             .canKingCastle = {true,true},
@@ -982,13 +984,10 @@ class Board {
             {
                 U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                int score = 16 * (15 - capturedPieceType) + pieceType;
+                U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
 
-                if (pieceType < capturedPieceType && pieceType >= _nQueens)
-                {
-                    int seeCheck = see.evaluate(move);
-                    if (seeCheck < 0) {score = seeCheck;}
-                }
+                int score = 32 * (15 - capturedPieceType) + pieceType;
+                score += finishPieceType != pieceType ? (15 - finishPieceType) : 0;
 
                 moveCache[ply].push_back(std::pair<U32, int>(move, score));
             }
