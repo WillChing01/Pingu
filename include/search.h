@@ -100,7 +100,7 @@ inline bool checkTime()
     else {return true;}
 }
 
-inline int alphaBetaQuiescence(Board &b, int ply, int qply, int alpha, int beta)
+inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
 {
     //check time.
     totalNodes++;
@@ -125,13 +125,13 @@ inline int alphaBetaQuiescence(Board &b, int ply, int qply, int alpha, int beta)
     }
 
     U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
-    QMovePicker movePicker(&b, qply, numChecks);
+    QMovePicker movePicker(&b, ply, numChecks);
 
     //loop through moves and search them.
     while (U32 move = movePicker.getNext())
     {
         b.makeMove(move);
-        int score = -alphaBetaQuiescence(b, ply+1, qply+1, -beta, -alpha);
+        int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
         b.unmakeMove();
 
         if (score > bestScore)
@@ -178,7 +178,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //qSearch at horizon.
-    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, 0, alpha, beta);}
+    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
 
     //main search.
     bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
@@ -217,7 +217,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     int movesPlayed = 0; int quietsPlayed = 0;
     U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
 
-    MovePicker movePicker = MovePicker(&b, ply, numChecks, hashMove);
+    MovePicker movePicker(&b, ply, numChecks, hashMove);
 
     bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
 
@@ -251,7 +251,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
             case BAD_CAPTURES:
                 if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
                 {
-                    score = -alphaBetaQuiescence(b, ply+1, 0, -beta, -alpha);
+                    score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
                     if (score <= alpha) {reduction = 1;}
                 }
                 break;
