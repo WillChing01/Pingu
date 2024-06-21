@@ -27,7 +27,7 @@ static const int futilityDepthLimit = 2;
 const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
 
 static const int lateMovePruningDepthLimit = 4;
-const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {8, 14, 20, 26};
+const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {6, 10, 14, 18};
 
 const std::array<int, 3> aspirationDelta = {50, 200, 2 * MATE_SCORE};
 const std::array<int, 4> betaDelta = {1, 50, 200, 2 * MATE_SCORE};
