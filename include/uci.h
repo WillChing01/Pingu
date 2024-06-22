@@ -365,7 +365,10 @@ void gensfenCommand(Board &b, const std::vector<std::string> &words)
             }
 
             //update output buffer.
-            bool isQuiet = !util::isInCheck(b.side, b.pieces, b.occupied) && ((storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) == 15;
+            U32 pieceType = (storedBestMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            U32 capturedPieceType = (storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+            U32 finishPieceType = (storedBestMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
+            bool isQuiet = !util::isInCheck(b.side, b.pieces, b.occupied) && capturedPieceType == 15 && pieceType == finishPieceType;
             if (isQuiet) {outputBuffer.push_back(gensfenData(positionToFen(b.pieces, b.current, b.side), score, 0.5));}
 
             b.makeMove(storedBestMove);
