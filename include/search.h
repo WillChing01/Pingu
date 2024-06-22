@@ -78,7 +78,7 @@ void collectPVRoot(Board &b, U32 bestMove, int depth)
     b.unmakeMove();
 }
 
-inline bool isDraw(Board &b)
+inline bool isDrawByRepetition(Board &b)
 {
     //check if current position has appeared in moveHistory.
     U32 zHash = b.zHashPieces ^ b.zHashState;
@@ -88,6 +88,19 @@ inline bool isDraw(Board &b)
         if (b.hashHistory[i] == zHash) {return true;}
     }
     return false;
+}
+
+inline bool isDrawByMaterial(Board &b)
+{
+    return b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1]);
+}
+
+inline bool isDrawByFifty(Board &b)
+{
+    //check if draw by fifty move rule.
+    int lastIndex = b.moveHistory.size() - 1;
+    int diff = b.irrevMoveInd.size() > 0 ? lastIndex - b.irrevMoveInd.back() : lastIndex;
+    return diff >= 100;
 }
 
 inline bool checkTime()
@@ -108,7 +121,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     if (isSearchAborted) {return 0;}
 
     //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
+    if (isDrawByMaterial(b)) {return 0;}
 
     bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
     int bestScore = -MATE_SCORE + ply;
@@ -155,11 +168,8 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
     if (isSearchAborted) {return 0;}
 
-    //check for draw by repetition.
-    if (isDraw(b)) {return 0;}
-
-    //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {return 0;}
+    //check for draw.
+    if (isDrawByRepetition(b) || isDrawByMaterial(b) || isDrawByFifty(b)) {return 0;}
 
     //probe hash table.
     U64 bHash = b.zHashPieces ^ b.zHashState;
