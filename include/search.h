@@ -217,7 +217,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     int movesPlayed = 0; int quietsPlayed = 0;
     U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
 
-    MovePicker movePicker(&b, ply, numChecks, hashMove);
+    MovePicker movePicker(&b, ply, depth, numChecks, hashMove);
 
     bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
 
@@ -249,10 +249,10 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
                 if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3) {reduction = 1;}
                 break;
             case BAD_CAPTURES:
-                if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
+                if (canLateMoveReduce && depth >= 3 && movesPlayed > 0)
                 {
                     score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
-                    if (score <= alpha) {reduction = 1;}
+                    if (score <= alpha) {reduction = int(0.5 * std::log((double)depth) * std::log((double)(movesPlayed+1)));}
                 }
                 break;
             case QUIET_MOVES:

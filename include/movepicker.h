@@ -48,6 +48,7 @@ class MovePicker
     private:
         Board* b;
         int ply;
+        int depth;
         U32 numChecks;
         U32 hashMove = 0;
 
@@ -58,11 +59,12 @@ class MovePicker
         moveType stage;
         std::unordered_set<U32> singleQuiets = {};
 
-        MovePicker(Board* _b, int _ply, U32 _numChecks, U32 _hashMove)
+        MovePicker(Board* _b, int _ply, int _depth, U32 _numChecks, U32 _hashMove)
         {
             //initializer for main nodes.
             b = _b;
             ply = _ply;
+            depth = _depth;
             numChecks = _numChecks;
             hashMove = _hashMove;
 
@@ -114,7 +116,7 @@ class MovePicker
                         int seeScore = b->see.evaluate(move);
                         if (seeScore < 0)
                         {
-                            b->badCaptures[ply].push_back(std::pair<U32, int>(move, seeScore));
+                            if (depth > 2) {b->badCaptures[ply].push_back(std::pair<U32, int>(move, seeScore));}
                             continue;
                         }
                     }
