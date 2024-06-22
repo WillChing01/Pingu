@@ -165,9 +165,10 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     U64 bHash = b.zHashPieces ^ b.zHashState;
     bool hashHit = ttProbe(bHash, ply);
     U32 hashMove = hashHit ? tableEntry.bestMove : 0;
+    int hashDepth = hashHit ? tableEntry.depth : 0;
 
     //check for early TT cutoff.
-    if (hashHit && tableEntry.depth >= depth)
+    if (hashHit && hashDepth >= depth)
     {
         //PV node.
         if (tableEntry.isExact) {return tableEntry.evaluation;}
@@ -209,7 +210,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //internal iterative reduction on hash miss.
-    if (!hashHit && depth > 3) {depth--;}
+    if (depth > 3 && (!hashHit || hashDepth + 6 <= depth)) {depth--;}
 
     //setup scoring variables.
     int score = 0; bool isExact = false;
