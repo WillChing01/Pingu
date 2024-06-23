@@ -9,7 +9,7 @@ import sys
 import time
 import multiprocessing
 
-HASH = 256
+HASH = 64
 
 DEPTH = 8
 POSITIONS = 10000
