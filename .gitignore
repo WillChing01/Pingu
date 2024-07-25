@@ -1,4 +1,5 @@
 /testing/__pycache__
 /tuning/__pycache__
+/tuning/datasets
 *.o
 *.exe
