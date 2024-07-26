@@ -128,7 +128,7 @@ def main():
                 try:
                     data = fileData.pop()
                     args = (data[0], data[1], input_name, input_shape, label_name, label_shape)
-                    print("Reading file", file_number, "/", total_files, ";", file)
+                    print("Reading file", file_number, "/", total_files, ";", data[1])
                     result[i] = pool.apply_async(parseFile, args = args)
                     file_number += 1
                 except:
