@@ -7,9 +7,6 @@ import sys
 import numpy as np
 import multiprocessing
 
-TRAINING_RATIO = 0.95
-VALIDATION_RATIO = 1 - TRAINING_RATIO
-
 INPUT_DTYPE = np.short
 LABEL_DTYPE = np.float32
 
