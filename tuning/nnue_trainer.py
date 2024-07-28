@@ -106,8 +106,9 @@ Training loop
 
 def custom_loss(output, target):
     K = 0.00475
+    GAMMA = 0.8
     output_scaled = torch.sigmoid(K*output)
-    target_scaled = torch.sigmoid(K*target)
+    target_scaled = GAMMA * torch.sigmoid(K*target[0]) + (1. - GAMMA) * target[1]
     return torch.mean((output_scaled - target_scaled)**2)
 
 def training_loop(dataloader, model, loss_fn, optimizer, device, input_count):
