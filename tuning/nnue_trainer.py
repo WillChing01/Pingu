@@ -3,11 +3,36 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
-"""
+INPUT_DTYPE = np.short
+LABEL_DTYPE = np.float32
 
+"""
 Dataset and dataloader
-
 """
+
+class ChessDataset(Dataset):
+    def __init__(self, inputs_file, inputs_shape, labels_file, labels_shape, indices_file):
+        self.inputs_file = inputs_file
+        self.inputs_shape = inputs_shape
+        self.labels_file = labels_file
+        self.labels_shape = labels_shape
+        self.indices = np.load(indices_file, allow_pickle = True)
+
+    def __len__(self):
+        return len(self.indices)
+
+    def __getitem__(self, idx):
+        sparse_inputs = np.memmap(self.inputs_file, mode = "r", dtype = INPUT_DTYPE, shape = self.inputs_shape)
+        labels = np.memmap(self.labels_file, mode = "r", dtype = LABEL_DTYPE, shape = self.labels_shape)
+        index = self.indices[idx]
+
+        x = torch.from_numpy(sparse_inputs[index])
+        y = torch.from_numpy(labels[index])
+
+        sparse_inputs._mmap.close()
+        labels._mmap.close()
+
+        return x, y
 
 class ChessChunkDataset(Dataset):
     def __init__(self, inputs_file, labels_file, start_index, finish_index, input_count):
@@ -22,21 +47,6 @@ class ChessChunkDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.inputs[idx].long(), self.labels[idx].float()
-
-class ChessBigDataset(Dataset):
-    def __init__(self, inputs_file, labels_file, dataset_size, input_count):
-        self.inputs_file = inputs_file
-        self.labels_file = labels_file
-        self.len = dataset_size
-        self.input_count = input_count
-
-    def __len__(self):
-        return self.len
-
-    def __getitem__(self, idx):
-        inputs = np.memmap(self.inputs_file, mode = "r", dtype = np.short, shape = (self.len, 32))
-        labels = np.memmap(self.labels_file, mode = "r", dtype = np.short, shape = (self.len, 1))
-        return torch.LongTensor(inputs[idx]), torch.Tensor(labels[idx])
 
 """
 
