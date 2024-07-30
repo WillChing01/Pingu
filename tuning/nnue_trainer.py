@@ -14,24 +14,27 @@ LABEL_TENSOR_DTYPE = torch.float32
 Dataset and dataloader
 """
 
-training_indices = np.load('training_indices.npy')
-validation_indices = np.load('validation_indices.npy')
-
 class ChessDataset(Dataset):
-    def __init__(self, inputs_file, inputs_shape, labels_file, labels_shape, is_training):
+    def __init__(self, inputs_file, inputs_shape, labels_file, labels_shape, indices_file):
         self.inputs_file = inputs_file
         self.inputs_shape = inputs_shape
         self.labels_file = labels_file
         self.labels_shape = labels_shape
-        self.is_training = is_training
+
+        indices = np.load(indices_file, mmap_mode = "r")
+        self.length = len(indices)
+        self.indices_file = indices_file
 
     def __len__(self):
-        return len(self.indices)
+        return self.length
 
     def __getitem__(self, idx):
+        indices = np.load(self.indices_file, mmap_mode = "r")
+        index = indices[idx]
+        del indices
+
         sparse_inputs = np.memmap(self.inputs_file, mode = "r", dtype = INPUT_DTYPE, shape = self.inputs_shape)
         labels = np.memmap(self.labels_file, mode = "r", dtype = LABEL_DTYPE, shape = self.labels_shape)
-        index = training_indices[idx] if self.is_training else validation_indices[idx] 
 
         x = torch.tensor(sparse_inputs[index], dtype = INPUT_TENSOR_DTYPE)
         y = torch.tensor([labels[index][0]], dtype = LABEL_TENSOR_DTYPE)
@@ -183,7 +186,7 @@ def main():
     EPOCHS = 10000
 
     BATCH_SIZE = 1024
-    NUM_WORKERS = 4
+    NUM_WORKERS = 6
 
     SAVED_MODEL_FILE = "saved_model.pth"
 
@@ -199,11 +202,16 @@ def main():
 
     print("Using device", device)
 
-    inputs_file = ""
-    inputs_shape = (0, 32)
+    NUM_DATA = 1180700000
 
-    labels_file = ""
-    labels_shape = (0, 2)
+    inputs_file = "sparse_input_" + str(NUM_DATA) + "_32.dat"
+    inputs_shape = (NUM_DATA, 32)
+
+    labels_file = "labels_" + str(NUM_DATA) + "_2.dat"
+    labels_shape = (NUM_DATA, 2)
+
+    training_indices_file = "training_indices.npy"
+    validation_indices_file = "validation_indices.npy"
 
     model = NeuralNetwork(INPUT_COUNT, L1_COUNT, L2_COUNT, OUTPUT_COUNT).to(device)
 
@@ -215,10 +223,10 @@ def main():
 
     optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
 
-    training_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, True)
-    training_dataloader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS, pin_memory = True)
+    training_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, training_indices_file)
+    training_dataloader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = False, num_workers = NUM_WORKERS, pin_memory = True)
 
-    validation_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, False)
+    validation_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, validation_indices_file)
     validation_dataloader = DataLoader(validation_dataset, batch_size = BATCH_SIZE, shuffle = False, num_workers = NUM_WORKERS, pin_memory = True)
 
     for epoch in range(EPOCHS):
