@@ -14,13 +14,16 @@ LABEL_TENSOR_DTYPE = torch.float32
 Dataset and dataloader
 """
 
+training_indices = np.load('training_indices.npy')
+validation_indices = np.load('validation_indices.npy')
+
 class ChessDataset(Dataset):
-    def __init__(self, inputs_file, inputs_shape, labels_file, labels_shape, indices_file):
+    def __init__(self, inputs_file, inputs_shape, labels_file, labels_shape, is_training):
         self.inputs_file = inputs_file
         self.inputs_shape = inputs_shape
         self.labels_file = labels_file
         self.labels_shape = labels_shape
-        self.indices = np.load(indices_file, allow_pickle = True)
+        self.is_training = is_training
 
     def __len__(self):
         return len(self.indices)
@@ -28,7 +31,7 @@ class ChessDataset(Dataset):
     def __getitem__(self, idx):
         sparse_inputs = np.memmap(self.inputs_file, mode = "r", dtype = INPUT_DTYPE, shape = self.inputs_shape)
         labels = np.memmap(self.labels_file, mode = "r", dtype = LABEL_DTYPE, shape = self.labels_shape)
-        index = self.indices[idx]
+        index = training_indices[idx] if self.is_training else validation_indices[idx] 
 
         x = torch.tensor(sparse_inputs[index], dtype = INPUT_TENSOR_DTYPE)
         y = torch.tensor([labels[index][0]], dtype = LABEL_TENSOR_DTYPE)
@@ -202,9 +205,6 @@ def main():
     labels_file = ""
     labels_shape = (0, 2)
 
-    training_indices_file = "training_indices.npy"
-    validation_indices_file = "validation_indices.npy"
-
     model = NeuralNetwork(INPUT_COUNT, L1_COUNT, L2_COUNT, OUTPUT_COUNT).to(device)
 
     try:
@@ -215,10 +215,10 @@ def main():
 
     optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
 
-    training_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, training_indices_file)
+    training_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, True)
     training_dataloader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS, pin_memory = True)
 
-    validation_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, validation_indices_file)
+    validation_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, False)
     validation_dataloader = DataLoader(validation_dataset, batch_size = BATCH_SIZE, shuffle = False, num_workers = NUM_WORKERS, pin_memory = True)
 
     for epoch in range(EPOCHS):
