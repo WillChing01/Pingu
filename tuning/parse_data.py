@@ -7,13 +7,10 @@ import sys
 import numpy as np
 import multiprocessing
 
-INPUT_DTYPE = np.short
-LABEL_DTYPE = np.float32
+DATASET_DTYPE = np.short
 
 def fenToSparse(fen):
-    """
-        Return non-zero indices of input matrix derived from FEN.
-    """
+    """Return non-zero indices of input matrix derived from FEN."""
 
     fen = fen.split(' ')[0]
     indices = []
@@ -33,31 +30,29 @@ def fenToSparse(fen):
     return indices
 
 def sparseToArray(indices):
-    x = np.zeros(32, dtype = INPUT_DTYPE)
+    x = np.zeros(32, dtype = DATASET_DTYPE)
     x[0:len(indices)] = np.array(indices, copy=True)
     x[len(indices):].fill(indices[0])
     return x
 
-def parseFile(startIndex, fileName, input_name, input_shape, label_name, label_shape):
-    sparse_input = np.memmap(input_name, mode = "r+", dtype = INPUT_DTYPE, shape = input_shape)
-    labels = np.memmap(label_name, mode = "r+", dtype = LABEL_DTYPE, shape = label_shape)
+def parseFile(startIndex, file_name, dataset_file, dataset_shape):
+    dataset = np.memmap(dataset_file, mode = "r+", dtype = DATASET_DTYPE, shape = dataset_shape)
 
     i = startIndex
-    with open(fileName, "r") as f:
+    with open(file_name, "r") as f:
         lines = f.readlines()
         for line in lines:
             fen, evaluation, result = line.rstrip().split("; ")
-            array = sparseToArray(fenToSparse(fen))
-            sparse_input[i] = np.array(array, copy = True)
-            labels[i][0] = int(evaluation)
-            labels[i][1] = float(result)
+
+            fenData = sparseToArray(fenToSparse(fen))
+            evalData = np.array([int(evaluation)], dtype = DATASET_DTYPE)
+            resultData = np.array([int(round(2. * float(result)))], dtype = DATASET_DTYPE)
+
+            dataset[i] = np.array(np.concatenate([fenData, evalData, resultData]), copy = True)
             i += 1
 
-    sparse_input.flush()
-    labels.flush()
-
-    sparse_input._mmap.close()
-    labels._mmap.close()
+    dataset.flush()
+    dataset._mmap.close()
 
     return True
 
@@ -96,21 +91,15 @@ def main():
 
     print("Storing data...")
 
-    input_name = "sparse_input_"+str(n)+"_32.dat"
-    input_shape = (n, 32)
-
-    label_name = "labels_"+str(n)+"_2.dat"
-    label_shape = (n, 2)
+    dataset_file = "dataset_" + str(n) + "_34.dat"
+    dataset_shape = (n, 34)
 
     try:
-        sparse_input = np.memmap(input_name, mode = "r", dtype = INPUT_DTYPE, shape = input_shape)
-        labels = np.memmap(label_name, mode = "r", dtype = LABEL_DTYPE, shape = label_shape)
+        dataset = np.memmap(dataset_file, mode = "r", dtype = DATASET_DTYPE, shape = dataset_shape)
+        dataset._mmap.close()
     except:
-        sparse_input = np.memmap(input_name, mode = "w+", dtype = INPUT_DTYPE, shape = input_shape)
-        labels = np.memmap(label_name, mode = "w+", dtype = LABEL_DTYPE, shape = label_shape)
-
-    sparse_input._mmap.close()
-    labels._mmap.close()
+        dataset = np.memmap(dataset_file, mode = "w+", dtype = DATASET_DTYPE, shape = dataset_shape)
+        dataset._mmap.close()
 
     pool = multiprocessing.Pool(num_cpu)
     result = [None for i in range(num_cpu)]
@@ -124,7 +113,7 @@ def main():
             if result[i] is None or result[i].ready():
                 try:
                     data = fileData.pop()
-                    args = (data[0], data[1], input_name, input_shape, label_name, label_shape)
+                    args = (data[0], data[1], dataset_file, dataset_shape)
                     print("Reading file", file_number, "/", total_files, ";", data[1])
                     result[i] = pool.apply_async(parseFile, args = args)
                     file_number += 1
