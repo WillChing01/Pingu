@@ -37,12 +37,12 @@ def main():
     print("Assigning indices to chunks...")
 
     chunk_indices = [[[] for i in range(num_training_chunks)], [[] for i in range(num_validation_chunks)]]
+    random_nums = rng.random(size = N, dtype = np.float32)
     num_training = 0
     num_validation = 0
 
     for i in tqdm(range(N)):
-        x = rng.uniform()
-        is_validation = x > TRAINING_RATIO
+        is_validation = bool(random_nums[i] > TRAINING_RATIO)
 
         if is_validation:
             num_validation += 1
@@ -51,7 +51,9 @@ def main():
 
         chunk_choice = num_validation_chunks if is_validation else num_training_chunks
         chunk_id = rng.integers(chunk_choice)
-        chunk_indices[is_validation][chunk_id].append(i)
+        chunk_indices[is_validation][chunk_id].append(np.array(i, dtype = np.int32))
+
+    del random_nums
 
     temp_training_dir = os.getcwd() + "/temp-training/"
     temp_validation_dir = os.getcwd() + "/temp-validation/"
