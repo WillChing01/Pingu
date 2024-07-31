@@ -3,7 +3,7 @@ import os
 import pickle
 from tqdm import tqdm
 
-N = 0
+N = 1180700000
 TRAINING_RATIO = 0.95
 
 CHUNK_SIZE = 25000000
@@ -37,12 +37,21 @@ def main():
     print("Assigning indices to chunks...")
 
     chunk_indices = [[[] for i in range(num_training_chunks)], [[] for i in range(num_validation_chunks)]]
-    is_validation = rng.choice(np.array([False, True], dtype = bool), N, p = [TRAINING_RATIO, 1. - TRAINING_RATIO])
+    num_training = 0
+    num_validation = 0
 
     for i in tqdm(range(N)):
-        chunk_choice = num_validation_chunks if is_validation[i] else num_training_chunks
+        x = rng.uniform()
+        is_validation = x > TRAINING_RATIO
+
+        if is_validation:
+            num_validation += 1
+        else:
+            num_training += 1
+
+        chunk_choice = num_validation_chunks if is_validation else num_training_chunks
         chunk_id = rng.integers(chunk_choice)
-        chunk_indices[bool(is_validation[i])][chunk_id].append(i)
+        chunk_indices[is_validation][chunk_id].append(i)
 
     temp_training_dir = os.getcwd() + "/temp-training/"
     temp_validation_dir = os.getcwd() + "/temp-validation/"
@@ -62,9 +71,6 @@ def main():
         with open(file_name, 'wb') as f:
             pickle.dump(chunk_indices[1][i], f)
 
-    num_validation = sum(is_validation)
-    num_training = N - num_validation
-
     print("")
     print("-------------------------")
     print("Training : Validation")
@@ -74,7 +80,6 @@ def main():
     print("")
 
     del chunk_indices
-    del is_validation
 
     print("Distributing data to chunks...")
 
