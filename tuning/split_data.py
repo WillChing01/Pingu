@@ -21,6 +21,8 @@ def indicesToData(indices_file, output_file):
     chunk = np.array(dataset[indices], copy = True)
     np.save(output_file, chunk)
 
+    dataset._mmap.close()
+
     return None
 
 def main():
