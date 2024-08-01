@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import pickle
+import array
 from tqdm import tqdm
 
 N = 1180700000
@@ -36,7 +37,7 @@ def main():
 
     print("Assigning indices to chunks...")
 
-    chunk_indices = [[[] for i in range(num_training_chunks)], [[] for i in range(num_validation_chunks)]]
+    chunk_indices = [[array.array('L') for i in range(num_training_chunks)], [array.array('L') for i in range(num_validation_chunks)]]
     random_nums = rng.random(size = N, dtype = np.float32)
     num_training = 0
     num_validation = 0
@@ -51,7 +52,7 @@ def main():
 
         chunk_choice = num_validation_chunks if is_validation else num_training_chunks
         chunk_id = rng.integers(chunk_choice)
-        chunk_indices[is_validation][chunk_id].append(np.array(i, dtype = np.int32))
+        chunk_indices[is_validation][chunk_id].append(i)
 
     del random_nums
 
