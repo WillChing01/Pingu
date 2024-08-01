@@ -38,7 +38,7 @@ def main():
     print("Assigning indices to chunks...")
 
     chunk_indices = [[array.array('L') for i in range(num_training_chunks)], [array.array('L') for i in range(num_validation_chunks)]]
-    random_nums = rng.random(size = N, dtype = np.float32)
+    random_nums = rng.random(size = N, dtype = np.float32).astype(np.float16)
     num_training = 0
     num_validation = 0
 
