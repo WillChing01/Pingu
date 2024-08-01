@@ -70,7 +70,7 @@ def main():
             dataset = np.memmap(dataset_file, mode = "r", dtype = DATASET_DTYPE, shape = DATASET_SHAPE)
         if is_validation[i]:
             chunk_id = validation_chunk_id[validation_index]
-            validation_memmaps[chunk_id][validation_indices[chunk_id]] = np.array(dataset[i], copy = True)
+            np.copyto(validation_memmaps[chunk_id][validation_indices[chunk_id]], dataset[i])
 
             if validation_indices[chunk_id] % 1000 == 0:
                 file_name = "chunk_" + str(chunk_id) + "_" + str(validation_chunk_sizes[chunk_id]) + "_" + str(DATASET_SHAPE[1]) + ".dat"
@@ -81,7 +81,7 @@ def main():
             validation_index += 1
         else:
             chunk_id = training_chunk_id[training_index]
-            training_memmaps[chunk_id][training_indices[chunk_id]] = np.array(dataset[i], copy = True)
+            np.copyto(training_memmaps[chunk_id][training_indices[chunk_id]], dataset[i])
 
             if training_indices[chunk_id] % 1000 == 0:
                 file_name = "chunk_" + str(chunk_id) + "_" + str(training_chunk_sizes[chunk_id]) + "_" + str(DATASET_SHAPE[1]) + ".dat"
