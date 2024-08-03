@@ -64,15 +64,17 @@ def main():
     dataset_file = "dataset_" + str(DATASET_SHAPE[0]) + "_" + str(DATASET_SHAPE[1]) + ".dat"
     dataset = np.memmap(dataset_file, mode = "r", dtype = DATASET_DTYPE, shape = DATASET_SHAPE)
 
+    buffer_size = 10000
+
     for i in tqdm(range(N)):
-        if i % 10000 == 0:
+        if i % buffer_size == 0:
             dataset._mmap.close()
             dataset = np.memmap(dataset_file, mode = "r", dtype = DATASET_DTYPE, shape = DATASET_SHAPE)
         if is_validation[i]:
             chunk_id = validation_chunk_id[validation_index]
             np.copyto(validation_memmaps[chunk_id][validation_indices[chunk_id]], dataset[i])
 
-            if validation_indices[chunk_id] % 1000 == 0:
+            if validation_indices[chunk_id] % buffer_size == 0:
                 file_name = "chunk_" + str(chunk_id) + "_" + str(validation_chunk_sizes[chunk_id]) + "_" + str(DATASET_SHAPE[1]) + ".dat"
                 validation_memmaps[chunk_id]._mmap.close()
                 validation_memmaps[chunk_id] = np.memmap(validation_dir + file_name, mode = "r+", dtype = DATASET_DTYPE, shape = (validation_chunk_sizes[chunk_id], DATASET_SHAPE[1]))
@@ -83,7 +85,7 @@ def main():
             chunk_id = training_chunk_id[training_index]
             np.copyto(training_memmaps[chunk_id][training_indices[chunk_id]], dataset[i])
 
-            if training_indices[chunk_id] % 1000 == 0:
+            if training_indices[chunk_id] % buffer_size == 0:
                 file_name = "chunk_" + str(chunk_id) + "_" + str(training_chunk_sizes[chunk_id]) + "_" + str(DATASET_SHAPE[1]) + ".dat"
                 training_memmaps[chunk_id]._mmap.close()
                 training_memmaps[chunk_id] = np.memmap(training_dir + file_name, mode = "r+", dtype = DATASET_DTYPE, shape = (training_chunk_sizes[chunk_id], DATASET_SHAPE[1]))
