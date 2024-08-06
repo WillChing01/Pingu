@@ -1,63 +1,32 @@
 import numpy as np
+import random
 import os
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
-INPUT_DTYPE = np.short
-LABEL_DTYPE = np.float32
+N = 1180700000
 
-INPUT_TENSOR_DTYPE = torch.short
-LABEL_TENSOR_DTYPE = torch.float32
+DATASET_DTYPE = np.short
+DATASET_SHAPE = (N, 34)
 
 """
 Dataset and dataloader
 """
 
 class ChessDataset(Dataset):
-    def __init__(self, inputs_file, inputs_shape, labels_file, labels_shape, indices_file):
-        self.inputs_file = inputs_file
-        self.inputs_shape = inputs_shape
-        self.labels_file = labels_file
-        self.labels_shape = labels_shape
-
-        indices = np.load(indices_file, mmap_mode = "r")
-        self.length = len(indices)
-        self.indices_file = indices_file
+    def __init__(self, data_file):
+        self.shape = np.array(data_file.split(".")[0].split("_")[-2:], dtype = np.int32)
+        dataset = np.memmap(data_file, mode = "r", dtype = DATASET_DTYPE, shape = (self.shape[0], self.shape[1]))
+        self.inputs, self.evaluations, self.results = torch.tensor_split(torch.tensor(dataset, dtype = torch.short), (32, 33), dim = 1)
+        self.results = self.results.float() * 0.5
+        dataset._mmap.close()
 
     def __len__(self):
-        return self.length
+        return self.shape[0]
 
     def __getitem__(self, idx):
-        indices = np.load(self.indices_file, mmap_mode = "r")
-        index = indices[idx]
-        del indices
-
-        sparse_inputs = np.memmap(self.inputs_file, mode = "r", dtype = INPUT_DTYPE, shape = self.inputs_shape)
-        labels = np.memmap(self.labels_file, mode = "r", dtype = LABEL_DTYPE, shape = self.labels_shape)
-
-        x = torch.tensor(sparse_inputs[index], dtype = INPUT_TENSOR_DTYPE)
-        y = torch.tensor([labels[index][0]], dtype = LABEL_TENSOR_DTYPE)
-        z = torch.tensor([labels[index][1]], dtype = LABEL_TENSOR_DTYPE)
-
-        sparse_inputs._mmap.close()
-        labels._mmap.close()
-
-        return x, y, z
-
-class ChessChunkDataset(Dataset):
-    def __init__(self, inputs_file, labels_file, start_index, finish_index, input_count):
-        self.len = finish_index - start_index
-        inputs_memmap = np.memmap(inputs_file, mode = "r", dtype = np.short, shape = (input_count, 32))
-        labels_memmap = np.memmap(labels_file, mode = "r", dtype = np.short, shape = (input_count, 1))
-        self.inputs = torch.from_numpy(inputs_memmap[start_index:finish_index])
-        self.labels = torch.from_numpy(labels_memmap[start_index:finish_index])
-
-    def __len__(self):
-        return self.len
-
-    def __getitem__(self, idx):
-        return self.inputs[idx].long(), self.labels[idx].float()
+        return self.inputs[idx], self.evaluations[idx], self.results[idx]
 
 """
 Model definition
@@ -133,8 +102,7 @@ def training_loop(dataloader, model, loss_fn, optimizer, device, input_count):
 
         batch_size = x.size(0)
         x = x.to(device, non_blocking = True)
-        inputs = torch.zeros(batch_size, input_count, device = device)
-        inputs = inputs.scatter_(dim = -1, index = x.long(), value = 1)
+        inputs = torch.zeros(batch_size, input_count, device = device).scatter_(dim = -1, index = x.long(), value = 1)
 
         output = model(inputs)
         loss = loss_fn(output, y.to(device, non_blocking = True), z.to(device, non_blocking = True))
@@ -165,8 +133,7 @@ def validation_loop(dataloader, model, loss_fn, device, input_count):
         for batch, (x, y, z) in enumerate(dataloader):
             batch_size = x.size(0)
             x = x.to(device, non_blocking = True)
-            inputs = torch.zeros(batch_size, input_count, device = device)
-            inputs = inputs.scatter_(dim = -1, index = x.long(), value = 1)
+            inputs = torch.zeros(batch_size, input_count, device = device).scatter_(dim = -1, index = x.long(), value = 1)
 
             output = model(inputs)
             loss = loss_fn(output, y.to(device, non_blocking = True), z.to(device, non_blocking = True))
@@ -181,14 +148,12 @@ def validation_loop(dataloader, model, loss_fn, device, input_count):
     return validation_loss
 
 def main():
-
-    LEARNING_RATE = 0.001
     EPOCHS = 10000
 
     BATCH_SIZE = 1024
     NUM_WORKERS = 6
 
-    SAVED_MODEL_FILE = "saved_model.pth"
+    SAVED_MODEL_FILE = ""
 
     INPUT_COUNT = 768
     L1_COUNT = 64
@@ -202,38 +167,69 @@ def main():
 
     print("Using device", device)
 
-    NUM_DATA = 1180700000
-
-    inputs_file = "sparse_input_" + str(NUM_DATA) + "_32.dat"
-    inputs_shape = (NUM_DATA, 32)
-
-    labels_file = "labels_" + str(NUM_DATA) + "_2.dat"
-    labels_shape = (NUM_DATA, 2)
-
-    training_indices_file = "training_indices.npy"
-    validation_indices_file = "validation_indices.npy"
-
     model = NeuralNetwork(INPUT_COUNT, L1_COUNT, L2_COUNT, OUTPUT_COUNT).to(device)
 
     try:
         print("Loading saved model...")
         model.load_state_dict(torch.load(SAVED_MODEL_FILE))
+        start_epoch = int(SAVED_MODEL_FILE.split("_")[1])
     except:
         print("Failed to load saved model.")
+        start_epoch = 0
 
-    optimizer = torch.optim.Adam(model.parameters(), lr = LEARNING_RATE)
+    optimizer = torch.optim.Adam(model.parameters())
 
-    training_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, training_indices_file)
-    training_dataloader = DataLoader(training_dataset, batch_size = BATCH_SIZE, shuffle = False, num_workers = NUM_WORKERS, pin_memory = True)
+    training_dir = os.getcwd() + "/training/"
+    validation_dir = os.getcwd() + "/validation/"
 
-    validation_dataset = ChessDataset(inputs_file, inputs_shape, labels_file, labels_shape, validation_indices_file)
-    validation_dataloader = DataLoader(validation_dataset, batch_size = BATCH_SIZE, shuffle = False, num_workers = NUM_WORKERS, pin_memory = True)
+    training_chunks = []
+    validation_chunks = []
 
-    for epoch in range(EPOCHS):
+    for (root, dir, files) in os.walk(training_dir):
+        training_chunks = files
+        break
+    for (root, dir, files) in os.walk(validation_dir):
+        validation_chunks = files
+        break
+
+    num_training = 0
+    num_validation = 0
+
+    for chunk_file in training_chunks:
+        num_training += int(chunk_file.split(".")[0].split("_")[-2])
+    for chunk_file in validation_chunks:
+        num_validation += int(chunk_file.split(".")[0].split("_")[-2])
+
+    for epoch in range(start_epoch, EPOCHS):
         print(f"Epoch {epoch+1}\n-------------------------------")
 
-        training_loss = training_loop(training_dataloader, model, custom_loss, optimizer, device, INPUT_COUNT)
-        validation_loss = validation_loop(validation_dataloader, model, custom_loss, device, INPUT_COUNT)
+        print("Training...")
+        training_loss = 0
+
+        print("Shuffling chunks...")
+        random.shuffle(training_chunks)
+
+        for i in range(len(training_chunks)):
+            print(f"Training chunk {i+1} / {len(training_chunks)} : {training_chunks[i]}")
+            chunk_dataset = ChessDataset(training_dir + training_chunks[i])
+            dataloader = DataLoader(chunk_dataset, batch_size = BATCH_SIZE, shuffle = True, num_workers = NUM_WORKERS, pin_memory = True)
+
+            chunk_loss = training_loop(dataloader, model, custom_loss, optimizer, device, INPUT_COUNT)
+            training_loss += chunk_loss * len(chunk_dataset) / num_training
+
+        print("Validating...")
+        validation_loss = 0
+
+        for i in range(len(validation_chunks)):
+            print(f"Validation chunk {i+1} / {len(validation_chunks)} : {validation_chunks[i]}")
+            chunk_dataset = ChessDataset(validation_dir + validation_chunks[i])
+            dataloader = DataLoader(chunk_dataset, batch_size = BATCH_SIZE, shuffle = False, num_workers = NUM_WORKERS, pin_memory = True)
+
+            chunk_loss = validation_loop(dataloader, model, custom_loss, device, INPUT_COUNT)
+            validation_loss += chunk_loss * len(chunk_dataset) / num_validation
+
+        print(f"Training loss : {training_loss}")
+        print(f"Validation loss : {validation_loss}")
 
         # epoch complete - save model.
         print("Saving model...")
