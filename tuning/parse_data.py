@@ -3,12 +3,14 @@ Parse and format data in book files.
 """
 
 import os
+import sys
 import numpy as np
+import multiprocessing
+
+DATASET_DTYPE = np.short
 
 def fenToSparse(fen):
-    """
-        Return non-zero indices of input matrix derived from FEN.
-    """
+    """Return non-zero indices of input matrix derived from FEN."""
 
     fen = fen.split(' ')[0]
     indices = []
@@ -28,81 +30,99 @@ def fenToSparse(fen):
     return indices
 
 def sparseToArray(indices):
-    x = np.zeros(32, dtype = np.short)
+    x = np.zeros(32, dtype = DATASET_DTYPE)
     x[0:len(indices)] = np.array(indices, copy=True)
     x[len(indices):].fill(indices[0])
     return x
 
+def parseFile(startIndex, file_name, dataset_file, dataset_shape):
+    dataset = np.memmap(dataset_file, mode = "r+", dtype = DATASET_DTYPE, shape = dataset_shape)
+
+    i = startIndex
+    with open(file_name, "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            fen, evaluation, result = line.rstrip().split("; ")
+
+            fenData = sparseToArray(fenToSparse(fen))
+            evalData = np.array([int(evaluation)], dtype = DATASET_DTYPE)
+            resultData = np.array([int(round(2. * float(result)))], dtype = DATASET_DTYPE)
+
+            dataset[i] = np.array(np.concatenate([fenData, evalData, resultData]), copy = True)
+            i += 1
+
+    dataset.flush()
+    dataset._mmap.close()
+
+    return True
+
 def main():
+    user_args = sys.argv[1:]
+    if len(user_args) != 2 or user_args[0] != "-N" or not user_args[1].isdigit():
+        print("error: incorrect format of args")
+        print("usage: parse_data.py -N <num_threads>")
+        print("e.g. parse_data.py -N 2")
+        return None
+    elif int(user_args[1]) > multiprocessing.cpu_count():
+        print("error: not enough cpu threads")
+        return None
+    num_cpu = int(user_args[1])
 
     directory = os.getcwd() + "/datasets/"
-
-    files = [i for i in os.listdir(directory) if i.split(".")[-1] == "txt" and i[0:7] == "gensfen"]
-
-    print("Found", len(files), "files.")
-
-    print("Reading files...")
-
+    fileData = []
     n = 0
-    for file in files:
-        with open(directory+file, "r") as f:
-            lines = f.readlines()
-            n += len(lines)
 
-    print("Collected", n, "pieces of data.")
+    print("Searching for data...")
+
+    for (root, dirs, files) in os.walk(directory):
+        if len(files) == 0:
+            continue
+        for file in files:
+            fileData.append([n, root + "/" + file])
+            tokens = file.split("_")
+            num = ""
+            for element in tokens:
+                if element[0] == "n":
+                    num = element[1:]
+                    break
+            n += int(num)
+
+    print("Found", n, "pieces of data in", len(fileData), "files.")
 
     print("Storing data...")
 
-    sparse_input = np.memmap("sparse_input_"+str(n)+"_32.dat", mode = "w+", dtype = np.short, shape = (n, 32))
-    labels = np.memmap("labels_"+str(n)+"_1.dat", mode = "w+", dtype = np.short, shape = (n, 1))
+    dataset_file = "dataset_" + str(n) + "_34.dat"
+    dataset_shape = (n, 34)
 
-    file_count = 0
-    i = 0
-    for file in files:
-        file_count += 1
-        print("Reading file", file_count, ";", file)
-        with open(directory+file, "r") as f:
-            lines = f.readlines()
-            for x in lines:
-                fen, eval_ = x.rstrip().split("; ")
-                arr = sparseToArray(fenToSparse(fen))
-                sparse_input[i] = np.array(arr, copy=True)
-                labels[i][0] = int(eval_)
-                i += 1
-                if i % 1000000 == 0:
-                    print(i)
-    sparse_input.flush()
-    labels.flush()
+    try:
+        dataset = np.memmap(dataset_file, mode = "r", dtype = DATASET_DTYPE, shape = dataset_shape)
+        dataset._mmap.close()
+    except:
+        dataset = np.memmap(dataset_file, mode = "w+", dtype = DATASET_DTYPE, shape = dataset_shape)
+        dataset._mmap.close()
 
-    validation_ratio = 0.05
-    validation_num = int(round(validation_ratio * n))
+    pool = multiprocessing.Pool(num_cpu)
+    result = [None for i in range(num_cpu)]
 
-    print("Generating", validation_num, "validation samples...")
-
-    indices = np.array([i for i in range(n)])
-    np.random.shuffle(indices)
-
-    validation_input = np.memmap("validation_input_"+str(validation_num)+"_32.dat", mode = "w+", dtype = np.short, shape = (validation_num, 32))
-    validation_labels = np.memmap("validation_labels_"+str(validation_num)+"_1.dat", mode = "w+", dtype = np.short, shape = (validation_num, 1))
-    
-    for i in range(0, validation_num):
-        validation_input[i] = np.array(sparse_input[indices[i]], copy=True)
-        validation_labels[i][0] = labels[indices[i]][0]
-    validation_input.flush()
-    validation_labels.flush()
-
-    print("Generating", n - validation_num, "training samples...")
-
-    training_input = np.memmap("training_input_"+str(n - validation_num)+"_32.dat", mode = "w+", dtype = np.short, shape = (n - validation_num, 32))
-    training_labels = np.memmap("training_labels_"+str(n - validation_num)+"_1.dat", mode = "w+", dtype = np.short, shape = (n - validation_num, 1))
-
-    for i in range(validation_num, n):
-        if (i - validation_num) % 1000000 == 0:
-            print("Progress", i - validation_num)
-        training_input[i-validation_num] = np.array(sparse_input[indices[i]], copy=True)
-        training_labels[i-validation_num][0] = labels[indices[i]][0]
-    training_input.flush()
-    training_labels.flush()
+    file_number = 1
+    total_files = len(fileData)
+    fileData.reverse()
+    while True:
+        all_ready = True
+        for i in range(num_cpu):
+            if result[i] is None or result[i].ready():
+                try:
+                    data = fileData.pop()
+                    args = (data[0], data[1], dataset_file, dataset_shape)
+                    print("Reading file", file_number, "/", total_files, ";", data[1])
+                    result[i] = pool.apply_async(parseFile, args = args)
+                    file_number += 1
+                except:
+                    pass
+            else:
+                all_ready = False
+        if all_ready and len(fileData) == 0:
+            break
 
     print("Process complete.")
 
