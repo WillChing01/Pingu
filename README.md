@@ -24,8 +24,8 @@ Pingu accepts many of the usual UCI commands (go/stop/position etc.) and it has 
 
 | Version | CCRL Blitz | CCRL 40/15 |
 | ------: | ---------: | ---------: |
-| 3.0.0   | N/A        | 2828       |
-| 2.0.0   | 2528       | 2614       |
+| 3.0.0   | N/A        | 2820       |
+| 2.0.0   | 2527       | 2614       |
 | 1.0.0   | 2162       | N/A        |
 
 More information on [CCRL](https://www.computerchess.org.uk/ccrl/).
@@ -91,7 +91,7 @@ More information on [CCRL](https://www.computerchess.org.uk/ccrl/).
   - Quantized weights
   - AVX2 instructions
 
-NNUE trained from Pingu 2.0.0 self-play data.
+NNUE trained from Pingu 3.0.0 self-play data.
 
 # Thanks
 
