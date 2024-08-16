@@ -68,7 +68,7 @@ The clipped ReLU activation allows the network to learn non-linear relationships
 
 For the first iteration of Pingu NNUE, the aim was to generate an evaluation stronger than HCE, whilst retaining the character of Pingu HCE. Therefore, the NNUE was trained to approximate the score of a fixed-depth Pingu HCE search.
 
-This [dataset](https://drive.google.com/drive/folders/1P7xMjhwiFZD8OufCJOfprwFcFwC4627_?usp=sharing) was used.
+This [dataset](https://www.kaggle.com/datasets/williamching/pingu-2-0-0-dataset) was used.
 
 It contains ~93 million fen strings labelled with the white-relative score (centipawns) of a fixed-depth search using 256 MB hash.
 
