@@ -1,14 +1,12 @@
 <div align="center">
 
-  <img src="pingu.jpeg" alt="pingu" width="300"/>
-
   # Pingu
 
   [![License][license-badge]][license-link]
   [![Release][release-badge]][release-link]
   [![Commits][commits-badge]][commits-link]
 
-Pingu is a chess engine built from scratch. It communicates via [UCI protocol](https://gist.github.com/DOBRO/2592c6dad754ba67e6dcaec8c90165bf).
+Pingu is a chess engine which communicates via [UCI protocol](https://gist.github.com/DOBRO/2592c6dad754ba67e6dcaec8c90165bf).
 
 </div>
 
@@ -91,7 +89,15 @@ More information on [CCRL](https://www.computerchess.org.uk/ccrl/).
   - Quantized weights
   - AVX2 instructions
 
-NNUE trained from Pingu 3.0.0 self-play data.
+NNUE versions of Pingu were trained with the engine's own self-play data.
+The process is described in [nnue.md](docs/nnue.md).
+
+- [Pingu 3.0.0 dataset](https://www.kaggle.com/datasets/williamching/pingu-3-0-0-self-play-data)
+- [Pingu 2.0.0 dataset](https://www.kaggle.com/datasets/williamching/pingu-2-0-0-dataset)
+
+Early HCE versions of Pingu were Texel-tuned using self-play data from [Ethereal](https://github.com/AndyGrant/Ethereal), obtained from this [forum post](https://talkchess.com/forum3/viewtopic.php?f=7&t=77502).
+The process is described in [evaluation_tuning.md](docs/evaluation_tuning.md).
+
 
 # Thanks
 
