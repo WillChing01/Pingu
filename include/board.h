@@ -1,6 +1,7 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
+#include <bit>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -970,7 +971,46 @@ class Board {
 
         int evaluateBoard()
         {
-            return nnue.forward() * (1-2*(int)(side));
+            int factor = 1;
+            int rawEval = nnue.forward() * (1-2*(int)(side));
+
+            //check for drawish pawnless endgames with imbalanced material.
+            bool arePawnsLeft = (bool)(pieces[_nPawns] | pieces[_nPawns+1]);
+            if (!arePawnsLeft)
+            {
+                int whiteQueens = std::popcount(pieces[_nQueens]);
+                int blackQueens = std::popcount(pieces[_nQueens+1]);
+
+                int whiteRooks = std::popcount(pieces[_nRooks]);
+                int blackRooks = std::popcount(pieces[_nRooks+1]);
+
+                int whiteBishops = std::popcount(pieces[_nBishops]);
+                int blackBishops = std::popcount(pieces[_nBishops+1]);
+
+                int whiteKnights = std::popcount(pieces[_nKnights]);
+                int blackKnights = std::popcount(pieces[_nKnights+1]);
+
+                int materialDiff = 9 * (whiteQueens - blackQueens)
+                                 + 5 * (whiteRooks - blackRooks)
+                                 + 3 * (whiteBishops - blackBishops)
+                                 + 3 * (whiteKnights - blackKnights);
+
+                if (materialDiff < 0) {materialDiff = -materialDiff;}
+
+                //KNNK drawn endgame.
+                if (materialDiff == 6 && whiteQueens == 0 && blackQueens == 0 && whiteRooks == 0 && blackRooks == 0 &&
+                    whiteBishops == 0 && blackBishops == 0 && (whiteKnights + blackKnights == 2))
+                {
+                    factor = 16;
+                }
+                //drawish endgame with material imbalance.
+                else if (materialDiff < 4)
+                {
+                    factor = 8;
+                }
+            }
+
+            return rawEval / factor;
         }
 
         void orderCaptures(int ply)
