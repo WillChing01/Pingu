@@ -995,7 +995,7 @@ class Board {
                 int lastIndex = moveHistory.size() - 1;
                 int diff = irrevMoveInd.size() > 0 ? lastIndex - irrevMoveInd.back() : lastIndex;
 
-                factor *= 1 << std::min(6, diff / 6);
+                factor *= 1 << std::min(3, diff / 12);
             }
 
             return rawEval / factor;
