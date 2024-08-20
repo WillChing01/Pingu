@@ -970,7 +970,14 @@ class Board {
 
         int evaluateBoard()
         {
-            return nnue.forward() * (1-2*(int)(side));
+            int rawEval = nnue.forward() * (1-2*(int)(side));
+
+            //scale eval by 50 move counter.
+            int lastIndex = moveHistory.size() - 1;
+            int diff = irrevMoveInd.size() > 0 ? lastIndex - irrevMoveInd.back() : lastIndex;
+            rawEval = (rawEval * std::min(100, 100 - diff)) / 100;
+
+            return rawEval;
         }
 
         void orderCaptures(int ply)
