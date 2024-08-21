@@ -1,47 +1,33 @@
 #ifndef MATERIAL_COUNTER_H_INCLUDED
 #define MATERIAL_COUNTER_H_INCLUDED
 
+#include <bit>
+
 #include "constants.h"
 
-const int pieceWeights[12] = {0, 0, 9, -9, 5, -5, 3, -3, 3, -3, 1, -1};
+const U64 pieceBase = 12;
+const U64 pieceKeys[10] = {1, 12, 144, 1728, 20736, 248832, 2985984, 35831808, 429981696, 5159780352};
 
 class MaterialCounter
 {
     public:
-        int values[12] = {};
-        int materialDiff = 0;
+        U64 signature = 0;
 
         MaterialCounter() {}
 
-        MaterialCounter(const int* _values) {setValues(_values);}
+        MaterialCounter(const U64* pieces) {setValues(pieces);}
 
-        void setValues(const int* _values)
+        void setValues(const U64* pieces)
         {
-            materialDiff = 0;
-            for (int i=0;i<12;i++)
-            {
-                values[i] = _values[i];
-                materialDiff += pieceWeights[i] * _values[i];
-            }
+            signature = 0;
+            for (int i=2;i<12;i++) {signature += pieceKeys[i-2] * std::popcount(pieces[i]);}
         }
 
-        bool is_equal(const int* _values)
-        {
-            for (int i=2;i<12;i++) {if (values[i] != _values[i]) {return false;}}
-            return true;
-        }
+        void addPiece(const U32 i) {signature += pieceKeys[i-2];}
 
-        void addPiece(const int i)
-        {
-            ++values[i];
-            materialDiff += pieceWeights[i]; 
-        }
+        void removePiece(const U32 i) {signature -= pieceKeys[i-2];}
 
-        void removePiece(const int i)
-        {
-            --values[i];
-            materialDiff -= pieceWeights[i];
-        }
+        U32 getCount(const U32 i) {return (signature / pieceKeys[i-2]) % pieceBase;}
 };
 
 #endif // MATERIAL_COUNTER_H_INCLUDED

@@ -1,7 +1,6 @@
 #ifndef BOARD_H_INCLUDED
 #define BOARD_H_INCLUDED
 
-#include <bit>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -22,6 +21,7 @@
 #include "see.h"
 
 #include "material-counter.h"
+#include "endgames.h"
 #include "evaluation.h"
 #include "nnue.h"
 
@@ -121,12 +121,7 @@ class Board {
             }
         }
 
-        void materialHardUpdate()
-        {
-            int _values[12] = {};
-            for (int i=0;i<12;i++) {_values[i] = std::popcount(pieces[i]);}
-            materialCounter.setValues(_values);
-        }
+        void materialHardUpdate() {materialCounter.setValues(pieces);}
 
         void nnueHardUpdate() {nnue.refreshInput();}
 
@@ -699,8 +694,8 @@ class Board {
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
                 phase += piecePhases[currentMove.finishPieceType >> 1];
-                // materialCounter.removePiece(currentMove.pieceType);
-                // materialCounter.addPiece(currentMove.finishPieceType);
+                materialCounter.removePiece(currentMove.pieceType);
+                materialCounter.addPiece(currentMove.finishPieceType);
             }
 
             //remove any captured pieces.
@@ -712,7 +707,7 @@ class Board {
 
                 //update the game phase.
                 phase -= piecePhases[currentMove.capturedPieceType >> 1];
-                // materialCounter.removePiece(currentMove.capturedPieceType);
+                materialCounter.removePiece(currentMove.capturedPieceType);
 
                 //update nnue.
                 nnue.zeroInput(64 * currentMove.capturedPieceType + capturedSquare);
@@ -770,8 +765,8 @@ class Board {
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
                 phase -= piecePhases[currentMove.finishPieceType >> 1];
-                // materialCounter.addPiece(currentMove.pieceType);
-                // materialCounter.removePiece(currentMove.finishPieceType);
+                materialCounter.addPiece(currentMove.pieceType);
+                materialCounter.removePiece(currentMove.finishPieceType);
             }
 
             //add back captured pieces.
@@ -783,7 +778,7 @@ class Board {
 
                 //update the game phase.
                 phase += piecePhases[currentMove.capturedPieceType >> 1];
-                // materialCounter.addPiece(currentMove.capturedPieceType);
+                materialCounter.addPiece(currentMove.capturedPieceType);
 
                 //update nnue.
                 nnue.oneInput(64 * currentMove.capturedPieceType + capturedSquare);
@@ -987,56 +982,17 @@ class Board {
 
         int evaluateBoard()
         {
-            int factor = 1;
-            int rawEval = nnue.forward() * (1-2*(int)(side));
+            int evalScore = nnue.forward() * (1-2*(int)(side));
 
-            if (phase <= 6 && phase > 0)
+            //check for drawish endgame evaluation.
+            int numPawns = materialCounter.getCount(_nPawns) + materialCounter.getCount(_nPawns+1);
+            if (numPawns <= endgameHashMaxPawns)
             {
-                int lastIndex = moveHistory.size() - 1;
-                int diff = irrevMoveInd.size() > 0 ? lastIndex - irrevMoveInd.back() : lastIndex;
-
-                factor *= 1 << std::min(3, diff / 12);
+                const auto query = endgameHash.find(materialCounter.signature);
+                if (query != endgameHash.end()) {evalScore /= query->second;}
             }
 
-            return rawEval / factor;
-
-            // //check for drawish pawnless endgames with imbalanced material.
-            // bool arePawnsLeft = (bool)(pieces[_nPawns] | pieces[_nPawns+1]);
-            // if (!arePawnsLeft)
-            // {
-            //     int whiteQueens = std::popcount(pieces[_nQueens]);
-            //     int blackQueens = std::popcount(pieces[_nQueens+1]);
-
-            //     int whiteRooks = std::popcount(pieces[_nRooks]);
-            //     int blackRooks = std::popcount(pieces[_nRooks+1]);
-
-            //     int whiteBishops = std::popcount(pieces[_nBishops]);
-            //     int blackBishops = std::popcount(pieces[_nBishops+1]);
-
-            //     int whiteKnights = std::popcount(pieces[_nKnights]);
-            //     int blackKnights = std::popcount(pieces[_nKnights+1]);
-
-            //     int materialDiff = 9 * (whiteQueens - blackQueens)
-            //                      + 5 * (whiteRooks - blackRooks)
-            //                      + 3 * (whiteBishops - blackBishops)
-            //                      + 3 * (whiteKnights - blackKnights);
-
-            //     if (materialDiff < 0) {materialDiff = -materialDiff;}
-
-            //     //KNNK drawn endgame.
-            //     if (materialDiff == 6 && whiteQueens == 0 && blackQueens == 0 && whiteRooks == 0 && blackRooks == 0 &&
-            //         whiteBishops == 0 && blackBishops == 0 && (whiteKnights + blackKnights == 2))
-            //     {
-            //         factor = 16;
-            //     }
-            //     //drawish endgame with material imbalance.
-            //     else if (materialDiff < 4)
-            //     {
-            //         factor = 8;
-            //     }
-            // }
-
-            // return rawEval / factor;
+            return evalScore;
         }
 
         void orderCaptures(int ply)
