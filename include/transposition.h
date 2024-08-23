@@ -42,7 +42,7 @@ const hashStore emptyStore =
 };
 
 U64 hashTableMask = 63; //start with a small hash.
-std::vector<std::pair<hashStore, hashStore> > hashTable(hashTableMask + 1);
+std::pair<hashStore, hashStore> * hashTable = new std::pair<hashStore, hashStore>[hashTableMask + 1];
 
 U64 randomNums[781] = {};
 
@@ -69,7 +69,8 @@ void resizeTT(U64 memory)
     while (hashTableMask <= length) {hashTableMask *= 2;}
     hashTableMask /= 2;
     hashTableMask -= 1;
-    hashTable.resize(hashTableMask + 1, std::pair<hashStore, hashStore>(emptyStore, emptyStore));
+    delete[] hashTable;
+    hashTable = new std::pair<hashStore, hashStore>[hashTableMask + 1];
 }
 
 inline int ttProbeScore(int score, int ply)

@@ -17,5 +17,7 @@ int main(int argc, const char* argv[])
             break;
     }
 
+    delete[] hashTable;
+
     return 0;
 }
