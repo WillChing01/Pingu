@@ -60,10 +60,12 @@ inline int formatScore(int score)
 void collectPVChild(Board &b, int depth)
 {
     U64 bHash = b.zHashPieces ^ b.zHashState;
-    if (ttProbe(bHash, 0) == true && depth > 0)
+    U64 hashInfo = ttProbe(bHash);
+    if (hashInfo && depth > 0)
     {
-        pvMoves.push_back(tableEntry.bestMove);
-        b.makeMove(tableEntry.bestMove);
+        U32 hashMove = getHashMove(hashInfo);
+        pvMoves.push_back(hashMove);
+        b.makeMove(hashMove);
         collectPVChild(b, depth-1);
         b.unmakeMove();
     }
@@ -173,18 +175,25 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 
     //probe hash table.
     U64 bHash = b.zHashPieces ^ b.zHashState;
-    bool hashHit = ttProbe(bHash, ply);
-    U32 hashMove = hashHit ? tableEntry.bestMove : 0;
+    U64 hashInfo = ttProbe(bHash);
 
     //check for early TT cutoff.
-    if (hashHit && tableEntry.depth >= depth)
+    if (hashInfo && getHashDepth(hashInfo) >= depth)
     {
         //PV node.
-        if (tableEntry.isExact) {return tableEntry.evaluation;}
+        if (getHashExactFlag(hashInfo)) {return getHashEval(hashInfo, ply);}
         //Cut node.
-        else if (tableEntry.isBeta) {if (tableEntry.evaluation >= beta) {return tableEntry.evaluation;}}
+        else if (getHashBetaFlag(hashInfo))
+        {
+            int hashEval = getHashEval(hashInfo, ply);
+            if (hashEval >= beta) {return hashEval;}
+        }
         //All node.
-        else {if (tableEntry.evaluation <= alpha) {return tableEntry.evaluation;}}
+        else
+        {
+            int hashEval = getHashEval(hashInfo, ply);
+            if (hashEval <= alpha) {return hashEval;}
+        }
     }
 
     //qSearch at horizon.
@@ -206,7 +215,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //null move pruning.
-    if (hashHit && tableEntry.depth >= depth-nullMoveR-depth/6 && !tableEntry.isBeta && tableEntry.evaluation < beta) {nullMoveAllowed = false;}
+    if (hashInfo && getHashDepth(hashInfo) >= depth-nullMoveR-depth/6 && !getHashBetaFlag(hashInfo) && getHashEval(hashInfo, ply) < beta) {nullMoveAllowed = false;}
     if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
         (b.occupied[b.side] ^ b.pieces[_nKing+b.side] ^ b.pieces[_nPawns+b.side]))
     {
@@ -219,7 +228,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //internal iterative reduction on hash miss.
-    if (!hashHit && depth > 3) {depth--;}
+    if (!hashInfo && depth > 3) {depth--;}
 
     //setup scoring variables.
     int score = 0; bool isExact = false;
@@ -227,7 +236,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     int movesPlayed = 0; int quietsPlayed = 0;
     U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
 
-    MovePicker movePicker(&b, ply, numChecks, hashMove);
+    MovePicker movePicker(&b, ply, numChecks, getHashMove(hashInfo));
 
     bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
 

@@ -29,17 +29,6 @@ const U64 AGESHIFT = 56;
 int rootCounter = 0;
 const int ageLimit = 2;
 
-struct hashEntry
-{
-    int depth;
-    U32 bestMove;
-    int evaluation;
-    bool isExact;
-    bool isBeta;
-};
-
-static hashEntry tableEntry;
-
 struct hashStore
 {
     U64 zHash;
@@ -99,15 +88,33 @@ inline int ttSaveScore(int score, int ply)
         score;
 }
 
-inline void unpackInfo(U64 info, int ply)
+inline U32 getHashMove(const U64 info)
 {
-    tableEntry.bestMove = (info & BESTMOVEMASK);
-    tableEntry.isExact = (info & EXACTFLAGMASK);
-    tableEntry.isBeta = (info & BETAFLAGMASK);
-    tableEntry.depth = (info & DEPTHMASK) >> DEPTHSHIFT;
-    tableEntry.evaluation = (info & EVALMASK) >> EVALSHIFT;
-    if (!(info & EVALSIGNMASK)) {tableEntry.evaluation *= -1;}
-    tableEntry.evaluation = ttProbeScore(tableEntry.evaluation, ply);
+    return info & BESTMOVEMASK;
+}
+
+inline bool getHashExactFlag(const U64 info)
+{
+    return info & EXACTFLAGMASK;
+}
+
+inline bool getHashBetaFlag(const U64 info)
+{
+    return info & BETAFLAGMASK;
+}
+
+inline int getHashDepth(const U64 info)
+{
+    return (info & DEPTHMASK) >> DEPTHSHIFT;
+}
+
+inline int getHashEval(const U64 info, const int ply)
+{
+    int eval = (info & EVALMASK) >> EVALSHIFT;
+    if (!(info & EVALSIGNMASK)) {eval = -eval;}
+    eval = ttProbeScore(eval, ply);
+
+    return eval;
 }
 
 inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, bool isExact, bool isBeta)
@@ -147,20 +154,15 @@ inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, 
     }
 }
 
-inline bool ttProbe(U64 zHash, int ply)
+inline U64 ttProbe(const U64 zHash)
 {
-    if (hashTable[zHash & hashTableMask].first.zHash == zHash)
-    {
-        unpackInfo(hashTable[zHash & hashTableMask].first.info, ply);
-        return true;
-    }
-    if (hashTable[zHash & hashTableMask].second.zHash == zHash)
-    {
-        unpackInfo(hashTable[zHash & hashTableMask].second.info, ply);
-        return true;
-    }
+    U64 index = zHash & hashTableMask;
 
-    return false;
+    //check deep table then always table.
+    if (hashTable[index].first.zHash == zHash) {return hashTable[index].first.info;}
+    if (hashTable[index].second.zHash == zHash) {return hashTable[index].second.info;}
+
+    return 0;
 }
 
 void populateRandomNums()
