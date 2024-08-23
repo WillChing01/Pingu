@@ -2,7 +2,6 @@
 #define TRANSPOSITION_H_INCLUDED
 
 #include <random>
-#include <chrono>
 
 #include "constants.h"
 
@@ -47,7 +46,6 @@ struct hashStore
     U64 info;
 };
 
-static hashStore tableStore;
 const hashStore emptyStore =
 {
     .zHash = 0,
@@ -114,26 +112,38 @@ inline void unpackInfo(U64 info, int ply)
 
 inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, bool isExact, bool isBeta)
 {
-    evaluation = ttSaveScore(evaluation, ply);
-    tableStore.zHash = zHash;
-    tableStore.info = bestMove;
-    tableStore.info += ((U64)(depth) << DEPTHSHIFT) & DEPTHMASK;
-    tableStore.info += ((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK;
-    tableStore.info += ((U64)(evaluation > 0) << EVALSIGNSHIFT);
-    tableStore.info += ((U64)(isExact) << EXACTFLAGSHIFT);
-    tableStore.info += ((U64)(isBeta) << BETAFLAGSHIFT);
-    tableStore.info += ((U64)(rootCounter) << AGESHIFT) & AGEMASK;
+    U64 index = zHash & hashTableMask;
 
-    if (depth >= (int)((hashTable[zHash & hashTableMask].first.info & DEPTHMASK) >> DEPTHSHIFT) ||
-        rootCounter > (int)((hashTable[zHash & hashTableMask].first.info & AGEMASK) >> AGESHIFT) + ageLimit)
+    int deepDepth = (hashTable[index].first.info & DEPTHMASK) >> DEPTHSHIFT;
+    int deepAge = (hashTable[index].first.info & AGEMASK) >> AGESHIFT;
+
+    evaluation = ttSaveScore(evaluation, ply);
+
+    if (depth >= deepDepth || (rootCounter > deepAge + ageLimit))
     {
         //fits in deep table.
-        hashTable[zHash & hashTableMask].first = tableStore;
+        hashTable[index].first.zHash = zHash;
+        hashTable[index].first.info =
+            bestMove +
+            (((U64)(depth) << DEPTHSHIFT) & DEPTHMASK) +
+            (((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK) +
+            ((U64)(evaluation > 0) << EVALSIGNSHIFT) +
+            ((U64)(isExact) << EXACTFLAGSHIFT) +
+            ((U64)(isBeta) << BETAFLAGSHIFT) +
+            (((U64)(rootCounter) << AGESHIFT) & AGEMASK);
     }
     else
     {
         //fits in always table.
-        hashTable[zHash & hashTableMask].second = tableStore;
+        hashTable[index].second.zHash = zHash;
+        hashTable[index].second.info =
+            bestMove +
+            (((U64)(depth) << DEPTHSHIFT) & DEPTHMASK) +
+            (((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK) +
+            ((U64)(evaluation > 0) << EVALSIGNSHIFT) +
+            ((U64)(isExact) << EXACTFLAGSHIFT) +
+            ((U64)(isBeta) << BETAFLAGSHIFT) +
+            (((U64)(rootCounter) << AGESHIFT) & AGEMASK);
     }
 }
 
