@@ -1,6 +1,7 @@
 #ifndef TRANSPOSITION_H_INCLUDED
 #define TRANSPOSITION_H_INCLUDED
 
+#include <atomic>
 #include <random>
 
 #include "constants.h"
@@ -31,14 +32,8 @@ const int ageLimit = 2;
 
 struct hashStore
 {
-    U64 zHash = 0;
-    U64 info = 0;
-};
-
-const hashStore emptyStore =
-{
-    .zHash = 0,
-    .info = 0,
+    std::atomic<U64> zHash = 0;
+    std::atomic<U64> info = 0;
 };
 
 U64 hashTableMask = 63; //start with a small hash.
@@ -56,7 +51,10 @@ void clearTT()
     rootCounter = 0;
     for (int i=0;i<(int)(hashTableMask + 1);i++)
     {
-        hashTable[i] = std::pair<hashStore, hashStore>(emptyStore, emptyStore);
+        hashTable[i].first.zHash = 0;
+        hashTable[i].first.info = 0;
+        hashTable[i].second.zHash = 0;
+        hashTable[i].second.info = 0;
     }
 }
 
