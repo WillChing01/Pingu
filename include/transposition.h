@@ -31,8 +31,8 @@ const int ageLimit = 2;
 
 struct hashStore
 {
-    U64 zHash;
-    U64 info;
+    U64 zHash = 0;
+    U64 info = 0;
 };
 
 const hashStore emptyStore =
@@ -42,7 +42,7 @@ const hashStore emptyStore =
 };
 
 U64 hashTableMask = 63; //start with a small hash.
-std::pair<hashStore, hashStore> * hashTable = new std::pair<hashStore, hashStore>[hashTableMask + 1];
+std::pair<hashStore, hashStore> * hashTable = new std::pair<hashStore, hashStore>[hashTableMask + 1]();
 
 U64 randomNums[781] = {};
 
@@ -70,7 +70,7 @@ void resizeTT(U64 memory)
     hashTableMask /= 2;
     hashTableMask -= 1;
     delete[] hashTable;
-    hashTable = new std::pair<hashStore, hashStore>[hashTableMask + 1];
+    hashTable = new std::pair<hashStore, hashStore>[hashTableMask + 1]();
 }
 
 inline int ttProbeScore(int score, int ply)

@@ -5,7 +5,6 @@ int main(int argc, const char* argv[])
 {
     populateMagicTables();
     populateRandomNums();
-    clearTT();
 
     switch(argc)
     {
