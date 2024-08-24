@@ -125,31 +125,26 @@ inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, 
 
     evaluation = ttSaveScore(evaluation, ply);
 
+    U64 info =
+        bestMove +
+        (((U64)(depth) << DEPTHSHIFT) & DEPTHMASK) +
+        (((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK) +
+        ((U64)(evaluation > 0) << EVALSIGNSHIFT) +
+        ((U64)(isExact) << EXACTFLAGSHIFT) +
+        ((U64)(isBeta) << BETAFLAGSHIFT) +
+        (((U64)(rootCounter) << AGESHIFT) & AGEMASK);
+
     if (depth >= deepDepth || (rootCounter > deepAge + ageLimit))
     {
         //fits in deep table.
-        hashTable[index].first.zHash = zHash;
-        hashTable[index].first.info =
-            bestMove +
-            (((U64)(depth) << DEPTHSHIFT) & DEPTHMASK) +
-            (((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK) +
-            ((U64)(evaluation > 0) << EVALSIGNSHIFT) +
-            ((U64)(isExact) << EXACTFLAGSHIFT) +
-            ((U64)(isBeta) << BETAFLAGSHIFT) +
-            (((U64)(rootCounter) << AGESHIFT) & AGEMASK);
+        hashTable[index].first.zHash = zHash ^ info;
+        hashTable[index].first.info = info;
     }
     else
     {
         //fits in always table.
-        hashTable[index].second.zHash = zHash;
-        hashTable[index].second.info =
-            bestMove +
-            (((U64)(depth) << DEPTHSHIFT) & DEPTHMASK) +
-            (((U64)(abs(evaluation)) << EVALSHIFT) & EVALMASK) +
-            ((U64)(evaluation > 0) << EVALSIGNSHIFT) +
-            ((U64)(isExact) << EXACTFLAGSHIFT) +
-            ((U64)(isBeta) << BETAFLAGSHIFT) +
-            (((U64)(rootCounter) << AGESHIFT) & AGEMASK);
+        hashTable[index].second.zHash = zHash ^ info;
+        hashTable[index].second.info = info;
     }
 }
 
@@ -158,8 +153,8 @@ inline U64 ttProbe(const U64 zHash)
     U64 index = zHash & hashTableMask;
 
     //check deep table then always table.
-    if (hashTable[index].first.zHash == zHash) {return hashTable[index].first.info;}
-    if (hashTable[index].second.zHash == zHash) {return hashTable[index].second.info;}
+    if ((hashTable[index].first.zHash ^ hashTable[index].first.info) == zHash) {return hashTable[index].first.info;}
+    if ((hashTable[index].second.zHash ^ hashTable[index].second.info) == zHash) {return hashTable[index].second.info;}
 
     return 0;
 }
