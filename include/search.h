@@ -107,22 +107,20 @@ inline bool isDrawByFifty(Board &b)
     return diff >= 100;
 }
 
-inline bool checkTime()
+inline void checkTime()
 {
     if (std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count() > timeLeft)
     {
         isSearchAborted = true;
-        return false;
     }
-    else {return true;}
 }
 
 inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
 {
     //check time.
-    totalNodes++;
-    if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
+    if (!(totalNodes & 2047u)) {checkTime();}
     if (isSearchAborted || isSearchPaused) {return 0;}
+    ++totalNodes;
 
     //draw by insufficient material.
     if (isDrawByMaterial(b)) {return 0;}
@@ -168,9 +166,9 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
 inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
 {
     //check time.
-    totalNodes++;
-    if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
+    if (!(totalNodes & 2047u)) {checkTime();}
     if (isSearchAborted || isSearchPaused) {return 0;}
+    ++totalNodes;
 
     //check for draw.
     if (isDrawByRepetition(b) || isDrawByMaterial(b) || isDrawByFifty(b)) {return 0;}
@@ -199,7 +197,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     }
 
     //qSearch at horizon.
-    if (depth <= 0) {totalNodes--; return alphaBetaQuiescence(b, ply, alpha, beta);}
+    if (depth <= 0) {--totalNodes; return alphaBetaQuiescence(b, ply, alpha, beta);}
 
     //main search.
     bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
