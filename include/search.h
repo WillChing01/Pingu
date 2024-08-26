@@ -23,10 +23,10 @@ const int inverseFutilityDepthLimit = 8;
 const int nullMoveR = 2;
 const int nullMoveDepthLimit = 3;
 
-static const int futilityDepthLimit = 2;
+const int futilityDepthLimit = 2;
 const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
 
-static const int lateMovePruningDepthLimit = 4;
+const int lateMovePruningDepthLimit = 4;
 const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {6, 10, 14, 18};
 
 const std::array<int, 3> aspirationDelta = {50, 200, 2 * MATE_SCORE};

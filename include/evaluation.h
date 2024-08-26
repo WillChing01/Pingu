@@ -15,7 +15,7 @@ const int MOB_ROOK_END = 6;
 
 //order is king,queen,rook,bishop,knight,pawn.
 
-static const std::array<int,6> PIECE_VALUES_START =
+const std::array<int,6> PIECE_VALUES_START =
 {{
     20000,
     803,
@@ -25,7 +25,7 @@ static const std::array<int,6> PIECE_VALUES_START =
     74,
 }};
 
-static const std::array<int,6> PIECE_VALUES_END =
+const std::array<int,6> PIECE_VALUES_END =
 {{
     20000,
     1785,
@@ -37,7 +37,7 @@ static const std::array<int,6> PIECE_VALUES_END =
 
 //piece-square tables.
 
-static const std::array<std::array<int,64>,6> PIECE_TABLES_START =
+const std::array<std::array<int,64>,6> PIECE_TABLES_START =
 {{
     {{
           0,  0,  0,  0,  0,  0,  0,-28,
@@ -101,7 +101,7 @@ static const std::array<std::array<int,64>,6> PIECE_TABLES_START =
     }},
 }};
 
-static const std::array<std::array<int,64>,6> PIECE_TABLES_END =
+const std::array<std::array<int,64>,6> PIECE_TABLES_END =
 {{
     {{
         -50, -6, -1,  0, -3, -8,  0,-49,
