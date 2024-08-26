@@ -41,6 +41,8 @@ auto startTime = std::chrono::high_resolution_clock::now();
 auto currentTime = std::chrono::high_resolution_clock::now();
 
 std::atomic_bool isSearchAborted(false);
+std::atomic_bool isSearchPaused(false);
+
 U32 totalNodes = 0;
 
 U32 lastIterTime = 0;
@@ -120,7 +122,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
     //check time.
     totalNodes++;
     if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
-    if (isSearchAborted) {return 0;}
+    if (isSearchAborted || isSearchPaused) {return 0;}
 
     //draw by insufficient material.
     if (isDrawByMaterial(b)) {return 0;}
@@ -168,7 +170,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //check time.
     totalNodes++;
     if ((totalNodes & 2047) == 0) {if (!checkTime()) {return 0;}}
-    if (isSearchAborted) {return 0;}
+    if (isSearchAborted || isSearchPaused) {return 0;}
 
     //check for draw.
     if (isDrawByRepetition(b) || isDrawByMaterial(b) || isDrawByFifty(b)) {return 0;}
@@ -300,22 +302,25 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         {
             if (score >= beta)
             {
-                bool isQuiet = movePicker.stage == QUIET_MOVES || movePicker.singleQuiets.contains(move);
-                if (isQuiet)
+                if (!isSearchAborted && !isSearchPaused)
                 {
-                    //update killers.
-                    b.killer.update(move, ply);
-
-                    //update history.
-                    if (depth >= 5)
+                    bool isQuiet = movePicker.stage == QUIET_MOVES || movePicker.singleQuiets.contains(move);
+                    if (isQuiet)
                     {
-                        if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);}
-                        else {b.history.update(movePicker.singleQuiets, move, depth);}
-                    }
-                }
+                        //update killers.
+                        b.killer.update(move, ply);
 
-                //update tt.
-                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
+                        //update history.
+                        if (depth >= 5)
+                        {
+                            if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);}
+                            else {b.history.update(movePicker.singleQuiets, move, depth);}
+                        }
+                    }
+
+                    //update tt.
+                    ttSave(bHash, ply, depth, move, score, false, true);
+                }
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
@@ -327,7 +332,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //stalemate or checkmate.
     if (movesPlayed == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
 
-    if (!isSearchAborted) {ttSave(bHash, ply, depth, bestMove, bestScore, isExact, false);}
+    if (!isSearchAborted && !isSearchPaused) {ttSave(bHash, ply, depth, bestMove, bestScore, isExact, false);}
     return bestScore;
 }
 
