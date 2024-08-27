@@ -30,14 +30,20 @@ const U64 AGESHIFT = 56;
 int rootCounter = 0;
 const int ageLimit = 2;
 
-struct hashStore
+struct hashEntry
 {
     std::atomic<U64> zHash = 0;
     std::atomic<U64> info = 0;
 };
 
+struct tableEntry
+{
+    hashEntry deepEntry;
+    hashEntry alwaysEntry;
+};
+
 U64 hashTableMask = 63; //start with a small hash.
-std::pair<hashStore, hashStore> * hashTable = new std::pair<hashStore, hashStore>[hashTableMask + 1]();
+tableEntry * hashTable = new tableEntry[hashTableMask + 1]();
 
 U64 randomNums[781] = {};
 
@@ -51,24 +57,23 @@ void clearTT()
     rootCounter = 0;
     for (int i=0;i<(int)(hashTableMask + 1);i++)
     {
-        hashTable[i].first.zHash = 0;
-        hashTable[i].first.info = 0;
-        hashTable[i].second.zHash = 0;
-        hashTable[i].second.info = 0;
+        hashTable[i].deepEntry.zHash = 0;
+        hashTable[i].deepEntry.info = 0;
+        hashTable[i].alwaysEntry.zHash = 0;
+        hashTable[i].alwaysEntry.info = 0;
     }
 }
 
 void resizeTT(U64 memory)
 {
     //memory in MB.
-    U64 length = (memory * 1048576ull)/((U64)sizeof(hashStore));
-    length = length >> 1; //two tables to fill.
+    U64 length = (memory * 1048576ull)/((U64)sizeof(tableEntry));
     hashTableMask = 1;
     while (hashTableMask <= length) {hashTableMask *= 2;}
     hashTableMask /= 2;
     hashTableMask -= 1;
     delete[] hashTable;
-    hashTable = new std::pair<hashStore, hashStore>[hashTableMask + 1]();
+    hashTable = new tableEntry[hashTableMask + 1]();
 }
 
 inline int ttProbeScore(int score, int ply)
@@ -116,12 +121,18 @@ inline int getHashEval(const U64 info, const int ply)
     return eval;
 }
 
+inline int getHashAge(const U64 info)
+{
+    return (info & AGEMASK) >> AGESHIFT;
+}
+
 inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, bool isExact, bool isBeta)
 {
     U64 index = zHash & hashTableMask;
 
-    int deepDepth = (hashTable[index].first.info & DEPTHMASK) >> DEPTHSHIFT;
-    int deepAge = (hashTable[index].first.info & AGEMASK) >> AGESHIFT;
+    U64 deepInfo = hashTable[index].deepEntry.info.load(std::memory_order_relaxed);
+    int deepDepth = getHashDepth(deepInfo);
+    int deepAge = getHashAge(deepInfo);
 
     evaluation = ttSaveScore(evaluation, ply);
 
@@ -137,14 +148,14 @@ inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, 
     if (depth >= deepDepth || (rootCounter > deepAge + ageLimit))
     {
         //fits in deep table.
-        hashTable[index].first.zHash = zHash ^ info;
-        hashTable[index].first.info = info;
+        hashTable[index].deepEntry.zHash.store(zHash ^ info, std::memory_order_relaxed);
+        hashTable[index].deepEntry.info.store(info, std::memory_order_relaxed);
     }
     else
     {
         //fits in always table.
-        hashTable[index].second.zHash = zHash ^ info;
-        hashTable[index].second.info = info;
+        hashTable[index].alwaysEntry.zHash.store(zHash ^ info, std::memory_order_relaxed);
+        hashTable[index].alwaysEntry.info.store(info, std::memory_order_relaxed);
     }
 }
 
@@ -152,9 +163,15 @@ inline U64 ttProbe(const U64 zHash)
 {
     U64 index = zHash & hashTableMask;
 
-    //check deep table then always table.
-    if ((hashTable[index].first.zHash ^ hashTable[index].first.info) == zHash) {return hashTable[index].first.info;}
-    if ((hashTable[index].second.zHash ^ hashTable[index].second.info) == zHash) {return hashTable[index].second.info;}
+    //check deep table.
+    U64 deepHash = hashTable[index].deepEntry.zHash.load(std::memory_order_relaxed);
+    U64 deepInfo = hashTable[index].deepEntry.info.load(std::memory_order_relaxed);
+    if ((deepHash ^ deepInfo) == zHash) {return deepInfo;}
+
+    //check always table.
+    U64 alwaysHash = hashTable[index].alwaysEntry.zHash.load(std::memory_order_relaxed);
+    U64 alwaysInfo = hashTable[index].alwaysEntry.info.load(std::memory_order_relaxed);
+    if ((alwaysHash ^ alwaysInfo) == zHash) {return alwaysInfo;}
 
     return 0;
 }
