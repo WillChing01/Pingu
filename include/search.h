@@ -6,8 +6,6 @@
 #include <algorithm>
 #include <cmath>
 #include <thread>
-#include <mutex>
-#include <condition_variable>
 
 #include "format.h"
 #include "thread.h"
@@ -42,11 +40,8 @@ void collectPV(std::vector<U32> &pvMoves, Board &b, int depth)
 class Search
 {
     public:
-        std::vector<Thread*> threads = {new Thread(&_cv)};
+        std::vector<Thread*> threads = {new Thread()};
         Board pvBoard;
-
-        std::mutex _m;
-        std::condition_variable _cv;
 
         Search() {}
 
@@ -108,7 +103,7 @@ class Search
 
             while (numThreads > (int)threads.size())
             {
-                threads.push_back(new Thread(&_cv));
+                threads.push_back(new Thread());
                 threads.back()->b.copyBoard(threads[0]->b);
             }
         }
@@ -166,7 +161,6 @@ class Search
             bool isSearching = true;
 
             //set the threads to start searching.
-            std::unique_lock<std::mutex> lock(_m);
             for (Thread* thread: threads)
             {
                 thread->prepareSearch(depth, searchTime, analysisMode);
@@ -176,12 +170,9 @@ class Search
 
             while (isSearching)
             {
-                _cv.wait(lock);
-                //check if threads have finished.
                 if (areThreadsTerminated()) {isSearching = false;}
 
-                //check if threads have completed next depth.
-                while (verbose)
+                while (true)
                 {
                     bool isNextDepthFinished = true;
                     for (Thread* thread: threads)
@@ -191,11 +182,13 @@ class Search
 
                     if (isNextDepthFinished)
                     {
-                        outputInfo(nextDepth);
+                        if (verbose) {outputInfo(nextDepth);}
                         ++nextDepth;
                     }
                     else {break;}
                 }
+                
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
 
             return threads[0]->bestMove;

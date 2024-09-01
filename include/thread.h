@@ -46,8 +46,6 @@ class Thread
         std::vector<searchInfo> searchResults;
         std::atomic<U32> depthCounter{0};
 
-        std::condition_variable* _cv;
-
         double searchTime = 0.; // milliseconds.
         std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
 
@@ -57,7 +55,7 @@ class Thread
         int maxDepth = 0;
         bool analysisMode = false;
 
-        Thread(std::condition_variable* cv) {_cv = cv;}
+        Thread() {}
 
         void checkTime()
         {
@@ -369,9 +367,9 @@ class Thread
             bool inCheck = b.generatePseudoMoves();
 
             //checkmate or stalemate.
-            if (b.moveBuffer.size() == 0) {bestScore = inCheck ? -MATE_SCORE : 0; isSearchFinished = true; _cv->notify_one(); return;}
+            if (b.moveBuffer.size() == 0) {bestScore = inCheck ? -MATE_SCORE : 0; isSearchFinished = true; return;}
             //if only one move return immediately.
-            if (b.moveBuffer.size() == 1 && !analysisMode) {bestMove = b.moveBuffer[0]; isSearchFinished = true; _cv->notify_one(); return;}
+            if (b.moveBuffer.size() == 1 && !analysisMode) {bestMove = b.moveBuffer[0]; isSearchFinished = true; return;}
 
             //set root moves.
             for (const U32 move: b.moveBuffer)
@@ -416,12 +414,9 @@ class Thread
                 if (bestScore > MATE_BOUND && !analysisMode) {break;}
                 //early exit if insufficient time for next iteration.
                 if (iterationTime * 2. > timeLeft && !analysisMode) {break;}
-
-                _cv->notify_one();
             }
 
             isSearchFinished = true;
-            _cv->notify_one();
         }
 
         void prepareSearch(int _maxDepth, double _searchTime, bool _analysisMode)
