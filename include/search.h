@@ -79,7 +79,7 @@ class Search
                 << " nps " << nps
                 << " pv";
 
-            std::vector<U32> pvMoves = {threads[0]->bestMove};
+            std::vector<U32> pvMoves = {bestMove};
             pvBoard.makeMove(bestMove);
             collectPV(pvMoves, pvBoard, depth-1);
             pvBoard.unmakeMove();
