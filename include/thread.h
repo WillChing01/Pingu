@@ -369,9 +369,9 @@ class Thread
             bool inCheck = b.generatePseudoMoves();
 
             //checkmate or stalemate.
-            if (b.moveBuffer.size() == 0) {bestScore = inCheck ? -MATE_SCORE : 0; isSearchFinished = true; return;}
+            if (b.moveBuffer.size() == 0) {bestScore = inCheck ? -MATE_SCORE : 0; isSearchFinished = true; _cv->notify_one(); return;}
             //if only one move return immediately.
-            if (b.moveBuffer.size() == 1 && !analysisMode) {bestMove = b.moveBuffer[0]; isSearchFinished = true; return;}
+            if (b.moveBuffer.size() == 1 && !analysisMode) {bestMove = b.moveBuffer[0]; isSearchFinished = true; _cv->notify_one(); return;}
 
             //set root moves.
             for (const U32 move: b.moveBuffer)

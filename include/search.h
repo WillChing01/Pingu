@@ -159,8 +159,11 @@ class Search
 
         U32 go(int depth, double searchTime, bool analysisMode, bool verbose)
         {
-            //increment TT counter.
             ++rootCounter;
+
+            U32 nextDepth = 1;
+            std::string input;
+            bool isSearching = true;
 
             //set the threads to start searching.
             std::unique_lock<std::mutex> lock(_m);
@@ -171,9 +174,6 @@ class Search
                 t.detach();
             }
 
-            U32 nextDepth = 1;
-            std::string input;
-            bool isSearching = true;
             while (isSearching)
             {
                 _cv.wait(lock);
