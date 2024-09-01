@@ -32,8 +32,8 @@ const int ageLimit = 2;
 
 struct hashEntry
 {
-    std::atomic<U64> zHash = 0;
-    std::atomic<U64> info = 0;
+    std::atomic<U64> zHash{0ull};
+    std::atomic<U64> info{0ull};
 };
 
 struct tableEntry

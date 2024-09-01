@@ -167,4 +167,64 @@ const std::vector<engineCommand> COMMANDS = {
     )
 };
 
+void displayHelp(const std::vector<std::string> &words)
+{
+    //display help.
+    const std::string t = "    ";
+
+    //overview.
+    if (words.size() == 1)
+    {
+        int maxLength = 0;
+        for (const auto &command: COMMANDS)
+        {
+            maxLength = std::max(maxLength,(int)command.name.length());
+        }
+        std::cout << "\nCommands:\n";
+        for (const auto &command: COMMANDS)
+        {
+            std::cout << std::left << t << std::setw(maxLength+4)
+                << command.name << command.desc
+            << "\n";
+        }
+        std::cout << "\nType 'help <command>' for more information\n";
+        std::cout << std::endl;
+        return;
+    }
+
+    //verbose.
+    for (const auto &command: COMMANDS)
+    {
+        if (words[1] != command.name) {continue;}
+        std::cout << "\n" << command.desc << "\n";
+        std::cout << "\nUsage: ";
+        if (command.usage.size())
+        {
+            std::cout << "\n";
+            for (const auto &use: command.usage)
+            {
+                std::cout << t << use << "\n";
+            }
+        }
+        else {std::cout << command.name << "\n";}
+        if (command.options.size())
+        {
+            int maxLength = 0;
+            for (const auto &[option,desc]: command.options)
+            {
+                maxLength = std::max(maxLength,(int)option.length());
+            }
+            std::cout << "\nOptions:\n";
+            for (const auto &[option,desc]: command.options)
+            {
+                std::cout << std::left << t << std::setw(maxLength+4)
+                    << option << desc
+                << "\n";
+            }
+        }
+        std::cout << std::endl;
+        return;
+    }
+}
+
 #endif // ENGINE_COMMANDS_H_INCLUDED

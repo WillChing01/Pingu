@@ -492,6 +492,8 @@ class Board {
                 std::cout << " " << i+1 << std::endl;
             }
             std::cout << " A  B  C  D  E  F  G  H" << std::endl;
+
+            std::cout << positionToFen(pieces, current, side) << std::endl;
         }
 
         void generateCaptures(int numChecks)

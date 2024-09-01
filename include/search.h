@@ -5,51 +5,12 @@
 #include <atomic>
 #include <algorithm>
 #include <cmath>
-#include <unordered_set>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
-#include "bitboard.h"
-#include "transposition.h"
-#include "evaluation.h"
 #include "format.h"
-#include "board.h"
-#include "validate.h"
-#include "movepicker.h"
-
-const int maximumPruningDepth = 8;
-
-const int inverseFutilityMargin = 120;
-const int inverseFutilityDepthLimit = 8;
-
-const int nullMoveR = 2;
-const int nullMoveDepthLimit = 3;
-
-const int futilityDepthLimit = 2;
-const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
-
-const int lateMovePruningDepthLimit = 4;
-const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {6, 10, 14, 18};
-
-const std::array<int, 3> aspirationDelta = {50, 200, 2 * MATE_SCORE};
-const std::array<int, 4> betaDelta = {1, 50, 200, 2 * MATE_SCORE};
-
-U32 storedBestMove = 0;
-int storedBestScore = 0;
-std::vector<U32> pvMoves;
-
-double timeLeft = 0; //milliseconds.
-auto startTime = std::chrono::high_resolution_clock::now();
-auto currentTime = std::chrono::high_resolution_clock::now();
-
-std::atomic_bool isSearchAborted(false);
-std::atomic_bool isSearchPaused(false);
-
-U32 totalNodes = 0;
-
-U32 lastIterTime = 0;
-U32 lastIterNodes = 0;
-U32 lastIterNps = 0;
-
-bool isGameOver = false;
+#include "thread.h"
 
 inline int formatScore(int score)
 {
@@ -59,419 +20,186 @@ inline int formatScore(int score)
         score;
 }
 
-void collectPVChild(Board &b, int depth)
+void collectPV(std::vector<U32> &pvMoves, Board &b, int depth)
 {
+    if (depth == 0) {return;}
+
     U64 bHash = b.zHashPieces ^ b.zHashState;
     U64 hashInfo = ttProbe(bHash);
-    if (hashInfo && depth > 0)
-    {
-        U32 hashMove = getHashMove(hashInfo);
-        pvMoves.push_back(hashMove);
-        b.makeMove(hashMove);
-        collectPVChild(b, depth-1);
-        b.unmakeMove();
-    }
-}
+    if (!hashInfo) {return;}
 
-void collectPVRoot(Board &b, U32 bestMove, int depth)
-{
-    pvMoves.clear();
-    pvMoves.push_back(bestMove);
-    b.makeMove(bestMove);
-    collectPVChild(b, depth-1);
+    U32 hashMove = getHashMove(hashInfo);
+    bool isInCheck = util::isInCheck(b.side, b.pieces, b.occupied);
+    bool isValid = validate::isValidMove(hashMove, isInCheck, b.side, b.current, b.pieces, b.occupied);
+    if (!isValid) {return;}
+
+    pvMoves.push_back(hashMove);
+    b.makeMove(hashMove);
+    collectPV(pvMoves, b, depth-1);
     b.unmakeMove();
 }
 
-inline bool isDrawByRepetition(Board &b)
+class Search
 {
-    //check if current position has appeared in moveHistory.
-    U32 zHash = b.zHashPieces ^ b.zHashState;
-    int finishInd = b.irrevMoveInd.size() ? b.irrevMoveInd.back() : -1;
-    for (int i=(int)(b.hashHistory.size())-4;i>finishInd;i-=2)
-    {
-        if (b.hashHistory[i] == zHash) {return true;}
-    }
-    return false;
-}
+    public:
+        std::vector<Thread*> threads = {new Thread(&_cv)};
+        Board pvBoard;
 
-inline bool isDrawByMaterial(Board &b)
-{
-    return b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1]);
-}
+        std::mutex _m;
+        std::condition_variable _cv;
 
-inline bool isDrawByFifty(Board &b)
-{
-    //check if draw by fifty move rule.
-    int lastIndex = b.moveHistory.size() - 1;
-    int diff = b.irrevMoveInd.size() > 0 ? lastIndex - b.irrevMoveInd.back() : lastIndex;
-    return diff >= 100;
-}
+        Search() {}
 
-inline void checkTime()
-{
-    if (std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count() > timeLeft)
-    {
-        isSearchAborted = true;
-    }
-}
-
-inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
-{
-    //check time.
-    if (!(totalNodes & 2047u)) {checkTime();}
-    if (isSearchAborted || isSearchPaused) {return 0;}
-    ++totalNodes;
-
-    //draw by insufficient material.
-    if (isDrawByMaterial(b)) {return 0;}
-
-    bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
-    int bestScore = -MATE_SCORE + ply;
-
-    //stand pat.
-    if (!inCheck)
-    {
-        bestScore = b.evaluateBoard();
-        if (bestScore > alpha)
+        ~Search()
         {
-            if (bestScore >= beta) {return bestScore;}
-            alpha = bestScore;
-        }
-    }
-
-    U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
-    QMovePicker movePicker(&b, ply, numChecks);
-
-    //loop through moves and search them.
-    while (U32 move = movePicker.getNext())
-    {
-        b.makeMove(move);
-        int score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
-        b.unmakeMove();
-
-        if (score > bestScore)
-        {
-            if (score > alpha)
+            while (threads.size())
             {
-                if (score >= beta) {return score;}
-                alpha = score;
-            }
-            bestScore = score;
-        }
-    }
-
-    return bestScore;
-}
-
-inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
-{
-    //check time.
-    if (!(totalNodes & 2047u)) {checkTime();}
-    if (isSearchAborted || isSearchPaused) {return 0;}
-    ++totalNodes;
-
-    //check for draw.
-    if (isDrawByRepetition(b) || isDrawByMaterial(b) || isDrawByFifty(b)) {return 0;}
-
-    //probe hash table.
-    U64 bHash = b.zHashPieces ^ b.zHashState;
-    U64 hashInfo = ttProbe(bHash);
-
-    //check for early TT cutoff.
-    if (hashInfo && getHashDepth(hashInfo) >= depth)
-    {
-        //PV node.
-        if (getHashExactFlag(hashInfo)) {return getHashEval(hashInfo, ply);}
-        //Cut node.
-        else if (getHashBetaFlag(hashInfo))
-        {
-            int hashEval = getHashEval(hashInfo, ply);
-            if (hashEval >= beta) {return hashEval;}
-        }
-        //All node.
-        else
-        {
-            int hashEval = getHashEval(hashInfo, ply);
-            if (hashEval <= alpha) {return hashEval;}
-        }
-    }
-
-    //qSearch at horizon.
-    if (depth <= 0) {--totalNodes; return alphaBetaQuiescence(b, ply, alpha, beta);}
-
-    //main search.
-    bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
-
-    //get static evaluation.
-    int staticEval = 0;
-    bool canPrune = (alpha == beta - 1) && !inCheck && abs(alpha) < MATE_BOUND;
-    if (canPrune && depth <= maximumPruningDepth) {staticEval = b.evaluateBoard();}
-
-    //inverse futility pruning.
-    if (canPrune && depth <= inverseFutilityDepthLimit)
-    {
-        int margin = inverseFutilityMargin * depth;
-        if (staticEval - margin >= beta) {return beta;}
-    }
-
-    //null move pruning.
-    if (hashInfo && getHashDepth(hashInfo) >= depth-nullMoveR-depth/6 && !getHashBetaFlag(hashInfo) && getHashEval(hashInfo, ply) < beta) {nullMoveAllowed = false;}
-    if (nullMoveAllowed && !inCheck && depth >= nullMoveDepthLimit &&
-        (b.occupied[b.side] ^ b.pieces[_nKing+b.side] ^ b.pieces[_nPawns+b.side]))
-    {
-        b.makeNullMove();
-        int nullScore = -alphaBeta(b, -beta, -beta+1, depth-1-nullMoveR-depth/6, ply+1, false);
-        b.unmakeNullMove();
-
-        //fail hard only for null move pruning.
-        if (nullScore >= beta) {return beta;}
-    }
-
-    //internal iterative reduction on hash miss.
-    if (!hashInfo && depth > 3) {depth--;}
-
-    //setup scoring variables.
-    int score = 0; bool isExact = false;
-    int bestScore = -MATE_SCORE; U32 bestMove = 0;
-    int movesPlayed = 0; int quietsPlayed = 0;
-    U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
-
-    MovePicker movePicker(&b, ply, numChecks, getHashMove(hashInfo));
-
-    bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
-
-    bool canFutilityPrune = canPrune && depth <= futilityDepthLimit &&
-                            staticEval + futilityMargins[depth-1] <= alpha;
-
-    //loop through moves and search them.
-    while (U32 move = movePicker.getNext())
-    {
-        //late move pruning.
-        if (canLateMovePrune && quietsPlayed > lateMovePruningMargins[depth-1]) {break;}
-
-        //futility pruning.
-        if (canFutilityPrune && movesPlayed > 0 && movePicker.stage == QUIET_MOVES && !b.isCheckingMove(move)) {continue;}
-
-        //search with PVS. Research if reductions do not fail low.
-        b.makeMove(move);
-
-        //late move reductions.
-        int reduction = 0;
-        bool canLateMoveReduce = !inCheck && alpha == beta-1;
-        switch(movePicker.stage)
-        {
-            case HASH_MOVE:
-                break;
-            case GOOD_CAPTURES:
-                break;
-            case KILLER_MOVES:
-                if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3) {reduction = 1;}
-                break;
-            case BAD_CAPTURES:
-                if (canLateMoveReduce && depth >= 3 && movesPlayed >= 3)
-                {
-                    score = -alphaBetaQuiescence(b, ply+1, -beta, -alpha);
-                    if (score <= alpha) {reduction = 1;}
-                }
-                break;
-            case QUIET_MOVES:
-                if (canLateMoveReduce && movesPlayed > 0) {reduction = int(0.5 * std::log((double)depth) * std::log((double)(movesPlayed+1)));}
-                break;
-        }
-
-        if (depth >= 2 && movesPlayed > 0)
-        {
-            if (reduction > 0) {score = -alphaBeta(b, -beta, -alpha, depth-1-reduction, ply+1, true);}
-            else {score = alpha + 1;}
-
-            if (score > alpha)
-            {
-                score = -alphaBeta(b, -alpha-1, -alpha, depth-1, ply+1, true);
-                if (score > alpha && score < beta) {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
+                delete threads.back();
+                threads.pop_back();
             }
         }
-        else {score = -alphaBeta(b, -beta, -alpha, depth-1, ply+1, true);}
-        b.unmakeMove();
-        ++movesPlayed;
-        if (movePicker.stage == QUIET_MOVES) {++quietsPlayed;}
 
-        //update scores.
-        if (score > bestScore)
+        void outputInfo(int depth)
         {
-            if (score >= beta)
+            //collect info from all threads.
+            U32 totalNodes = 0;
+            double averageTime = 0.;
+
+            //output pv and score of first thread (arbitrary).
+            for (Thread* thread: threads)
             {
-                if (!isSearchAborted && !isSearchPaused)
-                {
-                    bool isQuiet = movePicker.stage == QUIET_MOVES || movePicker.singleQuiets.contains(move);
-                    if (isQuiet)
-                    {
-                        //update killers.
-                        b.killer.update(move, ply);
-
-                        //update history.
-                        if (depth >= 5)
-                        {
-                            if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);}
-                            else {b.history.update(movePicker.singleQuiets, move, depth);}
-                        }
-                    }
-
-                    //update tt.
-                    ttSave(bHash, ply, depth, move, score, false, true);
-                }
-                return score;
+                totalNodes += thread->searchResults[depth-1].nodes;
+                averageTime += thread->searchResults[depth-1].time / threads.size();
             }
-            if (score > alpha) {alpha = score; isExact = true;}
-            bestScore = score;
-            bestMove = move;
-        }
-    }
+            U32 nps = (U32)((double)totalNodes * 1000. / averageTime);
 
-    //stalemate or checkmate.
-    if (movesPlayed == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
+            int bestScore = threads[0]->searchResults[depth-1].bestScore;
+            U32 bestMove = threads[0]->searchResults[depth-1].bestMove;
 
-    if (!isSearchAborted && !isSearchPaused) {ttSave(bHash, ply, depth, bestMove, bestScore, isExact, false);}
-    return bestScore;
-}
+            std::cout << "info"
+                << " depth " << depth
+                << " score " << (abs(bestScore) > MATE_BOUND ? "mate " : "cp ") << formatScore(bestScore)
+                << " time " << (U32)averageTime
+                << " nodes " << totalNodes
+                << " nps " << nps
+                << " pv";
 
-int alphaBetaRoot(Board &b, int depth, bool gensfen = false)
-{
-    //track start-time of search.
-    startTime = std::chrono::high_resolution_clock::now();
+            std::vector<U32> pvMoves = {threads[0]->bestMove};
+            pvBoard.makeMove(bestMove);
+            collectPV(pvMoves, pvBoard, depth-1);
+            pvBoard.unmakeMove();
 
-    //update TT 'age' and reset nodes.
-    rootCounter++;
-    totalNodes = 0;
-
-    //reset gameover state.
-    isGameOver = false;
-
-    //generate moves.
-    bool inCheck = b.generatePseudoMoves();
-
-    //checkmate or stalemate.
-    if (b.moveBuffer.size() == 0) {storedBestMove = 0; isGameOver = true; return inCheck ? -MATE_SCORE : 0;}
-
-    //if only one move, return immediately.
-    if (b.moveBuffer.size() == 1 && !gensfen) {storedBestMove = b.moveBuffer[0]; return 0;}
-
-    //draw by insufficient material.
-    if (b.phase <= 1 && !(b.pieces[_nPawns] | b.pieces[_nPawns+1])) {storedBestMove = b.moveBuffer[0]; isGameOver = true; return 0;}
-
-    //create move cache.
-    std::vector<std::pair<U32,int> > moveCache;
-    for (const auto move: b.moveBuffer)
-    {
-        moveCache.push_back(std::pair<U32,int>(move, 0));
-    }
-
-    //age history at root.
-    b.history.age(8);
-
-    //reset best score and best move.
-    storedBestScore = -MATE_SCORE; storedBestMove = 0;
-    int pvIndex = 0;
-
-    //iterative deepening.
-    for (int itDepth = 1; itDepth <= std::min(depth, MAXDEPTH); itDepth++)
-    {
-        auto iterationStartTime = std::chrono::high_resolution_clock::now();
-
-        U32 startNodes = totalNodes;
-        totalNodes++;
-
-        int score;
-        int alpha = -MATE_SCORE; int beta = MATE_SCORE;
-
-        //order moves for later depths by nodes searched.
-        if (itDepth > 1)
-        {
-            //put best move of previous iter to front.
-            moveCache[pvIndex].second = INT_MAX;
-
-            //sort rest of moves.
-            sort(moveCache.begin(), moveCache.end(), [](const auto &a, const auto &b) {return a.second > b.second;});
-        }
-
-        //play moves.
-        for (int i=0;i<(int)(moveCache.size());i++)
-        {
-            U32 startMoveNodes = totalNodes;
-            b.makeMove(moveCache[i].first);
-            if (i == 0)
+            for (const U32 move: pvMoves)
             {
-                //aspiration window for pv move.
-                int alphaInd = itDepth >= 5 ? 0 : aspirationDelta.size() - 1;
-                int betaInd = itDepth >= 5 ? 0 : aspirationDelta.size() - 1;
-                while (true)
-                {
-                    alpha = std::max(storedBestScore - aspirationDelta[alphaInd], -MATE_SCORE);
-                    beta = std::min(storedBestScore + aspirationDelta[betaInd], MATE_SCORE);
-                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
-                    if (score <= alpha) {++alphaInd;}
-                    else if (score >= beta) {++betaInd;}
-                    else {break;}
-                }
-            }
-            else
-            {
-                int betaInd = itDepth >= 2 ? 0 : betaDelta.size() - 1;
-                while (true)
-                {
-                    beta = std::min(alpha + betaDelta[betaInd], MATE_SCORE);
-                    score = -alphaBeta(b, -beta, -alpha, itDepth-1, 1, true);
-                    if (score >= beta) {++betaInd;}
-                    else {break;}
-                }
-            }
-            b.unmakeMove();
-            if (score > alpha && !isSearchAborted)
-            {
-                alpha = score;
-                pvIndex = i;
-                storedBestMove = moveCache[i].first;
-                storedBestScore = score;
-            }
-            moveCache[i].second = totalNodes - startMoveNodes;
-        }
-
-        //check if time is up.
-        if (isSearchAborted) {break;}
-
-        auto iterationFinishTime = std::chrono::high_resolution_clock::now();
-        
-        double iterationTime = std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
-        double realTimeLeft = std::max(timeLeft - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count(), 0.);
-
-        lastIterTime = (U32)(iterationTime);
-        lastIterNodes = totalNodes - startNodes;
-        lastIterNps = (U32)((double)(lastIterNodes) / (iterationTime / 1000.));
-
-        //display info.
-        if (!gensfen)
-        {
-            std::cout << "info" <<
-                " depth " << itDepth <<
-                " score " << (abs(storedBestScore) > MATE_BOUND ? "mate " : "cp ") << formatScore(storedBestScore) <<
-                " time " << lastIterTime <<
-                " nodes " << lastIterNodes <<
-                " nps " << lastIterNps <<
-                " pv";
-            collectPVRoot(b, storedBestMove, itDepth);
-            for (const auto pvMove: pvMoves)
-            {
-                std::cout << " " << moveToString(pvMove);
+                std::cout << " " << moveToString(move);
             } std::cout << std::endl;
         }
 
-        //break if checkmate is reached.
-        if (storedBestScore > MATE_BOUND) {break;}
+        void setThreads(int numThreads)
+        {
+            if (!areThreadsTerminated()) {return;}
+            if (numThreads < 1) {return;}
 
-        //early exit if insufficient time for next iteration.
-        //assume a branching factor of 2.
-        if (iterationTime * 2. > realTimeLeft) {break;}
-    }
-    return storedBestScore;
-}
+            while (numThreads < (int)threads.size())
+            {
+                delete threads.back();
+                threads.pop_back();
+            }
+
+            while (numThreads > (int)threads.size())
+            {
+                threads.push_back(new Thread(&_cv));
+                threads.back()->b.copyBoard(threads[0]->b);
+            }
+        }
+
+        bool areThreadsTerminated()
+        {
+            for (Thread* thread: threads)
+            {
+                if (!thread->isSearchFinished) {return false;}
+            }
+            return true;
+        }
+
+        void terminateThreads()
+        {
+            for (Thread* thread: threads)
+            {
+                thread->isSearchAborted = true;
+                while (!thread->isSearchFinished) {}
+            }
+        }
+
+        void prepareForNewGame()
+        {
+            for (Thread* thread: threads)
+            {
+                thread->prepareNewGame();
+            }
+        }
+
+        void setPositionFen(const std::string &fen)
+        {
+            pvBoard.setPositionFen(fen);
+            for (Thread* thread: threads)
+            {
+                thread->b.setPositionFen(fen);
+            }
+        }
+
+        void makeMove(const U32 move)
+        {
+            pvBoard.makeMove(move);
+            for (Thread* thread: threads)
+            {
+                thread->b.makeMove(move);
+            }
+        }
+
+        U32 go(int depth, double searchTime, bool analysisMode, bool verbose)
+        {
+            //increment TT counter.
+            ++rootCounter;
+
+            //set the threads to start searching.
+            std::unique_lock<std::mutex> lock(_m);
+            for (Thread* thread: threads)
+            {
+                thread->prepareSearch(depth, searchTime, analysisMode);
+                std::thread t(&Thread::rootSearch, thread);
+                t.detach();
+            }
+
+            U32 nextDepth = 1;
+            std::string input;
+            bool isSearching = true;
+            while (isSearching)
+            {
+                _cv.wait(lock);
+                //check if threads have finished.
+                if (areThreadsTerminated()) {isSearching = false;}
+
+                //check if threads have completed next depth.
+                while (verbose)
+                {
+                    bool isNextDepthFinished = true;
+                    for (Thread* thread: threads)
+                    {
+                        if (thread->depthCounter < nextDepth) {isNextDepthFinished = false; break;}
+                    }
+
+                    if (isNextDepthFinished)
+                    {
+                        outputInfo(nextDepth);
+                        ++nextDepth;
+                    }
+                    else {break;}
+                }
+            }
+
+            return threads[0]->bestMove;
+        }
+};
 
 #endif // SEARCH_H_INCLUDED
