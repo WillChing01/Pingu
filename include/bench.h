@@ -1,6 +1,7 @@
 #ifndef BENCH_H_INCLUDED
 #define BENCH_H_INCLUDED
 
+#include <chrono>
 #include <iostream>
 #include <string>
 
@@ -29,20 +30,20 @@ void benchCommand()
 
     for (const std::string &fen: benchPositions)
     {
-        clearTT();
-        rootCounter = 0;
+        prepareForNewGame(search);
         search.setPositionFen(fen);
+
+        auto startTime = std::chrono::high_resolution_clock::now();
         search.go(benchDepth, INT_MAX, true, false);
-    
-        U32 iterNodes = search.threads[0]->searchResults.back().nodes;
-        double iterTime = search.threads[0]->searchResults.back().time;
+        auto finishTime = std::chrono::high_resolution_clock::now();
 
-        U32 iterNps = (U32)((double)iterNodes * 1000. / iterTime);
-
+        U64 iterNodes = globalNodeCount;
+        double iterTime = std::chrono::duration<double, std::milli>(finishTime - startTime).count();
+        
         nodes += iterNodes;
         time += iterTime;
 
-        std::cout << "info bench position " << fen << " nodes " << iterNodes << " nps " << iterNps << std::endl;
+        std::cout << "info bench position " << fen << " nodes " << iterNodes << " nps " << (U64)((double)(iterNodes) * 1000. / iterTime) << std::endl;
     }
 
     double nps = 1000. * (double)(nodes) / (time);

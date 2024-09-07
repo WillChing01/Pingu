@@ -73,7 +73,7 @@ void positionCommand(Search &s, const std::vector<std::string> &words)
     //play the specified moves.
     for (int i=ind;i<(int)words.size();i++)
     {
-        U32 chessMove = stringToMove(s.pvBoard, words[i]);
+        U32 chessMove = stringToMove(s.mainThread.b, words[i]);
         if (chessMove == 0) {break;}
         s.makeMove(chessMove);
     }
@@ -175,8 +175,8 @@ void goCommand(Search &s, const std::vector<std::string> &words)
 
         depth = 100;
 
-        double timeLeft = s.pvBoard.side ? blackTime : whiteTime;
-        double increment = s.pvBoard.side ? blackInc : whiteInc;
+        double timeLeft = s.mainThread.b.side ? blackTime : whiteTime;
+        double increment = s.mainThread.b.side ? blackInc : whiteInc;
 
         moveTime = timeLeft / std::max(movesToGo, 20) + 0.5 * increment;
         if (moveTime > timeLeft) {moveTime = 0.8 * timeLeft;}
@@ -214,8 +214,8 @@ void uciLoop()
         if (isSearching)
         {
             if (input == "isready") {std::cout << "readyok" << std::endl;}
-            else if (input == "stop") {search.terminateThreads(); while (isSearching);}
-            else if (input == "quit") {search.terminateThreads(); while (isSearching); break;}
+            else if (input == "stop") {search.terminateSearch(); while (isSearching);}
+            else if (input == "quit") {search.terminateSearch() ; while (isSearching); break;}
         }
         else
         {
@@ -225,12 +225,12 @@ void uciLoop()
             else if (commands[0] == "ucinewgame") {prepareForNewGame(search);}
             else if (commands[0] == "position") {positionCommand(search, commands);}
             else if (commands[0] == "go") {std::thread(goCommand, std::ref(search), std::ref(commands)).detach();}
-            else if (commands[0] == "eval") {evalCommand(search.pvBoard, commands);}
-            else if (commands[0] == "see") {seeCommand(search.pvBoard, commands);}
-            else if (commands[0] == "perft") {perftCommand(search.pvBoard, commands);}
-            else if (commands[0] == "display") {search.pvBoard.display();}
+            else if (commands[0] == "eval") {evalCommand(search.mainThread.b, commands);}
+            else if (commands[0] == "see") {seeCommand(search.mainThread.b, commands);}
+            else if (commands[0] == "perft") {perftCommand(search.mainThread.b, commands);}
+            else if (commands[0] == "display") {search.mainThread.b.display();}
             // else if (commands[0] == "gensfen") {gensfenCommand(b, commands);}
-            else if (commands[0] == "test") {testCommand(search.pvBoard, commands);}
+            else if (commands[0] == "test") {testCommand(search.mainThread.b, commands);}
             else if (commands[0] == "help") {displayHelp(commands);}
             else if (commands[0] == "quit") {break;}
         }

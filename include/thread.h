@@ -24,13 +24,34 @@ const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {6, 10
 const std::array<int, 3> aspirationDelta = {50, 200, 2 * MATE_SCORE};
 const std::array<int, 4> betaDelta = {1, 50, 200, 2 * MATE_SCORE};
 
-struct searchInfo
+inline int formatScore(int score)
 {
-    double time;
-    U32 nodes;
-    U32 bestMove;
-    int bestScore;
-};
+    return
+        score > MATE_BOUND ? (MATE_SCORE - score + 1) / 2 :
+        score < -MATE_BOUND ? (-MATE_SCORE - score) / 2 :
+        score;
+}
+
+inline void collectPV(std::vector<U32> &pvMoves, Board &b, int depth)
+{
+    if (depth == 0) {return;}
+
+    U64 bHash = b.zHashPieces ^ b.zHashState;
+    U64 hashInfo = ttProbe(bHash);
+    if (!hashInfo) {return;}
+
+    U32 hashMove = getHashMove(hashInfo);
+    bool isInCheck = util::isInCheck(b.side, b.pieces, b.occupied);
+    bool isValid = validate::isValidMove(hashMove, isInCheck, b.side, b.current, b.pieces, b.occupied);
+    if (!isValid) {return;}
+
+    pvMoves.push_back(hashMove);
+    b.makeMove(hashMove);
+    collectPV(pvMoves, b, depth-1);
+    b.unmakeMove();
+}
+
+std::atomic<U64> globalNodeCount = 0;
 
 class Thread
 {
@@ -43,9 +64,6 @@ class Thread
         U32 bestMove = 0;
         int bestScore = 0;
 
-        std::vector<searchInfo> searchResults;
-        std::atomic<U32> depthCounter{0};
-
         double searchTime = 0.; // milliseconds.
         std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
 
@@ -54,6 +72,8 @@ class Thread
 
         int maxDepth = 0;
         bool analysisMode = false;
+
+        std::vector<U32> pvMoves;
 
         Thread() {}
 
@@ -95,7 +115,7 @@ class Thread
             //check time.
             if (!(nodeCount & 2047u)) {checkTime();}
             if (isSearchAborted) {return 0;}
-            ++nodeCount;
+            ++nodeCount; ++globalNodeCount;
 
             //draw by insufficient material.
             if (isDrawByMaterial()) {return 0;}
@@ -143,7 +163,7 @@ class Thread
             //check time.
             if (!(nodeCount & 2047u)) {checkTime();}
             if (isSearchAborted) {return 0;}
-            ++nodeCount;
+            ++nodeCount; ++globalNodeCount;
 
             //check for draw.
             if (isDrawByRepetition() || isDrawByMaterial() || isDrawByFifty()) {return 0;}
@@ -172,7 +192,7 @@ class Thread
             }
 
             //qSearch at horizon.
-            if (depth <= 0) {--nodeCount; return qSearch(ply, alpha, beta);}
+            if (depth <= 0) {--nodeCount; --globalNodeCount; return qSearch(ply, alpha, beta);}
 
             //main search.
             bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
@@ -361,7 +381,7 @@ class Thread
             }
         }
 
-        void rootSearch()
+        void rootSearch(bool verbose)
         {
             //root search with iterative deepening.
             bool inCheck = b.generatePseudoMoves();
@@ -381,8 +401,7 @@ class Thread
             {
                 //start of iteration book-keeping.
                 auto iterationStartTime = std::chrono::high_resolution_clock::now();
-                U32 iterationStartNodes = nodeCount;
-                ++nodeCount;
+                ++nodeCount; ++globalNodeCount;
 
                 //order root moves by nodes searched.
                 if (depth > 1)
@@ -396,19 +415,12 @@ class Thread
                 if (isSearchAborted) {break;}
 
                 //end of iteration book-keeping.
-                U32 iterationNodeCount = nodeCount - iterationStartNodes;
                 auto iterationFinishTime = std::chrono::high_resolution_clock::now();
                 double iterationTime = std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
-                double timeLeft = std::max(searchTime - std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - startTime).count(), 0.);
+                double totalTimeSpent = std::chrono::duration<double, std::milli>(iterationFinishTime - startTime).count();
+                double timeLeft = std::max(searchTime - totalTimeSpent, 0.);
 
-                searchResults.push_back((searchInfo){
-                    .time = iterationTime,
-                    .nodes = iterationNodeCount,
-                    .bestMove = bestMove,
-                    .bestScore = bestScore
-                });
-
-                ++depthCounter;
+                if (verbose) {outputInfo(depth, totalTimeSpent);}
 
                 //early exit if mate detected.
                 if (bestScore > MATE_BOUND && !analysisMode) {break;}
@@ -436,8 +448,6 @@ class Thread
             bestScore = -MATE_SCORE;
 
             rootMoves.clear();
-            searchResults.clear();
-            depthCounter = 0;
 
             //age history at root.
             b.history.age(8);
@@ -447,6 +457,28 @@ class Thread
         {
             b.killer.clear();
             b.history.clear();
+        }
+
+        void outputInfo(int depth, double totalTimeSpent)
+        {
+            U64 nps = (U64)((double)(globalNodeCount) * 1000. / totalTimeSpent);
+            std::cout << "info"
+                << " depth " << depth
+                << " score " << (abs(bestScore) > MATE_BOUND ? "mate " : "cp ") << formatScore(bestScore)
+                << " time " << (U64)totalTimeSpent
+                << " nodes " << globalNodeCount
+                << " nps " << nps
+                << " pv";
+
+            pvMoves = {bestMove};
+            b.makeMove(bestMove);
+            collectPV(pvMoves, b, depth-1);
+            b.unmakeMove();
+
+            for (const U32 move: pvMoves)
+            {
+                std::cout << " " << moveToString(move);
+            } std::cout << std::endl;
         }
 };
 
