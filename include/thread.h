@@ -223,7 +223,7 @@ class Thread
             }
 
             //internal iterative reduction on hash miss.
-            if (!hashInfo && depth > 3) {depth--;}
+            if (!hashInfo && depth > 3) {--depth;}
 
             //setup scoring variables.
             int score = 0; bool isExact = false;
@@ -358,7 +358,7 @@ class Thread
             rootMoves[0].second = nodeCount - startNodes;
 
             //pvs with aspiration for subsequent moves.
-            for (int i=1;i<(int)(rootMoves.size());i++)
+            for (int i=1;i<(int)(rootMoves.size());++i)
             {
                 startNodes = nodeCount;
                 b.makeMove(rootMoves[i].first);
