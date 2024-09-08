@@ -115,7 +115,6 @@ class Search
 
             //wait for helper threads to finish.
             terminateThreads();
-            while (!areThreadsTerminated()) {}
 
             return mainThread.bestMove;
         }
