@@ -90,7 +90,7 @@ PyTorch with GPU acceleration was used to train the model.
 
 The mean squared error of a sigmoid transformation was used to calculate loss.
 
-```
+```py
 def custom_loss(output, target):
     K = 0.00475
     output_scaled = torch.sigmoid(K*output)
