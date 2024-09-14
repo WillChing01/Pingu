@@ -41,7 +41,6 @@ auto startTime = std::chrono::high_resolution_clock::now();
 auto currentTime = std::chrono::high_resolution_clock::now();
 
 std::atomic_bool isSearchAborted(false);
-
 U32 totalNodes = 0;
 
 U32 lastIterTime = 0;
