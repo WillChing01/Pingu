@@ -22,6 +22,7 @@ Pingu accepts many of the usual UCI commands (go/stop/position etc.) and it has 
 
 | Version | CCRL Blitz | CCRL 40/15 |
 | ------: | ---------: | ---------: |
+| 4.0.0   | 2988       | N/A        |
 | 3.0.0   | N/A        | 2820       |
 | 2.0.0   | 2527       | 2614       |
 | 1.0.0   | 2162       | N/A        |
@@ -90,13 +91,13 @@ More information on [CCRL](https://www.computerchess.org.uk/ccrl/).
   - AVX2 instructions
 
 NNUE versions of Pingu were trained with the engine's own self-play data.
-The process is described in [nnue.md](docs/nnue.md).
+The process is described in [nnue.md](/docs/nnue.md) and more recently in [nnue_2.md](/docs/nnue_2.md).
 
 - [Pingu 3.0.0 dataset](https://www.kaggle.com/datasets/williamching/pingu-3-0-0-self-play-data)
 - [Pingu 2.0.0 dataset](https://www.kaggle.com/datasets/williamching/pingu-2-0-0-dataset)
 
 Early HCE versions of Pingu were Texel-tuned using self-play data from [Ethereal](https://github.com/AndyGrant/Ethereal), obtained from this [forum post](https://talkchess.com/forum3/viewtopic.php?f=7&t=77502).
-The process is described in [evaluation_tuning.md](docs/evaluation_tuning.md).
+The process is described in [evaluation_tuning.md](/docs/evaluation_tuning.md).
 
 
 # Thanks
