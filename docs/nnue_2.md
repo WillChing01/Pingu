@@ -85,7 +85,7 @@ It was found that ```GAMMA = 0.5``` was optimal.
 | ----- | ------------------------ | --------------- |
 |  0.5  |  9.39 ± 5.00             |     11,322      |
 
-Pingu-dev represents the latest commit of Pingu before the updated NNUE was introduced. Mathches are the results of SPRT testing - 10.0+0.1s, single core, 8 MB hash, LLR > 2.94 [0.00, 3.00].
+Pingu-dev represents the latest commit of Pingu before the updated NNUE was introduced. Matches are the results of SPRT testing - 10.0+0.1s, single core, 8 MB hash, LLR > 2.94 [0.00, 3.00].
 
 ## Results
 
