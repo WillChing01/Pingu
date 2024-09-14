@@ -41,7 +41,6 @@ auto startTime = std::chrono::high_resolution_clock::now();
 auto currentTime = std::chrono::high_resolution_clock::now();
 
 std::atomic_bool isSearchAborted(false);
-std::atomic_bool isSearchPaused(false);
 
 U32 totalNodes = 0;
 
@@ -119,7 +118,7 @@ inline int alphaBetaQuiescence(Board &b, int ply, int alpha, int beta)
 {
     //check time.
     if (!(totalNodes & 2047u)) {checkTime();}
-    if (isSearchAborted || isSearchPaused) {return 0;}
+    if (isSearchAborted) {return 0;}
     ++totalNodes;
 
     //draw by insufficient material.
@@ -167,7 +166,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
 {
     //check time.
     if (!(totalNodes & 2047u)) {checkTime();}
-    if (isSearchAborted || isSearchPaused) {return 0;}
+    if (isSearchAborted) {return 0;}
     ++totalNodes;
 
     //check for draw.
@@ -300,7 +299,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         {
             if (score >= beta)
             {
-                if (!isSearchAborted && !isSearchPaused)
+                if (!isSearchAborted)
                 {
                     bool isQuiet = movePicker.stage == QUIET_MOVES || movePicker.singleQuiets.contains(move);
                     if (isQuiet)
@@ -330,7 +329,7 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
     //stalemate or checkmate.
     if (movesPlayed == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
 
-    if (!isSearchAborted && !isSearchPaused) {ttSave(bHash, ply, depth, bestMove, bestScore, isExact, false);}
+    if (!isSearchAborted) {ttSave(bHash, ply, depth, bestMove, bestScore, isExact, false);}
     return bestScore;
 }
 
