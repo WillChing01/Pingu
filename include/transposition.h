@@ -32,8 +32,8 @@ const int ageLimit = 2;
 
 struct hashEntry
 {
-    std::atomic<U64> zHash{0ull};
-    std::atomic<U64> info{0ull};
+    U64 zHash = 0;
+    U64 info = 0;
 };
 
 struct tableEntry
@@ -130,7 +130,7 @@ inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, 
 {
     U64 index = zHash & hashTableMask;
 
-    U64 deepInfo = hashTable[index].deepEntry.info.load(std::memory_order_relaxed);
+    U64 deepInfo = hashTable[index].deepEntry.info;
     int deepDepth = getHashDepth(deepInfo);
     int deepAge = getHashAge(deepInfo);
 
@@ -148,14 +148,14 @@ inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, 
     if (depth >= deepDepth || (rootCounter > deepAge + ageLimit))
     {
         //fits in deep table.
-        hashTable[index].deepEntry.zHash.store(zHash ^ info, std::memory_order_relaxed);
-        hashTable[index].deepEntry.info.store(info, std::memory_order_relaxed);
+        hashTable[index].deepEntry.zHash = zHash;
+        hashTable[index].deepEntry.info = info;
     }
     else
     {
         //fits in always table.
-        hashTable[index].alwaysEntry.zHash.store(zHash ^ info, std::memory_order_relaxed);
-        hashTable[index].alwaysEntry.info.store(info, std::memory_order_relaxed);
+        hashTable[index].alwaysEntry.zHash = zHash;
+        hashTable[index].alwaysEntry.info = info;
     }
 }
 
@@ -164,14 +164,10 @@ inline U64 ttProbe(const U64 zHash)
     U64 index = zHash & hashTableMask;
 
     //check deep table.
-    U64 deepHash = hashTable[index].deepEntry.zHash.load(std::memory_order_relaxed);
-    U64 deepInfo = hashTable[index].deepEntry.info.load(std::memory_order_relaxed);
-    if ((deepHash ^ deepInfo) == zHash) {return deepInfo;}
+    if (hashTable[index].deepEntry.zHash == zHash) {return hashTable[index].deepEntry.info;}
 
     //check always table.
-    U64 alwaysHash = hashTable[index].alwaysEntry.zHash.load(std::memory_order_relaxed);
-    U64 alwaysInfo = hashTable[index].alwaysEntry.info.load(std::memory_order_relaxed);
-    if ((alwaysHash ^ alwaysInfo) == zHash) {return alwaysInfo;}
+    if (hashTable[index].alwaysEntry.zHash == zHash) {return hashTable[index].alwaysEntry.info;}
 
     return 0;
 }
