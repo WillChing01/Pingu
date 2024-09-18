@@ -291,22 +291,25 @@ inline int alphaBeta(Board &b, int alpha, int beta, int depth, int ply, bool nul
         {
             if (score >= beta)
             {
-                bool isQuiet = movePicker.stage == QUIET_MOVES || movePicker.singleQuiets.contains(move);
-                if (isQuiet)
+                if (!isSearchAborted)
                 {
-                    //update killers.
-                    b.killer.update(move, ply);
-
-                    //update history.
-                    if (depth >= 5)
+                    bool isQuiet = movePicker.stage == QUIET_MOVES || movePicker.singleQuiets.contains(move);
+                    if (isQuiet)
                     {
-                        if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);}
-                        else {b.history.update(movePicker.singleQuiets, move, depth);}
-                    }
-                }
+                        //update killers.
+                        b.killer.update(move, ply);
 
-                //update tt.
-                if (!isSearchAborted) {ttSave(bHash, ply, depth, move, score, false, true);}
+                        //update history.
+                        if (depth >= 5)
+                        {
+                            if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);}
+                            else {b.history.update(movePicker.singleQuiets, move, depth);}
+                        }
+                    }
+
+                    //update tt.
+                    ttSave(bHash, ply, depth, move, score, false, true);
+                }
                 return score;
             }
             if (score > alpha) {alpha = score; isExact = true;}
