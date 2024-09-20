@@ -20,11 +20,9 @@ inline void displayBitboard(U64 bitboard)
     } std::cout << std::endl;
 }
 
-static int _i=0;
-
 inline int popLSB(U64 &b)
 {
-    _i=__builtin_ctzll(b);
+    int _i = __builtin_ctzll(b);
     b &= b-1ull;
     return _i;
 }

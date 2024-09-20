@@ -80,6 +80,25 @@ class Board {
             setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         };
 
+        void copyBoard(Board &b)
+        {
+            for (int i=0;i<12;i++) {pieces[i] = b.pieces[i];}
+            for (int i=0;i<2;i++) {occupied[i] = b.occupied[i];}
+            side = b.side;
+
+            stateHistory = b.stateHistory;
+            moveHistory = b.moveHistory;
+            hashHistory = b.hashHistory;
+            irrevMoveInd = b.irrevMoveInd;
+
+            current = b.current;
+            phase = b.phase;
+            zHashPieces = b.zHashPieces;
+            zHashState = b.zHashState;
+
+            nnueHardUpdate();
+        }
+
         void zHashHardUpdate()
         {
             zHashPieces = 0;
@@ -473,6 +492,8 @@ class Board {
                 std::cout << " " << i+1 << std::endl;
             }
             std::cout << " A  B  C  D  E  F  G  H" << std::endl;
+
+            std::cout << positionToFen(pieces, current, side) << std::endl;
         }
 
         void generateCaptures(int numChecks)

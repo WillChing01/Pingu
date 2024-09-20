@@ -1,12 +1,11 @@
 #ifndef BENCH_H_INCLUDED
 #define BENCH_H_INCLUDED
 
+#include <chrono>
 #include <iostream>
 #include <string>
 
-#include "transposition.h"
-#include "board.h"
-#include "search.h"
+#include "uci.h"
 
 const std::array<std::string, 10> benchPositions = {
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -23,26 +22,32 @@ const std::array<std::string, 10> benchPositions = {
 
 const int benchDepth = 13;
 
-void benchCommand(Board &b)
+void benchCommand()
 {
-    int nodes = 0;
-    int time = 0;    
-    timeLeft = INT_MAX; //fixed depth search.
+    Search search;
+    U32 nodes = 0;
+    double time = 0;
 
-    for (const auto &fen: benchPositions)
+    for (const std::string &fen: benchPositions)
     {
-        clearTT();
-        b.setPositionFen(fen);
-        alphaBetaRoot(b, benchDepth, true);
-        nodes += lastIterNodes;
-        time += lastIterTime;
+        prepareForNewGame(search);
+        search.setPositionFen(fen);
 
-        std::cout << "info bench position " << fen << " nodes " << lastIterNodes << " nps " << lastIterNps << std::endl;
+        auto startTime = std::chrono::high_resolution_clock::now();
+        search.go(benchDepth, INT_MAX, true, false);
+        auto finishTime = std::chrono::high_resolution_clock::now();
+
+        U64 iterNodes = globalNodeCount;
+        double iterTime = std::chrono::duration<double, std::milli>(finishTime - startTime).count();
+        
+        nodes += iterNodes;
+        time += iterTime;
+
+        std::cout << "info bench position " << fen << " nodes " << iterNodes << " nps " << (U64)((double)(iterNodes) * 1000. / iterTime) << std::endl;
     }
 
-    double nps = 1000. * (double)(nodes) / (double)(time);
-
-    std::cout << nodes << " nodes " << (int)(nps) << " nps" << std::endl;
+    double nps = 1000. * (double)(nodes) / (time);
+    std::cout << nodes << " nodes " << (U32)(nps) << " nps" << std::endl;
 }
 
 #endif // BENCH_H_INCLUDED
