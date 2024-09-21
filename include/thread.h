@@ -121,16 +121,16 @@ class Thread
             if (isDrawByMaterial()) {return 0;}
 
             bool inCheck = util::isInCheck(b.side, b.pieces, b.occupied);
-            int bestScore = -MATE_SCORE + ply;
+            int nodeBestScore = -MATE_SCORE + ply;
 
             //stand pat.
             if (!inCheck)
             {
-                bestScore = b.evaluateBoard();
-                if (bestScore > alpha)
+                nodeBestScore = b.evaluateBoard();
+                if (nodeBestScore > alpha)
                 {
-                    if (bestScore >= beta) {return bestScore;}
-                    alpha = bestScore;
+                    if (nodeBestScore >= beta) {return nodeBestScore;}
+                    alpha = nodeBestScore;
                 }
             }
 
@@ -144,18 +144,18 @@ class Thread
                 int score = -qSearch(ply+1, -beta, -alpha);
                 b.unmakeMove();
 
-                if (score > bestScore)
+                if (score > nodeBestScore)
                 {
                     if (score > alpha)
                     {
                         if (score >= beta) {return score;}
                         alpha = score;
                     }
-                    bestScore = score;
+                    nodeBestScore = score;
                 }
             }
 
-            return bestScore;
+            return nodeBestScore;
         }
 
         int search(int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
@@ -227,7 +227,7 @@ class Thread
 
             //setup scoring variables.
             int score = 0; bool isExact = false;
-            int bestScore = -MATE_SCORE; U32 bestMove = 0;
+            int nodeBestScore = -MATE_SCORE; U32 nodeBestMove = 0;
             int movesPlayed = 0; int quietsPlayed = 0;
             U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
 
@@ -291,7 +291,7 @@ class Thread
                 if (movePicker.stage == QUIET_MOVES) {++quietsPlayed;}
 
                 //update scores.
-                if (score > bestScore)
+                if (score > nodeBestScore)
                 {
                     if (score >= beta)
                     {
@@ -317,16 +317,16 @@ class Thread
                         return score;
                     }
                     if (score > alpha) {alpha = score; isExact = true;}
-                    bestScore = score;
-                    bestMove = move;
+                    nodeBestScore = score;
+                    nodeBestMove = move;
                 }
             }
 
             //stalemate or checkmate.
             if (movesPlayed == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
 
-            if (!isSearchAborted) {ttSave(bHash, ply, depth, bestMove, bestScore, isExact, false);}
-            return bestScore;
+            if (!isSearchAborted) {ttSave(bHash, ply, depth, nodeBestMove, nodeBestScore, isExact, false);}
+            return nodeBestScore;
         }
 
         void aspirationSearch(int depth)
