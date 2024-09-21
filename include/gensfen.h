@@ -1,175 +1,205 @@
 #ifndef GENSFEN_H_INCLUDED
 #define GENSFEN_H_INCLUDED
 
-#include <string>
+#include <cstring>
+#include <filesystem>
+#include <unordered_map>
 
-#include "board.h"
+#include "uci.h"
 
 struct gensfenData
 {
     std::string fen;
-    int eval;
-    double result;
+    int eval; //from white pov.
+    int result; //0 if black win, 1 if draw, 2 if white win.
 };
 
-// void gensfenCommand(Board &b, const std::vector<std::string> &words)
-// {
-//     //generate self-play data.
-//     if (words.size() != 11) {return;}
-//     if (words[1] != "depth" || words[3] != "positions" ||
-//         words[5] != "randomply" || words[7] != "maxply" ||
-//         words[9] != "evalbound")
-//     {
-//         return;
-//     }
-//     if (!isNumber(words[2]) || !isNumber(words[4]) ||
-//         !isNumber(words[6]) || !isNumber(words[8]) ||
-//         !isNumber(words[10]))
-//     {
-//         return;
-//     }
+bool isValidInput(int argc, const char** argv)
+{
+    if (argc != 16) {return false;}
 
-//     std::string dateTime = std::format("{:%F_%H-%M-%S_%Z}",
-//         std::chrono::zoned_time{
-//             std::chrono::current_zone(),
-//             std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now())
-//         }
-//     );
+    const std::array<std::pair<const char*, const char*>, 7> requiredArgs = {{
+        {"mindepth", "int"},
+        {"maxdepth", "int"},
+        {"positions", "int"},
+        {"randomply", "int"},
+        {"maxply", "int"},
+        {"evalbound", "int"},
+        {"book", "file"},
+    }};
 
-//     int depth = std::stoi(words[2]);
-//     int positions = std::stoi(words[4]);
-//     int randomply = std::stoi(words[6]);
-//     int maxply = std::stoi(words[8]);
-//     int evalbound = std::stoi(words[10]);
+    for (int i=0;i<(int)requiredArgs.size();++i)
+    {
+        //check field name.
+        if (std::strcmp(requiredArgs[i].first, argv[2+2*i]))
+        {
+            std::cout << "Error - expected to find argument '" << requiredArgs[i].first << "'" << std::endl;
+            return false;
+        }
 
-//     std::vector<gensfenData> output = {};
-//     std::vector<gensfenData> outputBuffer = {};
+        //check field type.
+        if (!std::strcmp(requiredArgs[i].second, "int"))
+        {
+            if (!isNumber(argv[3+2*i]))
+            {
+                std::cout << "Error - expected value of '" << requiredArgs[i].first << "' to be an integer" << std::endl;
+                return false;
+            }
+        }
+        if (!std::strcmp(requiredArgs[i].second, "file"))
+        {
+            //check if file exists.
+            if (std::strcmp(argv[3+2*i], "None") && !std::filesystem::exists(argv[3+2*i]))
+            {
+                std::cout << "Error - the file '" << argv[3+2*i] << "' does not exist the current directory" << std::endl;
+                return false;
+            }
+        }
+    }
 
-//     //set up random device.
-//     std::random_device _rd;
-//     std::size_t seed;
+    return true;
+}
 
-//     if (_rd.entropy()) {seed = _rd();}
-//     else {seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();}
+bool playOpening(Search &s, int randomPly, const std::string &bookFile)
+{
+    std::random_device _rd;
+    std::size_t seed;
 
-//     std::mt19937 _mt(seed);
+    if (_rd.entropy()) {seed = _rd();}
+    else {seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();}
+    std::mt19937_64 _mt(seed);
 
-//     //set up search params.
-//     timeLeft = INT_MAX;
-//     isSearchAborted = false;
+    //get random position from book.
+    //todo.
 
-//     int numGames = 1;
+    //random playout.
+    for (int i=0;i<randomPly;++i)
+    {
+        s.mainThread.b.generatePseudoMoves();
 
-//     std::cout << "Generating " << positions << " positions..." << std::endl;
+        //check for game over.
+        if (!s.mainThread.b.moveBuffer.size()) {return false;}
+        if (s.mainThread.isDrawByMaterial()) {return false;}
+        if (s.mainThread.isDrawByRepetition()) {return false;}
+        if (s.mainThread.isDrawByFifty()) {return false;}
 
-//     while ((int)output.size() < positions)
-//     {
-//         //start a new game.
-//         bool gameover = false;
-//         double result = 0.5;
-//         prepareForNewGame(b);
-//         b.setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-//         outputBuffer.clear();
+        std::uniform_int_distribution<int> _dist(0, s.mainThread.b.moveBuffer.size() - 1);
+        U32 move = s.mainThread.b.moveBuffer[_dist(_mt)];
+        s.makeMove(move);
+    }
+    return true;
+}
 
-//         //track zHash for draw by repetition.
-//         std::set<U64> zHash;
+void gensfenCommand(int argc, const char** argv)
+{
+    if (!isValidInput(argc, argv)) {return;}
 
-//         //play random moves up to randomply.
-//         for (int i=0;i<randomply;i++)
-//         {
-//             b.moveBuffer.clear();
-//             b.generatePseudoMoves();
+    std::string dateTime = std::format("{:%F_%H-%M-%S_%Z}",
+        std::chrono::zoned_time{
+            std::chrono::current_zone(),
+            std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now())
+        }
+    );
 
-//             //if no moves left we abort the game.
-//             if (b.moveBuffer.size() == 0) {gameover = true; break;}
+    int mindepth = std::stoi(argv[3]);
+    int maxdepth = std::stoi(argv[5]);
+    int positions = std::stoi(argv[7]);
+    int randomply = std::stoi(argv[9]);
+    int maxply = std::stoi(argv[11]);
+    int evalbound = std::stoi(argv[13]);
+    std::string bookFile = argv[15];
 
-//             std::uniform_int_distribution<int> _dist(0, (int)b.moveBuffer.size() - 1);
-//             U32 move = b.moveBuffer[_dist(_mt)];
-//             b.makeMove(move);
+    std::vector<gensfenData> output = {};
+    std::vector<gensfenData> outputBuffer = {};
+    int numGames = 1;
+    Search s;
 
-//             //store zHash.
-//             zHash.insert(b.zHashPieces ^ b.zHashState);
-//         }
+    //open the book and store its contents.
 
-//         if (gameover) {continue;}
+    std::cout << "Generating " << positions << " positions..." << std::endl;
 
-//         //fixed-depth search.
-//         while (true)
-//         {
-//             int score = alphaBetaRoot(b, depth, true);
+    while ((int)output.size() < positions)
+    {
+        //start a new game.
+        int result = 1;
+        prepareForNewGame(s);
+        s.setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        outputBuffer.clear();
 
-//             //check that score within bounds.
-//             if (b.side) {score *= -1;}
-//             if (abs(score) > evalbound || isGameOver)
-//             {
-//                 result = score == 0 ? 0.5 :
-//                          score > evalbound ? 1. : 0.;
-//                 break;
-//             }
+        //random playout.
+        if (!playOpening(s, randomply, bookFile)) {continue;}
 
-//             //exit if maxply exceeded.
-//             if ((int)b.moveHistory.size() > maxply)
-//             {
-//                 result = score > 400 ? 1. :
-//                          score < -400 ? 0. : 0.5;
-//                 break;
-//             }
+        //fixed-depth search.
+        while (true)
+        {
+            //check for game over.
+            bool inCheck = s.mainThread.b.generatePseudoMoves();
+            if (!s.mainThread.b.moveBuffer.size()) {result = inCheck ? (s.mainThread.b.side ? 2 : 0) : 1; break;}
+            if (s.mainThread.isDrawByMaterial()) {result = 1; break;}
+            if (s.mainThread.isDrawByRepetition()) {result = 1; break;}
+            if (s.mainThread.isDrawByFifty()) {result = 1; break;}
 
-//             //update output buffer.
-//             U32 pieceType = (storedBestMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-//             U32 capturedPieceType = (storedBestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
-//             U32 finishPieceType = (storedBestMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
-//             bool isQuiet = !util::isInCheck(b.side, b.pieces, b.occupied) && capturedPieceType == 15 && pieceType == finishPieceType;
-//             if (isQuiet) {outputBuffer.push_back(gensfenData(positionToFen(b.pieces, b.current, b.side), score, 0.5));}
+            //scale depth based on game phase.
+            int searchDepth = mindepth + ((24 - s.mainThread.b.phase) * (maxdepth - mindepth)) / 24;
+            U32 bestMove = s.go(searchDepth, INT_MAX, true, false);
+            int score = s.mainThread.bestScore;
+            if (s.mainThread.b.side) {score *= -1;}
 
-//             b.makeMove(storedBestMove);
+            //record move if quiet, below maxply, and within eval bound.
+            U32 pieceType = (bestMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            U32 capturedPieceType = (bestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+            U32 finishPieceType = (bestMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
+            bool isQuiet = !inCheck && capturedPieceType == 15 && pieceType == finishPieceType;
+            bool isBelowMaxPly = (int)s.mainThread.b.moveHistory.size() < maxply;
+            bool isWithinEvalBound = std::abs(score) < evalbound;
 
-//             //check if position is repeated and remove last output if so.
-//             if (zHash.find(b.zHashPieces ^ b.zHashState) != zHash.end())
-//             {
-//                 if (isQuiet) {outputBuffer.pop_back();}
-//                 result = 0.5;
-//                 break;
-//             }
-//             zHash.insert(b.zHashPieces ^ b.zHashState);
-//         }
+            if (isQuiet && isBelowMaxPly && isWithinEvalBound)
+            {
+                std::string fen = positionToFen(s.mainThread.b.pieces, s.mainThread.b.current, s.mainThread.b.side);
+                outputBuffer.push_back(gensfenData(fen, score, 1));
+            }
 
-//         //update contents of buffer with game result.
-//         for (auto &x: outputBuffer) {x.result = result;}
+            s.mainThread.b.makeMove(bestMove);
+        }
 
-//         //add contents of buffer to output.
-//         for (const auto &x: outputBuffer) {output.push_back(x);}
+        //update contents of buffer with game result.
+        for (auto &x: outputBuffer) {x.result = result;}
 
-//         std::cout << "Finished game " << numGames << "; " << output.size() << " positions overall" << std::endl;
-//         numGames++;
-//     }
+        //add contents of buffer to output.
+        for (const auto &x: outputBuffer) {output.push_back(x);}
 
-//     //trim size of output.
-//     while ((int)output.size() > positions) {output.pop_back();}
+        std::cout << "Finished game " << numGames++ << "; " << output.size() << " positions overall" << std::endl;
+    }
 
-//     //write output to file.
-//     std::string fileName = "gensfen_"+ ENGINE_NAME_NO_SPACE +
-//                            "_n" + std::to_string(positions) +
-//                            "_d" + std::to_string(depth) +
-//                            "_r" + std::to_string(randomply) +
-//                            "_m" + std::to_string(maxply) +
-//                            "_b" + std::to_string(evalbound) +
-//                            "_" + dateTime +
-//                            ".txt";
+    //write output to file.
+    std::string fileName = "gensfen_"+ ENGINE_NAME_NO_SPACE +
+                           "_n" + std::to_string(output.size()) +
+                           "_d" + std::to_string(mindepth) +
+                           "_r" + std::to_string(randomply) +
+                           "_m" + std::to_string(maxply) +
+                           "_b" + std::to_string(evalbound) +
+                           "_" + dateTime +
+                           ".txt";
 
-//     std::ofstream file;
-//     file.open(fileName);
+    std::ofstream file;
+    file.open(fileName);
 
-//     for (const auto &x: output)
-//     {
-//         file << x.fen << "; " << x.eval << "; " << x.result << std::endl;
-//     }
+    const std::unordered_map<int, std::string> resultMapping = {
+        {0, "0"},
+        {1, "0.5"},
+        {2, "1"},
+    };
 
-//     file.close();
+    for (const gensfenData &x: output)
+    {
+        file << x.fen << "; " << x.eval << "; " << resultMapping.at(x.result) << std::endl;
+    }
 
-//     std::cout << "Finished generating positions." << std::endl;
+    file.close();
 
-//     return;
-// }
+    std::cout << "Finished generating positions." << std::endl;
+
+    return;
+}
 
 #endif // GENSFEN_H_INCLUDED

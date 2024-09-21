@@ -1,20 +1,30 @@
 #include <cstring>
+#include <unordered_map>
 #include "uci.h"
 #include "bench.h"
+#include "gensfen.h"
 
-int main(int argc, const char* argv[])
+int main(int argc, const char** argv)
 {
     populateMagicTables();
     populateRandomNums();
 
-    switch(argc)
+    if (argc == 1) {uciLoop();}
+    else
     {
-        case 1:
-            uciLoop();
-            break;
-        case 2:
-            if (std::strcmp(argv[1], "bench") == 0) {benchCommand();}
-            break;
+        const std::unordered_map<const char *, void(*)(int, const char **)> commands = {
+            {"bench", benchCommand},
+            {"gensfen", gensfenCommand},
+        };
+
+        for (const auto &command: commands)
+        {
+            if (!std::strcmp(argv[1], command.first))
+            {
+                command.second(argc, argv);
+                break;
+            }
+        }
     }
 
     delete[] hashTable;
