@@ -16,7 +16,11 @@ struct gensfenData
 
 bool isValidInput(int argc, const char** argv)
 {
-    if (argc != 16) {return false;}
+    if (argc != 16)
+    {
+        std::cout << "Error - expected to find exactly 7 arguments" << std::endl;
+        return false;
+    }
 
     const std::array<std::pair<const char*, const char*>, 7> requiredArgs = {{
         {"mindepth", "int"},

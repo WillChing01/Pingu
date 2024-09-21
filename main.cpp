@@ -17,11 +17,11 @@ int main(int argc, const char** argv)
             {"gensfen", gensfenCommand},
         };
 
-        for (const auto &command: commands)
+        for (const auto &[command, callback]: commands)
         {
-            if (!std::strcmp(argv[1], command.first))
+            if (!std::strcmp(argv[1], command))
             {
-                command.second(argc, argv);
+                callback(argc, argv);
                 break;
             }
         }

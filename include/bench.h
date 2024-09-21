@@ -24,7 +24,11 @@ const int benchDepth = 13;
 
 void benchCommand(int argc, const char** argv)
 {
-    if (argc > 2) {return;}
+    if (argc > 2)
+    {
+        std::cout << "Error - too many commands provided" << std::endl;
+        return;
+    }
 
     Search search;
     U32 nodes = 0;
