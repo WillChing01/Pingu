@@ -44,11 +44,12 @@ const std::vector<engineCommand> COMMANDS = {
         {
             "setoption name <id> [value <x>]",
             "e.g. setoption name Hash value 256",
-            "e.g. setoption name Clear Hash"
+            "e.g. setoption name Clear Hash",
+            "e.g. setoption name Threads value 4",
         },
         {
             {"name <id>", "the name of the option"},
-            {"value <x>", "the value of the option"}
+            {"value <x>", "the value of the option"},
         }
     ),
     engineCommand(
@@ -63,12 +64,12 @@ const std::vector<engineCommand> COMMANDS = {
         {
             "position (fen <fenstring> | startpos) [moves <move1> ... <movei>]",
             "e.g. position startpos moves e2e4 e7e5",
-            "e.g. position fen 8/5k2/8/5N2/5Q2/2K5/8/8 w - - 0 1"
+            "e.g. position fen 8/5k2/8/5N2/5Q2/2K5/8/8 w - - 0 1",
         },
         {
             {"fen <fenstring>", "the position as described by FEN"},
             {"startpos", "the starting position"},
-            {"moves <move1> ... <movei>", "moves to be played from the given position, in long algebraic notation"}
+            {"moves <move1> ... <movei>", "moves to be played from the given position, in long algebraic notation"},
         }
     ),
     engineCommand(
@@ -78,7 +79,7 @@ const std::vector<engineCommand> COMMANDS = {
             "go (depth <n> | movetime <ms> | infinite)",
             "go wtime <ms> btime <ms> [winc <ms>] [binc <ms>] [movestogo <n>]",
             "e.g. go depth 5",
-            "e.g. go wtime 1000 btime 1000 winc 100 binc 100 movestogo 10"
+            "e.g. go wtime 1000 btime 1000 winc 100 binc 100 movestogo 10",
         },
         {
             {"depth <n>", "positive integer depth in units of ply"},
@@ -88,7 +89,7 @@ const std::vector<engineCommand> COMMANDS = {
             {"btime <ms>", "black time in ms"},
             {"winc <ms>", "white increment in ms"},
             {"binc <ms>", "black increment in ms"},
-            {"movestogo <n>", "moves until time control, otherwise sudden death"}
+            {"movestogo <n>", "moves until time control, otherwise sudden death"},
         }
     ),
     engineCommand(
@@ -108,10 +109,10 @@ const std::vector<engineCommand> COMMANDS = {
         "perform static exchange evaluation in current position",
         {
             "see move <x>",
-            "e.g. see move e4d5"
+            "e.g. see move e4d5",
         },
         {
-            {"move <x>", "move in long algebraic notation"}
+            {"move <x>", "move in long algebraic notation"},
         }
     ),
     engineCommand(
@@ -119,10 +120,10 @@ const std::vector<engineCommand> COMMANDS = {
         "count moves to given depth in current position",
         {
             "perft depth <n>",
-            "e.g. perft depth 5"
+            "e.g. perft depth 5",
         },
         {
-            {"depth <n>", "positive integer depth in units of ply"}
+            {"depth <n>", "positive integer depth in units of ply"},
         }
     ),
     engineCommand(
@@ -130,12 +131,12 @@ const std::vector<engineCommand> COMMANDS = {
         "test engine features via perft-like search",
         {
             "test (validation | incremental) depth <n>",
-            "e.g. test validation depth 5"
+            "e.g. test validation depth 5",
         },
         {
             {"validation", "test if move legality check works"},
             {"incremental", "test incremental updates of game state"},
-            {"depth <n>", "positive integer depth in units of ply"}
+            {"depth <n>", "positive integer depth in units of ply"},
         }
     ),
     // engineCommand(
