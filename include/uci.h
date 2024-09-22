@@ -17,7 +17,6 @@
 #include "format.h"
 #include "search.h"
 #include "board.h"
-#include "gensfen.h"
 
 const std::string ENGINE_NAME = "Pingu 4.0.0";
 const std::string ENGINE_AUTHOR = "William Ching";
@@ -205,6 +204,7 @@ void uciLoop()
 
     std::cout << "id name " << ENGINE_NAME << std::endl;
     std::cout << "id author " << ENGINE_AUTHOR << std::endl;
+    std::cout << "Type 'help' for a list of available commands" << std::endl;
 
     while (true)
     {
@@ -229,9 +229,8 @@ void uciLoop()
             else if (commands[0] == "see") {seeCommand(search.mainThread.b, commands);}
             else if (commands[0] == "perft") {perftCommand(search.mainThread.b, commands);}
             else if (commands[0] == "display") {search.mainThread.b.display();}
-            // else if (commands[0] == "gensfen") {gensfenCommand(b, commands);}
             else if (commands[0] == "test") {testCommand(search.mainThread.b, commands);}
-            else if (commands[0] == "help") {displayHelp(commands);}
+            else if (commands[0] == "help") {displayHelpUCI(commands);}
             else if (commands[0] == "quit") {break;}
         }
     }

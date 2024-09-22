@@ -22,8 +22,14 @@ const std::array<std::string, 10> benchPositions = {
 
 const int benchDepth = 13;
 
-void benchCommand()
+void benchCommand(int argc, const char** argv)
 {
+    if (argc > 2)
+    {
+        std::cout << "Error - too many arguments provided" << std::endl;
+        return;
+    }
+
     Search search;
     U32 nodes = 0;
     double time = 0;

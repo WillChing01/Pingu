@@ -42,7 +42,7 @@ struct tableEntry
     hashEntry alwaysEntry;
 };
 
-U64 hashTableMask = 63; //start with a small hash.
+U64 hashTableMask = 32767ull; //start with a 1MB hash.
 tableEntry * hashTable = new tableEntry[hashTableMask + 1]();
 
 U64 randomNums[781] = {};
