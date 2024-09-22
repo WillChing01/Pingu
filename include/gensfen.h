@@ -3,6 +3,8 @@
 
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <regex>
 #include <unordered_map>
 
 #include "uci.h"
@@ -64,7 +66,32 @@ bool isValidInput(int argc, const char** argv)
     return true;
 }
 
-bool playOpening(Search &s, int randomPly, const std::string &bookFile)
+std::vector<std::string> parseBook(const std::string &bookFile)
+{
+    std::vector<std::string> bookPositions = {};
+
+    std::ifstream file(bookFile);
+    std::string line;
+
+    std::regex fenRegex(R"((?![1-8PNBRQKpnbrqk\/]*\d{2,}[1-8PNBRQKpnbrqk\/]*)^([1-8PNBRQKpnbrqk]+\/){7}[1-8PNBRQKpnbrqk]+ [wb] (-|\bK?Q?k?q?) (-|[a-h][36])( [0-9]+ [0-9]+)?$)");
+    std::smatch match;
+
+    while (std::getline(file, line))
+    {
+        if (std::regex_match(line, match, fenRegex))
+        {
+            bookPositions.push_back(match[0]);
+        }
+    }
+
+    file.close();
+
+    std::cout << "Found " << bookPositions.size() << " valid FEN strings." << std::endl;
+
+    return bookPositions;
+}
+
+bool playOpening(Search &s, int randomPly, const std::vector<std::string> &bookPositions)
 {
     std::random_device _rd;
     std::size_t seed;
@@ -74,7 +101,8 @@ bool playOpening(Search &s, int randomPly, const std::string &bookFile)
     std::mt19937_64 _mt(seed);
 
     //get random position from book.
-    //todo.
+    std::uniform_int_distribution<U64> _bookDist(0, bookPositions.size() - 1);
+    s.setPositionFen(bookPositions[_bookDist(_mt)]);
 
     //random playout.
     for (int i=0;i<randomPly;++i)
@@ -119,6 +147,7 @@ void gensfenCommand(int argc, const char** argv)
     Search s;
 
     //open the book and store its contents.
+    std::vector<std::string> bookPositions = parseBook(bookFile);
 
     std::cout << "Generating " << positions << " positions..." << std::endl;
 
@@ -131,7 +160,7 @@ void gensfenCommand(int argc, const char** argv)
         outputBuffer.clear();
 
         //random playout.
-        if (!playOpening(s, randomply, bookFile)) {continue;}
+        if (!playOpening(s, randomply, bookPositions)) {continue;}
 
         //fixed-depth search.
         while (true)
