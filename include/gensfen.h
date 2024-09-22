@@ -18,19 +18,20 @@ struct gensfenData
 
 bool isValidInput(int argc, const char** argv)
 {
-    if (argc != 16)
+    if (argc != 18)
     {
-        std::cout << "Error - expected to find exactly 7 arguments" << std::endl;
+        std::cout << "Error - expected to find exactly 8 arguments and their values" << std::endl;
         return false;
     }
 
-    const std::array<std::pair<const char*, const char*>, 7> requiredArgs = {{
+    const std::array<std::pair<const char*, const char*>, 8> requiredArgs = {{
         {"mindepth", "int"},
         {"maxdepth", "int"},
         {"positions", "int"},
         {"randomply", "int"},
         {"maxply", "int"},
         {"evalbound", "int"},
+        {"hash", "int"},
         {"book", "file"},
     }};
 
@@ -68,6 +69,8 @@ bool isValidInput(int argc, const char** argv)
 
 std::vector<std::string> parseBook(const std::string &bookFile)
 {
+    if (bookFile == "None") {return {};}
+
     std::vector<std::string> bookPositions = {};
 
     std::ifstream file(bookFile);
@@ -86,7 +89,7 @@ std::vector<std::string> parseBook(const std::string &bookFile)
 
     file.close();
 
-    std::cout << "Found " << bookPositions.size() << " valid FEN strings." << std::endl;
+    std::cout << "Found " << bookPositions.size() << " valid FEN strings in book " << bookFile << std::endl;
 
     return bookPositions;
 }
@@ -101,8 +104,11 @@ bool playOpening(Search &s, int randomPly, const std::vector<std::string> &bookP
     std::mt19937_64 _mt(seed);
 
     //get random position from book.
-    std::uniform_int_distribution<U64> _bookDist(0, bookPositions.size() - 1);
-    s.setPositionFen(bookPositions[_bookDist(_mt)]);
+    if (bookPositions.size())
+    {
+        std::uniform_int_distribution<U64> _bookDist(0, bookPositions.size() - 1);
+        s.setPositionFen(bookPositions[_bookDist(_mt)]);
+    }
 
     //random playout.
     for (int i=0;i<randomPly;++i)
@@ -139,7 +145,10 @@ void gensfenCommand(int argc, const char** argv)
     int randomply = std::stoi(argv[9]);
     int maxply = std::stoi(argv[11]);
     int evalbound = std::stoi(argv[13]);
-    std::string bookFile = argv[15];
+    int hashSize = std::stoi(argv[15]);
+    std::string bookFile = argv[17];
+
+    resizeTT(hashSize);
 
     std::vector<gensfenData> output = {};
     std::vector<gensfenData> outputBuffer = {};
@@ -211,6 +220,7 @@ void gensfenCommand(int argc, const char** argv)
                            "_r" + std::to_string(randomply) +
                            "_m" + std::to_string(maxply) +
                            "_b" + std::to_string(evalbound) +
+                           "_h" + std::to_string(hashSize) +
                            "_" + bookFile +
                            "_" + dateTime +
                            ".txt";

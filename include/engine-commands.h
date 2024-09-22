@@ -37,8 +37,8 @@ const std::map<std::string, engineCommand> CLI_COMMANDS = {
         "gensfen",
         "generate quiet positions for nnue training via fixed-depth self-play",
         {
-            "./pingu gensfen mindepth <n> maxdepth <n> positions <n> randomply <n> maxply <n> evalbound <n> book (None | <x>)",
-            "e.g. ./pingu gensfen mindepth 8 maxdepth 12 positions 10000 randomply 4 maxply 200 evalbound 8192 book None",
+            "./pingu gensfen mindepth <n> maxdepth <n> positions <n> randomply <n> maxply <n> evalbound <n> hash <n> book (None | <x>)",
+            "e.g. ./pingu gensfen mindepth 8 maxdepth 12 positions 10000 randomply 4 maxply 200 evalbound 8192 hash 64 book None",
         },
         {
             {"mindepth <n>", "positive integer minimum depth in units of ply"},
@@ -47,6 +47,7 @@ const std::map<std::string, engineCommand> CLI_COMMANDS = {
             {"randomply <n>", "number of random moves to make from initial position"},
             {"maxply <n>", "maximum ply per game"},
             {"evalbound <n>", "maximum eval score in centipawns to save in file"},
+            {"hash <n>", "size of hash in MB"},
             {"book <x>", "filename of the opening book to use"},
         }
     )},
