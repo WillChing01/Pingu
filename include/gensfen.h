@@ -57,7 +57,7 @@ bool isValidInput(int argc, const char** argv)
             //check if file exists.
             if (std::strcmp(argv[3+2*i], "None") && !std::filesystem::exists(argv[3+2*i]))
             {
-                std::cout << "Error - the file '" << argv[3+2*i] << "' does not exist the current directory" << std::endl;
+                std::cout << "Error - the file '" << argv[3+2*i] << "' does not exist in the current directory" << std::endl;
                 return false;
             }
         }
@@ -207,10 +207,11 @@ void gensfenCommand(int argc, const char** argv)
     //write output to file.
     std::string fileName = "gensfen_"+ ENGINE_NAME_NO_SPACE +
                            "_n" + std::to_string(output.size()) +
-                           "_d" + std::to_string(mindepth) +
+                           "_d" + std::to_string(mindepth) + "-" + std::to_string(maxdepth) +
                            "_r" + std::to_string(randomply) +
                            "_m" + std::to_string(maxply) +
                            "_b" + std::to_string(evalbound) +
+                           "_" + bookFile +
                            "_" + dateTime +
                            ".txt";
 
