@@ -204,6 +204,7 @@ void uciLoop()
 
     std::cout << "id name " << ENGINE_NAME << std::endl;
     std::cout << "id author " << ENGINE_AUTHOR << std::endl;
+    std::cout << "Type 'help' for a list of available commands" << std::endl;
 
     while (true)
     {

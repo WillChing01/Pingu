@@ -26,7 +26,7 @@ void benchCommand(int argc, const char** argv)
 {
     if (argc > 2)
     {
-        std::cout << "Error - too many commands provided" << std::endl;
+        std::cout << "Error - too many arguments provided" << std::endl;
         return;
     }
 

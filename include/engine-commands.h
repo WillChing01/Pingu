@@ -26,19 +26,19 @@ struct engineCommand
     }
 };
 
-const std::vector<engineCommand> CLI_COMMANDS = {
-    engineCommand(
+const std::map<std::string, engineCommand> CLI_COMMANDS = {
+    {"bench", engineCommand(
         "bench",
         "verify engine build and measure its speed",
-        {},
+        {"./pingu bench"},
         {}
-    ),
-    engineCommand(
+    )},
+    {"gensfen", engineCommand(
         "gensfen",
         "generate quiet positions for nnue training via fixed-depth self-play",
         {
-            "gensfen mindepth <n> maxdepth <n> positions <n> randomply <n> maxply <n> evalbound <n> book (None | <x>)",
-            "e.g. gensfen mindepth 8 maxdepth 12 positions 10000 randomply 4 maxply 200 evalbound 2500 book None",
+            "./pingu gensfen mindepth <n> maxdepth <n> positions <n> randomply <n> maxply <n> evalbound <n> book (None | <x>)",
+            "e.g. ./pingu gensfen mindepth 8 maxdepth 12 positions 10000 randomply 4 maxply 200 evalbound 8192 book None",
         },
         {
             {"mindepth <n>", "positive integer minimum depth in units of ply"},
@@ -46,10 +46,10 @@ const std::vector<engineCommand> CLI_COMMANDS = {
             {"positions <n>", "number of positions to generate"},
             {"randomply <n>", "number of random moves to make from initial position"},
             {"maxply <n>", "maximum ply per game"},
-            {"evalbound <n>", "maximum eval score in cp to save in file"},
+            {"evalbound <n>", "maximum eval score in centipawns to save in file"},
             {"book <x>", "filename of the opening book to use"},
         }
-    ),
+    )},
 };
 
 const std::map<std::string, engineCommand> UCI_COMMANDS = {
@@ -195,7 +195,6 @@ void outputHelpSummary(const std::map<std::string, engineCommand> &commands)
             << command.name << command.desc
         << "\n";
     }
-    std::cout << "\nType 'help <command>' for more information\n" << std::endl;
 }
 
 void outputHelpVerbose(const std::string &key, const std::map<std::string, engineCommand> &commands)
@@ -240,12 +239,30 @@ void outputHelpVerbose(const std::string &key, const std::map<std::string, engin
     std::cout << std::endl;
 }
 
+void displayHelpCLI(int argc, const char** argv)
+{
+    switch (argc)
+    {
+        case 2:
+            outputHelpSummary(CLI_COMMANDS);
+            std::cout << "\nRun './pingu (-h | --help) <command>' for more information\n" << std::endl;
+            break;
+        case 3:
+            outputHelpVerbose(argv[2], CLI_COMMANDS);
+            break;
+        default:
+            std::cout << "Error - too many arguments provided" << std::endl;
+            break;
+    }
+}
+
 void displayHelpUCI(const std::vector<std::string> &words)
 {
     switch(words.size())
     {
         case 1:
             outputHelpSummary(UCI_COMMANDS);
+            std::cout << "\nType 'help <command>' for more information\n" << std::endl;
             break;
         case 2:
             outputHelpVerbose(words.back(), UCI_COMMANDS);
