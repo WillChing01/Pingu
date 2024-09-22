@@ -229,7 +229,7 @@ void uciLoop()
             else if (commands[0] == "perft") {perftCommand(search.mainThread.b, commands);}
             else if (commands[0] == "display") {search.mainThread.b.display();}
             else if (commands[0] == "test") {testCommand(search.mainThread.b, commands);}
-            else if (commands[0] == "help") {displayHelp(commands);}
+            else if (commands[0] == "help") {displayHelpUCI(commands);}
             else if (commands[0] == "quit") {break;}
         }
     }
