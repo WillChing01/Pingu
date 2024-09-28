@@ -1,6 +1,4 @@
-"""
-Parse and format data in book files.
-"""
+"""Parse and format data in datasets folder"""
 
 import os
 import sys
