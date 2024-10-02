@@ -1,6 +1,7 @@
 """Parse and format data in datasets folder"""
 
 import os
+import re
 import sys
 import numpy as np
 import multiprocessing
@@ -56,10 +57,9 @@ def parseFile(startIndex, file_name, dataset_file, dataset_shape):
 
 def main():
     user_args = sys.argv[1:]
-    if len(user_args) != 2 or user_args[0] != "-N" or not user_args[1].isdigit():
+    if not re.search(r"^-N [1-9][0-9]*$"):
         print("error: incorrect format of args")
         print("usage: parse_data.py -N <num_threads>")
-        print("e.g. parse_data.py -N 2")
         return None
     elif int(user_args[1]) > multiprocessing.cpu_count():
         print("error: not enough cpu threads")
