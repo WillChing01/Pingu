@@ -57,7 +57,7 @@ def gensfen_worker(token: str, q: multiprocessing.Queue) -> None:
 
 def main():
     user_args = sys.argv[1:]
-    if not re.search("^-N [1-9][0-9]* -P [1-9][0-9]* -T \S+$", " ".join(user_args)):
+    if not re.search(r"^-N [1-9][0-9]* -P [1-9][0-9]* -T \S+$", " ".join(user_args)):
         print("error: incorrect format of args")
         print("usage: generate_data.py -N <num_threads> -P <max_positions> -T <api_token>")
         return
