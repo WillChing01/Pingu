@@ -7,6 +7,7 @@ import time
 from tqdm import tqdm
 import multiprocessing
 import huggingface_hub
+from utils import REPO_ID, PATH_IN_REPO, REPO_TYPE
 
 HASH = 64
 
@@ -17,10 +18,6 @@ RANDOMPLY = 4
 MAXPLY = 150
 EVALBOUND = 8192
 BOOK = "noob_3moves.epd"
-
-REPO_ID = "WillChing01/pingu"
-PATH_IN_REPO = "Pingu_4.0.0"
-REPO_TYPE = "dataset"
 
 def progress_bar(total_positions: int, q: multiprocessing.Queue) -> None:
     n = 0

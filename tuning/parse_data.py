@@ -5,8 +5,17 @@ import re
 import sys
 import numpy as np
 import multiprocessing
+import huggingface_hub
+from utils import REPO_ID, REPO_TYPE, DATASET_DTYPE
 
-DATASET_DTYPE = np.short
+def download_files(token: str, directory: str) -> None:
+    huggingface_hub.snapshot_download(
+        repo_id=REPO_ID,
+        repo_type=REPO_TYPE,
+        cache_dir=directory,
+        local_dir=directory,
+        token=token
+    )
 
 def fenToSparse(fen):
     """Return non-zero indices of input matrix derived from FEN."""
@@ -57,16 +66,27 @@ def parseFile(startIndex, file_name, dataset_file, dataset_shape):
 
 def main():
     user_args = sys.argv[1:]
-    if not re.search(r"^-N [1-9][0-9]*$"):
+    if not re.search(r"^-N [1-9][0-9]* -T \S+$", " ".join(user_args)):
         print("error: incorrect format of args")
-        print("usage: parse_data.py -N <num_threads>")
+        print("usage: parse_data.py -N <num_threads> -T <api_token>")
         return None
     elif int(user_args[1]) > multiprocessing.cpu_count():
         print("error: not enough cpu threads")
         return None
     num_cpu = int(user_args[1])
+    token = user_args[3]
+
+    try:
+        huggingface_hub.login(token=token)
+    except ValueError:
+        print("Invalid token.")
+        return
 
     directory = os.getcwd() + "/datasets/"
+
+    if not os.listdir(directory):
+        download_files(token, directory)
+
     fileData = []
     n = 0
 
@@ -76,6 +96,8 @@ def main():
         if len(files) == 0:
             continue
         for file in files:
+            if file.split(".")[-1] != "txt":
+                continue
             fileData.append([n, root + "/" + file])
             tokens = file.split("_")
             num = ""

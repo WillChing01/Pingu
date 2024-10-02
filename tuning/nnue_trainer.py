@@ -4,11 +4,7 @@ import os
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
-
-N = 1180700000
-
-DATASET_DTYPE = np.short
-DATASET_SHAPE = (N, 34)
+from utils import DATASET_DTYPE
 
 """
 Dataset and dataloader
