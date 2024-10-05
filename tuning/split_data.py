@@ -9,8 +9,9 @@ TRAINING_RATIO = 0.95
 CHUNK_SIZE = 25000000
 
 def main():
+    regex = r"^dataset_(\d+)_(\d+)\.dat$"
     for item in os.listdir(os.getcwd()):
-        if DATASET_SHAPE := tuple(re.findall(r"^dataset_(\d+)_(\d+)\.dat$", item)):
+        if DATASET_SHAPE := tuple(int(x) for x in re.findall(regex, item)[0]):
             N = DATASET_SHAPE[0]
             break
     else:

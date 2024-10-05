@@ -98,14 +98,8 @@ def main():
         for file in files:
             if file.split(".")[-1] != "txt":
                 continue
-            fileData.append([n, root + "/" + file])
-            tokens = file.split("_")
-            num = ""
-            for element in tokens:
-                if element[0] == "n":
-                    num = element[1:]
-                    break
-            n += int(num)
+            fileData.append([n, f"{root}/{file}"])
+            n += int(re.findall(r"_n([1-9][0-9]*)_", file)[0])
 
     print("Found", n, "pieces of data in", len(fileData), "files.")
 
