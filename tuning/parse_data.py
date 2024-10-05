@@ -1,13 +1,21 @@
-"""
-Parse and format data in book files.
-"""
+"""Parse and format data in datasets folder"""
 
 import os
+import re
 import sys
 import numpy as np
 import multiprocessing
+import huggingface_hub
+from utils import REPO_ID, REPO_TYPE, DATASET_DTYPE
 
-DATASET_DTYPE = np.short
+def download_files(token: str, directory: str) -> None:
+    huggingface_hub.snapshot_download(
+        repo_id=REPO_ID,
+        repo_type=REPO_TYPE,
+        cache_dir=directory,
+        local_dir=directory,
+        token=token
+    )
 
 def fenToSparse(fen):
     """Return non-zero indices of input matrix derived from FEN."""
@@ -58,17 +66,30 @@ def parseFile(startIndex, file_name, dataset_file, dataset_shape):
 
 def main():
     user_args = sys.argv[1:]
-    if len(user_args) != 2 or user_args[0] != "-N" or not user_args[1].isdigit():
+    if not re.search(r"^-N [1-9][0-9]* -T \S+$", " ".join(user_args)):
         print("error: incorrect format of args")
-        print("usage: parse_data.py -N <num_threads>")
-        print("e.g. parse_data.py -N 2")
+        print("usage: parse_data.py -N <num_threads> -T <api_token>")
         return None
     elif int(user_args[1]) > multiprocessing.cpu_count():
         print("error: not enough cpu threads")
         return None
     num_cpu = int(user_args[1])
+    token = user_args[3]
+
+    try:
+        huggingface_hub.login(token=token)
+    except ValueError:
+        print("Invalid token.")
+        return
 
     directory = os.getcwd() + "/datasets/"
+
+    if not os.path.isdir(directory):
+        os.mkdir(directory)
+
+    if not os.listdir(directory):
+        download_files(token, directory)
+
     fileData = []
     n = 0
 
@@ -78,14 +99,10 @@ def main():
         if len(files) == 0:
             continue
         for file in files:
-            fileData.append([n, root + "/" + file])
-            tokens = file.split("_")
-            num = ""
-            for element in tokens:
-                if element[0] == "n":
-                    num = element[1:]
-                    break
-            n += int(num)
+            if file.split(".")[-1] != "txt":
+                continue
+            fileData.append([n, f"{root}/{file}"])
+            n += int(re.findall(r"_n([1-9][0-9]*)_", file)[0])
 
     print("Found", n, "pieces of data in", len(fileData), "files.")
 

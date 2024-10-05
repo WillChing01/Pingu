@@ -241,7 +241,7 @@ void gensfenCommand(int argc, const char** argv)
 
     file.close();
 
-    std::cout << "Finished generating positions." << std::endl;
+    std::cout << "Finished generating positions - " << fileName << std::endl;
 
     return;
 }

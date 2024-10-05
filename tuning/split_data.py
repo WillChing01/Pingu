@@ -1,18 +1,22 @@
 import numpy as np
 import os
-import pickle
-import array
+import re
 from tqdm import tqdm
+from utils import DATASET_DTYPE
 
-N = 1180700000
 TRAINING_RATIO = 0.95
 
 CHUNK_SIZE = 25000000
 
-DATASET_DTYPE = np.short
-DATASET_SHAPE = (N, 34)
-
 def main():
+    regex = r"^dataset_(\d+)_(\d+)\.dat$"
+    for item in os.listdir(os.getcwd()):
+        if DATASET_SHAPE := tuple(int(x) for x in re.findall(regex, item)[0]):
+            N = DATASET_SHAPE[0]
+            break
+    else:
+        return
+
     rng = np.random.default_rng()
 
     is_validation = rng.random(N, dtype = np.float32).astype(np.float16) > TRAINING_RATIO
