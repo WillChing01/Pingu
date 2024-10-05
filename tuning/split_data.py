@@ -9,13 +9,11 @@ TRAINING_RATIO = 0.95
 CHUNK_SIZE = 25000000
 
 def main():
-    DATASET_SHAPE = None
     for item in os.listdir(os.getcwd()):
         if DATASET_SHAPE := tuple(re.findall(r"^dataset_(\d+)_(\d+)\.dat$", item)):
             N = DATASET_SHAPE[0]
             break
-
-    if DATASET_SHAPE is None:
+    else:
         return
 
     rng = np.random.default_rng()
