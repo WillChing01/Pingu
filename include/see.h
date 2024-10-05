@@ -90,12 +90,12 @@ class SEE
                 occ ^= attackingPieceBB;
 
                 //update possible x-ray attacks.
-                if (attackingPieceType == (_nRooks >> 1) || attackingPieceType == (_nQueens >> 1) || d == 1)
+                if (attackingPieceType == (_nRooks >> 1) || attackingPieceType == (_nQueens >> 1) || attackingPieceType == (_nKing >> 1))
                 {
                     //rook-like xray.
                     attackersBB |= magicRookAttacks(occ, finishSquare) & (pieces[_nRooks] | pieces[_nRooks+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
                 }
-                if (attackingPieceType == (_nPawns >> 1) || attackingPieceType == (_nBishops >> 1) || attackingPieceType == (_nQueens >> 1))
+                if (attackingPieceType == (_nPawns >> 1) || attackingPieceType == (_nBishops >> 1) || attackingPieceType == (_nQueens >> 1) || attackingPieceType == (_nKing >> 1))
                 {
                     //bishop-like xray.
                     attackersBB |= magicBishopAttacks(occ, finishSquare) & (pieces[_nBishops] | pieces[_nBishops+1] | pieces[_nQueens] | pieces[_nQueens+1]) & occ;
