@@ -2,6 +2,7 @@
 
 import os
 import re
+import requests
 import sys
 import time
 from tqdm import tqdm
@@ -18,6 +19,18 @@ RANDOMPLY = 4
 MAXPLY = 150
 EVALBOUND = 8192
 BOOK = "noob_3moves.epd"
+
+def get_book():
+    url = f"https://raw.githubusercontent.com/WillChing01/pingu-books/refs/heads/master/{BOOK}"
+    res = requests.get(url)
+
+    if res.status_code != 200:
+        return False
+
+    with open(BOOK, "wb") as f:
+        f.write(res.content)
+
+    return True
 
 def progress_bar(total_positions: int, q: multiprocessing.Queue) -> None:
     n = 0
@@ -71,6 +84,10 @@ def main():
         huggingface_hub.login(token=token)
     except ValueError:
         print("Invalid token.")
+        return
+
+    if not get_book():
+        print("error: could not download book")
         return
 
     q = multiprocessing.Manager().Queue()

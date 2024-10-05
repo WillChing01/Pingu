@@ -84,6 +84,9 @@ def main():
 
     directory = os.getcwd() + "/datasets/"
 
+    if not os.path.isdir(directory):
+        os.mkdir(directory)
+
     if not os.listdir(directory):
         download_files(token, directory)
 
