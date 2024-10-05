@@ -39,8 +39,7 @@ class SEE
             if (!attackersBB) {return 0;}
             for (int i=_nPawns+(int)(side); i >= (int)_nKing+(int)(side); i-=2)
             {
-                U64 x = attackersBB & pieces[i];
-                if (x)
+                if (U64 x = attackersBB & pieces[i])
                 {
                     attackingPieceType = i >> 1;
                     return x & (-x);
