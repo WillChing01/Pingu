@@ -36,6 +36,7 @@ class SEE
 
         U64 getLeastValuableAttacker(bool side, U64 attackersBB, U32 &attackingPieceType)
         {
+            if (!attackersBB) {return 0;}
             for (int i=_nPawns+(int)(side); i >= (int)_nKing+(int)(side); i-=2)
             {
                 U64 x = attackersBB & pieces[i];
