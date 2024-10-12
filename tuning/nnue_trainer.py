@@ -162,9 +162,8 @@ def main():
 
     SAVED_MODEL_FILE = ""
 
-    INPUT_COUNT = 768
+    INPUT_COUNT = 45056
     L1_COUNT = 64
-    L2_COUNT = 8
     OUTPUT_COUNT = 1
 
     device = (
@@ -174,7 +173,7 @@ def main():
 
     print("Using device", device)
 
-    model = NeuralNetwork(INPUT_COUNT, L1_COUNT, L2_COUNT, OUTPUT_COUNT).to(device)
+    model = NeuralNetwork(INPUT_COUNT, L1_COUNT, OUTPUT_COUNT).to(device)
 
     try:
         print("Loading saved model...")
