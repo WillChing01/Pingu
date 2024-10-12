@@ -27,16 +27,13 @@ class ChessDataset(Dataset):
 """
 Model definition
 
-Structure: fully connected layers
-
-(Input)    (Hidden)    (Hidden)    (Output)
-  768   ->    64    ->     8    ->    1
-       cReLu       cReLu      Linear
+(45056 -> 64 -> cReLU(64)) x 2 -> 1
 """
 
 class ClippedReLU(nn.Module):
     def __init__(self):
         super().__init__()
+
     def forward(self, x):
         return torch.clamp(x, 0.0, 1.0)
     
@@ -44,33 +41,47 @@ class Scale(nn.Module):
     def __init__(self, factor):
         super().__init__()
         self.factor = factor
+
     def forward(self, x):
         return torch.mul(x, self.factor)
 
-class NeuralNetwork(nn.Module):
-    def __init__(self, input_count, l1_count, l2_count, output_count):
+class PerspectiveNetwork(nn.Module):
+    def __init__(self, input_count, output_count):
         super().__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(input_count, l1_count),
-            ClippedReLU(),
-            nn.Linear(l1_count, l2_count),
-            ClippedReLU(),
-            nn.Linear(l2_count, output_count),
+            nn.Linear(input_count, output_count),
+            ClippedReLU()
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+class NeuralNetwork(nn.Module):
+    def __init__(self, input_count, l1_count, output_count):
+        super().__init__()
+
+        self.perspectiveNets = [
+            PerspectiveNetwork(input_count, l1_count),
+            PerspectiveNetwork(input_count, l1_count),
+        ]
+
+        self.net = nn.Sequential(
+            nn.Linear(2 * l1_count, output_count),
             Scale(512)
         )
-        print("Created network.")
 
+        self.perspectiveNets[0].apply(self.init_weights)
+        self.perspectiveNets[1].apply(self.init_weights)
         self.net.apply(self.init_weights)
-        print("Initialized weights and biases.")
 
     def init_weights(self, x):
         if type(x) == nn.Linear:
             torch.nn.init.kaiming_normal_(x.weight, nonlinearity='relu')
             torch.nn.init.zeros_(x.bias)
 
-    def forward(self, x):
-        return self.net(x)
+    def forward(self, x, y):
+        return self.net(torch.cat((self.perspectiveNets[0](x), self.perspectiveNets[1](y))))
 
 """
 Training loop
