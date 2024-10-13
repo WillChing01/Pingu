@@ -58,15 +58,26 @@ class MovePicker
         moveType stage;
         std::unordered_set<U32> singleQuiets = {};
 
+        MovePicker() {}
+
         MovePicker(Board* _b, int _ply, U32 _numChecks, U32 _hashMove)
         {
             //initializer for main nodes.
             b = _b;
             ply = _ply;
+            reset(_numChecks, _hashMove);
+        }
+
+        void reset(U32 _numChecks, U32 _hashMove)
+        {
             numChecks = _numChecks;
             hashMove = _hashMove;
 
             stage = HASH_MOVE;
+
+            moveIndex = 0;
+            singleQuiets.clear();
+            killerIndex = 0;
         }
 
         U32 getNext()
@@ -188,6 +199,11 @@ class QMovePicker
         {
             b = _b;
             ply = _ply;
+            reset(_numChecks);
+        }
+
+        void reset(U32 _numChecks)
+        {
             numChecks = _numChecks;
 
             stage = Q_CAPTURES;
@@ -196,6 +212,8 @@ class QMovePicker
             b->generateCaptures(numChecks);
             b->orderCaptures(ply);
             b->badCaptures[ply].clear();
+
+            moveIndex = 0;
         }
 
         U32 getNext()

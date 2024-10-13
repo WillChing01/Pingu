@@ -57,6 +57,8 @@ class Thread
 {
     public:
         Board b;
+        std::array<MovePicker, MAXDEPTH+1> movePicker = {};
+        std::array<QMovePicker, MAXDEPTH+1+64> qMovePicker = {};
         U32 nodeCount = 0;
         std::atomic<bool> isSearchAborted{true};
         std::atomic<bool> isSearchFinished{true};
@@ -75,7 +77,17 @@ class Thread
 
         std::vector<U32> pvMoves;
 
-        Thread() {}
+        Thread()
+        {
+            for (int i=0;i<MAXDEPTH+1;++i)
+            {
+                movePicker[i] = MovePicker(&b, i, 0, 0);
+            }
+            for (int i=0;i<MAXDEPTH+1+64;++i)
+            {
+                qMovePicker[i] = QMovePicker(&b, i, 0);
+            }
+        }
 
         void checkTime()
         {
@@ -135,10 +147,10 @@ class Thread
             }
 
             U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
-            QMovePicker movePicker(&b, ply, numChecks);
+            qMovePicker[ply].reset(numChecks);
 
             //loop through moves and search them.
-            while (U32 move = movePicker.getNext())
+            while (U32 move = qMovePicker[ply].getNext())
             {
                 b.makeMove(move);
                 int score = -qSearch(ply+1, -beta, -alpha);
@@ -231,7 +243,7 @@ class Thread
             int movesPlayed = 0; int quietsPlayed = 0;
             U32 numChecks = inCheck ? util::isInCheckDetailed(b.side, b.pieces, b.occupied) : 0;
 
-            MovePicker movePicker(&b, ply, numChecks, getHashMove(hashInfo));
+            movePicker[ply].reset(numChecks, getHashMove(hashInfo));
 
             bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
 
@@ -239,13 +251,13 @@ class Thread
                                     staticEval + futilityMargins[depth-1] <= alpha;
 
             //loop through moves and search them.
-            while (U32 move = movePicker.getNext())
+            while (U32 move = movePicker[ply].getNext())
             {
                 //late move pruning.
                 if (canLateMovePrune && quietsPlayed > lateMovePruningMargins[depth-1]) {break;}
 
                 //futility pruning.
-                if (canFutilityPrune && movesPlayed > 0 && movePicker.stage == QUIET_MOVES && !b.isCheckingMove(move)) {continue;}
+                if (canFutilityPrune && movesPlayed > 0 && movePicker[ply].stage == QUIET_MOVES && !b.isCheckingMove(move)) {continue;}
 
                 //search with PVS. Research if reductions do not fail low.
                 b.makeMove(move);
@@ -253,7 +265,7 @@ class Thread
                 //late move reductions.
                 int reduction = 0;
                 bool canLateMoveReduce = !inCheck && alpha == beta-1;
-                switch(movePicker.stage)
+                switch(movePicker[ply].stage)
                 {
                     case HASH_MOVE:
                         break;
@@ -288,7 +300,7 @@ class Thread
                 else {score = -search(-beta, -alpha, depth-1, ply+1, true);}
                 b.unmakeMove();
                 ++movesPlayed;
-                if (movePicker.stage == QUIET_MOVES) {++quietsPlayed;}
+                if (movePicker[ply].stage == QUIET_MOVES) {++quietsPlayed;}
 
                 //update scores.
                 if (score > nodeBestScore)
@@ -297,7 +309,7 @@ class Thread
                     {
                         if (!isSearchAborted)
                         {
-                            bool isQuiet = movePicker.stage == QUIET_MOVES || movePicker.singleQuiets.contains(move);
+                            bool isQuiet = movePicker[ply].stage == QUIET_MOVES || movePicker[ply].singleQuiets.contains(move);
                             if (isQuiet)
                             {
                                 //update killers.
@@ -306,8 +318,8 @@ class Thread
                                 //update history.
                                 if (depth >= 5)
                                 {
-                                    if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);}
-                                    else {b.history.update(movePicker.singleQuiets, move, depth);}
+                                    if (movePicker[ply].stage == QUIET_MOVES) {b.history.update(movePicker[ply].singleQuiets, b.moveCache[ply], movePicker[ply].moveIndex - 1, move, depth);}
+                                    else {b.history.update(movePicker[ply].singleQuiets, move, depth);}
                                 }
                             }
 
