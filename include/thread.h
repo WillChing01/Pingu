@@ -200,7 +200,11 @@ class Thread
             //get static evaluation.
             int staticEval = 0;
             bool canPrune = (alpha == beta - 1) && !inCheck && abs(alpha) < MATE_BOUND;
-            if (canPrune && depth <= maximumPruningDepth) {staticEval = b.evaluateBoard();}
+            if (canPrune && depth <= maximumPruningDepth)
+            {
+                if (getHashExactFlag(hashInfo)) {staticEval = getHashEval(hashInfo, ply);}
+                else {staticEval = b.evaluateBoard();}
+            }
 
             //inverse futility pruning.
             if (canPrune && depth <= inverseFutilityDepthLimit)
