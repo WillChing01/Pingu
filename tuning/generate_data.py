@@ -21,6 +21,9 @@ EVALBOUND = 8192
 BOOK = "noob_3moves.epd"
 
 def get_book():
+    if BOOK == "None":
+        return True
+
     url = f"https://raw.githubusercontent.com/WillChing01/pingu-books/refs/heads/master/{BOOK}"
     res = requests.get(url)
 
