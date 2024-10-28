@@ -1,7 +1,7 @@
 import numpy as np
 import torch
-import nnue_trainer
-from parse_data import fenToSparse
+import nnue.trainer.nnue_trainer as nnue_trainer
+from nnue.parsed.parse_data import fenToSparse
 
 model_file = "saved_model.pth"
 

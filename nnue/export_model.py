@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from nnue_trainer import NeuralNetwork
+from nnue.trainer.nnue_trainer import NeuralNetwork
 
 INPUT_COUNT = 768
 L1_COUNT = 64

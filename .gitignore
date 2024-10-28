@@ -1,5 +1,6 @@
 /testing/__pycache__
-/tuning/__pycache__
-/tuning/datasets
+/nnue/__pycache__
+/nnue/_raw
+/nnue/parse/parsed_data
 *.o
 *.exe
