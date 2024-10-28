@@ -1,12 +1,14 @@
 #include <chrono>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <future>
 #include <iostream>
+#include <mutex>
 #include <random>
 #include <regex>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -139,7 +141,6 @@ inline void parseFile(const std::filesystem::path& filePath, std::mt19937_64& _m
 
     std::ifstream file(filePath);
     std::string line;
-    size_t idx = 0;
     while (std::getline(file, line))
     {
         datum res = parseLine(line);
@@ -157,7 +158,7 @@ inline void parseFile(const std::filesystem::path& filePath, std::mt19937_64& _m
     {
         if (size_t length = trainingBuffer[i].size())
         {
-            std::unique_lock<std::mutex>(trainingMutex[i]);
+            std::unique_lock<std::mutex> lock(trainingMutex[i]);
             std::string chunkName = "chunk_" + std::to_string(i) + ".dat";
             std::ofstream chunk(trainingDir / chunkName, std::ios::binary | std::ios::app);
             chunk.write(reinterpret_cast<char*>(&trainingBuffer[i][0]), length * sizeof(datum));
@@ -169,7 +170,7 @@ inline void parseFile(const std::filesystem::path& filePath, std::mt19937_64& _m
     {
         if (size_t length = validationBuffer[i].size())
         {
-            std::unique_lock<std::mutex>(validationMutex[i]);
+            std::unique_lock<std::mutex> lock(validationMutex[i]);
             std::string chunkName = "chunk_" + std::to_string(i) + ".dat";
             std::ofstream chunk(validationDir / chunkName, std::ios::binary | std::ios::app);
             chunk.write(reinterpret_cast<char*>(&validationBuffer[i][0]), length * sizeof(datum));
@@ -197,59 +198,46 @@ std::vector<std::filesystem::path> getFiles(const std::filesystem::path& path, c
     return res;
 }
 
-int main()
+int main(int argc, const char** argv)
 {
-    size_t num_cpu = 6;
-    std::future<void> futures[num_cpu];
-    for (size_t i=0;i<num_cpu;++i)
+    if (argc != 3 || !!std::strcmp(argv[1], "-N")) {return 0;}
+    auto isNumber = [&]() -> bool {
+        bool good = true; size_t i = 0;
+        while (good && argv[2][i] != '\0') {good &= (bool)std::isdigit(argv[2][i++]);}
+        return good;
+    };
+    if (!isNumber()) {return 0;}
+
+    size_t numCpu = std::stoi(argv[2]);
+    std::thread threads[numCpu];
+
+    std::random_device _rd;
+    std::size_t seed;
+
+    std::mt19937_64 _mt[numCpu];
+    for (size_t i=0;i<numCpu;++i)
     {
-        futures[i] = std::async(std::launch::async, []() {return;});
-        while (!futures[i].valid()) {}
+        if (_rd.entropy()) {seed = _rd();}
+        else {seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();}
+        _mt[i] = std::mt19937_64(seed);
     }
 
     const std::filesystem::path cwd = std::filesystem::current_path();
-    const std::filesystem::path rawPath = cwd / ".." / "_raw";
+    std::vector<std::filesystem::path> rawFiles = getFiles(cwd / "_raw", ".txt");
 
-    std::vector<std::filesystem::path> files = getFiles(rawPath, ".txt");
-
-    size_t start = 0;
-    for (const auto& file: files)
-    {
-        std::cout << file << std::endl;
-        bool assigned = false;
-        while (!assigned)
-        {
-            for (size_t i=0;i<num_cpu;++i)
-            {
-                if (futures[(start+i) % num_cpu].valid())
-                {
-                    futures[(start+i) % num_cpu] = std::async(std::launch::async, parseFile, std::ref(file));
-                    assigned = true;
-                    break;
-                }
-            }
-        }
-        start = (start+1) % num_cpu;
-    }
-
-    for (size_t i=0;i<num_cpu;++i) {futures[i].get();}
-
-    std::vector<std::filesystem::path> parsedFiles = getFiles(cwd / "parsed_data", ".dat");
     U64 total = 0;
 
-    std::regex lengthRegex(R"(_n([1-9][0-9]*)_)");
-    for (const auto& file: parsedFiles)
+    const std::regex lengthRegex(R"(_n([1-9][0-9]*)_)");
+    for (const auto& file: rawFiles)
     {
         const std::string fileName = file.filename().string();
         std::smatch match;
         std::regex_search(fileName, match, lengthRegex);
         total += std::stoull(match[1]);
     }
-
-    std::cout << total << std::endl;
+    std::cout << "Found " << rawFiles.size() << " files containing " << total << " pieces of data" << std::endl;
 
     const U64 chunkSize = 25000000ull;
-    
     const double trainingRatio = 0.95;
 
     const U64 expectedTraining = (U64)(trainingRatio * total);
@@ -258,18 +246,20 @@ int main()
     const U64 trainingChunks = std::max(1ull, expectedTraining / chunkSize);
     const U64 validationChunks = std::max(1ull, expectedValidation / chunkSize);
 
-    size_t numCpu = 6;
+    std::mutex* trainingMutex = new std::mutex[trainingChunks];
+    std::mutex* validationMutex = new std::mutex[validationChunks];
 
-    std::random_device _rd;
-    std::size_t seed;
-
-    std::vector<std::mt19937_64> _mt;
-    for (size_t i=0;i<numCpu;++i)
+    for (size_t i=0;i<rawFiles.size();++i)
     {
-        if (_rd.entropy()) {seed = _rd();}
-        else {seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();}
-        _mt.push_back(std::mt19937_64(seed));
+        std::cout << "Iteration: " << i+1 << " / " << rawFiles.size() << std::endl;
+        const size_t cpu = i % numCpu;
+        threads[cpu] = std::thread(parseFile, std::ref(rawFiles[i]), std::ref(_mt[cpu]), trainingRatio, trainingChunks, validationChunks, trainingMutex, validationMutex);
+        if (cpu == numCpu - 1) {for (size_t j=0;j<numCpu;++j) {threads[j].join();}}
     }
+    for (size_t i=0;i<rawFiles.size()%numCpu;++i) {threads[i].join();}
+
+    delete[] trainingMutex;
+    delete[] validationMutex;
 
     return 0;
 }
