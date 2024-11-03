@@ -70,7 +70,7 @@ inline datum parseLine(const std::string &line)
                                         square += 8;
                                         break;
                                     default:
-                                        res.pos[square >> 4] &= (U64)pieceTypeMap.at(x) << (U64)(square & 15);
+                                        res.pos[square >> 4] -= (15ull - (U64)pieceTypeMap.at(x)) << (U64)((square & 15) << 2);
                                         if (x == 'K') {res.kingPos[0] = square;}
                                         else if (x == 'k') {res.kingPos[1] = square;}
                                         ++square;
