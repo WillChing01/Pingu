@@ -9,19 +9,20 @@
 
 struct halfKaSparseBatch
 {
+    U64* indices;
     U64* firstFeatures;
     U64* secondFeatures;
     double* result;
     short* eval;
-    unsigned char* activeFeatures;
+    int totalFeatures = 0;
 
     halfKaSparseBatch(size_t batchSize, datum* data)
     {
-        firstFeatures = new U64[batchSize * 31]();
-        secondFeatures = new U64[batchSize * 31]();
-        result = new double[batchSize]();
-        eval = new short[batchSize]();
-        activeFeatures = new unsigned char[batchSize]();
+        indices = new U64[batchSize * 31];
+        firstFeatures = new U64[batchSize * 31];
+        secondFeatures = new U64[batchSize * 31];
+        result = new double[batchSize];
+        eval = new short[batchSize];
 
         for (size_t i=0;i<batchSize;++i) {datumToSparse(i, data[i]);}
     }
@@ -31,10 +32,10 @@ struct halfKaSparseBatch
         result[idx] = datum.isDraw ? 0.5 : datum.result;
         eval[idx] = datum.eval;
 
-        U64* whiteFeatures = datum.side ? secondFeatures + 31 * idx : firstFeatures + 31 * idx;
-        U64* blackFeatures = datum.side ? firstFeatures + 31 * idx : secondFeatures + 31 * idx;
+        U64* whiteFeatures = (datum.side ? secondFeatures : firstFeatures) + totalFeatures;
+        U64* blackFeatures = (datum.side ? firstFeatures : secondFeatures) + totalFeatures;
 
-        activeFeatures[idx] = 0;
+        int startFeatures = totalFeatures;
 
         for (size_t i=0;i<4;++i)
         {
@@ -48,33 +49,34 @@ struct halfKaSparseBatch
                     switch (pieceType)
                     {
                         case 0:
-                            *blackFeatures++ = (704 * datum.kingPos[1]) + (square ^ 56);
+                            blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + (square ^ 56);
                             break;
                         case 1:
-                            *whiteFeatures++ = (704 * datum.kingPos[0]) + square;
+                            whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + square;
                             break;
                         default:
-                            *whiteFeatures++ = (704 * datum.kingPos[0]) + 64 * (pieceType - 1) + square;
-                            *blackFeatures++ = (704 * datum.kingPos[1]) + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56);
+                            whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + 64 * (pieceType - 1) + square;
+                            blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56);
                             break;
                     }
-                    ++activeFeatures[idx];
+                    indices[totalFeatures] = idx;
+                    ++totalFeatures;
                 }
             }
         }
 
         //order indices in ascending order.
-        std::sort(whiteFeatures - activeFeatures[idx], whiteFeatures);
-        std::sort(blackFeatures - activeFeatures[idx], blackFeatures);
+        std::sort(firstFeatures + startFeatures, firstFeatures + totalFeatures);
+        std::sort(secondFeatures + startFeatures, secondFeatures + totalFeatures);
     }
 
     ~halfKaSparseBatch()
     {
+        delete[] indices;
         delete[] firstFeatures;
         delete[] secondFeatures;
         delete[] result;
         delete[] eval;
-        delete[] activeFeatures;
     }
 };
 
