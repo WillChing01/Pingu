@@ -1,8 +1,12 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <mutex>
+#include <queue>
 #include <random>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "utils.h"
@@ -15,6 +19,8 @@ struct halfKaSparseBatch
     double* result;
     short* eval;
     int totalFeatures = 0;
+
+    halfKaSparseBatch() {}
 
     halfKaSparseBatch(size_t batchSize, datum* data)
     {
@@ -32,8 +38,8 @@ struct halfKaSparseBatch
         result[idx] = datum.isDraw ? 0.5 : datum.result;
         eval[idx] = datum.eval;
 
-        U64* whiteFeatures = (datum.side ? secondFeatures : firstFeatures) + totalFeatures;
-        U64* blackFeatures = (datum.side ? firstFeatures : secondFeatures) + totalFeatures;
+        U64* whiteFeatures = datum.side ? secondFeatures : firstFeatures;
+        U64* blackFeatures = datum.side ? firstFeatures : secondFeatures;
 
         int startFeatures = totalFeatures;
 
@@ -82,40 +88,45 @@ struct halfKaSparseBatch
 
 struct dataLoader
 {
-    std::string path;
+    std::filesystem::path path;
+    size_t batchSize;
+    size_t numWorkers;
+
     size_t chunkIndex = 0;
     std::vector<std::filesystem::path> chunkFiles = {};
 
     datum* chunk = nullptr;
     size_t chunkSize;
 
-    size_t batchSize;
-    size_t batchIndex = 0;
+    size_t qLength = 8;
+    size_t batchCounter = 0;
+    std::vector<int>* batchIndices;
+    std::queue<halfKaSparseBatch>* batchQueue;
+    std::mutex* _m;
 
-    bool finished = false;
+    std::mt19937_64 _mt;
 
-    std::mt19937_64 _mt{std::random_device{}()};
-
-    dataLoader(const std::string& x, size_t y) : path(x), batchSize(y)
+    dataLoader(const std::filesystem::path& x, size_t y, size_t z) : path(x), batchSize(y), numWorkers(z)
     {
         chunkFiles = getFiles(path, ".dat");
-        std::shuffle(chunkFiles.begin(), chunkFiles.end(), _mt);
+        _mt = std::mt19937_64{std::random_device{}()};
+
+        batchIndices = new std::vector<int>[numWorkers];
+        batchQueue = new std::queue<halfKaSparseBatch>[numWorkers];
+        _m = new std::mutex[numWorkers];
+
+        prepareForNewIteration();
+        refreshChunk(0);
     }
 
     void prepareForNewIteration()
     {
-        finished = false;
-
         chunkIndex = 0;
-        std::shuffle(chunkFiles.begin(), chunkFiles.end(), _mt);
-
-        batchIndex = 0;
+        // std::shuffle(chunkFiles.begin(), chunkFiles.end(), _mt);
     }
 
     void refreshChunk(size_t index)
     {
-        batchIndex = 0;
-
         delete[] chunk;
         chunkSize = std::filesystem::file_size(chunkFiles[index]) / sizeof(datum);
         chunk = new datum[chunkSize];
@@ -123,13 +134,85 @@ struct dataLoader
         std::ifstream data(chunkFiles[index], std::ios::binary);
         data.read((char*)chunk, chunkSize * sizeof(datum));
 
-        std::shuffle(chunk, chunk + chunkSize, _mt);
+        // std::shuffle(chunk, chunk + chunkSize, _mt);
+
+        batchCounter = 0;
+        for (size_t i=0;i<chunkSize;i+=batchSize)
+        {
+            batchIndices[(i/batchSize) % numWorkers].push_back(i);
+        }
+        for (size_t i=0;i<numWorkers;++i)
+        {
+            std::thread(&dataLoader::processBatches, this, std::ref(_m[i]), std::ref(batchIndices[i]), std::ref(batchQueue[i])).detach();
+        }
     }
 
-    halfKaSparseBatch next(size_t startIndex)
+    void processBatches(std::mutex& m, std::vector<int>& indices, std::queue<halfKaSparseBatch>& queue)
     {
-        return halfKaSparseBatch(std::min(chunkSize - startIndex, batchSize), chunk + startIndex);
+        while (indices.size())
+        {
+            std::unique_lock<std::mutex> lock(m);
+            if (queue.size() < qLength)
+            {
+                int idx = indices.back();
+                indices.pop_back();
+                queue.emplace(std::min(chunkSize - idx, batchSize), chunk + idx);
+            }
+        }
     }
 
-    ~dataLoader() {delete[] chunk;}
+    halfKaSparseBatch next()
+    {
+        bool isChunkFinished = batchCounter == ((chunkSize / batchSize) + (bool)(chunkSize % batchSize));
+        if (isChunkFinished)
+        {
+            bool isIterationFinished = chunkIndex == chunkFiles.size() - 1;
+            if (isIterationFinished) {return halfKaSparseBatch();}
+            refreshChunk(++chunkIndex);
+            return next();
+        }
+
+        int worker = batchCounter++ % numWorkers;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+
+        while (true)
+        {
+            std::unique_lock<std::mutex> lock(_m[worker]);
+            if (batchQueue[worker].size())
+            {
+                halfKaSparseBatch batch = batchQueue[worker].front();
+                batchQueue[worker].pop();
+                return batch;
+            }
+            lock.unlock();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
+
+    ~dataLoader()
+    {
+        delete[] chunk;
+        delete[] batchIndices;
+        delete[] batchQueue;
+        delete[] _m;
+    }
 };
+
+int main()
+{
+    dataLoader dataloader(std::filesystem::current_path() / "dataset" / "training", 1024, 1);
+
+    auto startTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+    int batchCounter = 0;
+    while (dataloader.next().totalFeatures)
+    {
+        if ((++batchCounter) % 100 == 0) {std::cout << batchCounter << std::endl;}
+    }
+
+    auto finishTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
+    std::cout << "done in " << finishTime - startTime << " seconds" << std::endl;
+
+    return 0;
+}
