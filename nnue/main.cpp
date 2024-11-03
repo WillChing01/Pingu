@@ -9,38 +9,11 @@
 #include <sstream>
 #include <string>
 #include <thread>
-#include <unordered_map>
 #include <vector>
 
-typedef unsigned long long U64;
+#include "utils.h"
 
 const double TRAINING_RATIO = 0.95;
-
-// eval and result given relative to side.
-struct datum
-{
-    U64 pos[4] = {~0ull, ~0ull, ~0ull, ~0ull};
-    unsigned char kingPos[2];
-    short eval;
-    bool isDraw;
-    bool result;
-    bool side;
-};
-
-const std::unordered_map<unsigned char, unsigned char> pieceTypeMap = {
-    {'K', 0},
-    {'k', 1},
-    {'Q', 2},
-    {'q', 3},
-    {'R', 4},
-    {'r', 5},
-    {'B', 6},
-    {'b', 7},
-    {'N', 8},
-    {'n', 9},
-    {'P', 10},
-    {'p', 11},
-};
 
 inline datum parseLine(const std::string &line)
 {
@@ -180,22 +153,6 @@ inline void parseFile(const std::filesystem::path& filePath, std::mt19937_64& _m
 
     delete[] trainingBuffer;
     delete[] validationBuffer;
-}
-
-std::vector<std::filesystem::path> getFiles(const std::filesystem::path& path, const std::filesystem::path& ext)
-{
-    std::vector<std::filesystem::path> res = {};
-
-    for (const auto& entry: std::filesystem::recursive_directory_iterator(path))
-    {
-        const std::filesystem::path entryPath= entry.path();
-        if (entryPath.extension() == ext)
-        {
-            res.push_back(entryPath);
-        }
-    }
-
-    return res;
 }
 
 int main(int argc, const char** argv)
