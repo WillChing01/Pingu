@@ -101,7 +101,7 @@ struct dataLoader
     size_t qLength = 8;
     size_t batchCounter = 0;
     std::vector<int>* batchIndices;
-    std::queue<halfKaSparseBatch>* batchQueue;
+    std::queue<halfKaSparseBatch*>* batchQueue;
     std::mutex* _m;
 
     std::mt19937_64 _mt;
@@ -112,7 +112,7 @@ struct dataLoader
         _mt = std::mt19937_64{std::random_device{}()};
 
         batchIndices = new std::vector<int>[numWorkers];
-        batchQueue = new std::queue<halfKaSparseBatch>[numWorkers];
+        batchQueue = new std::queue<halfKaSparseBatch*>[numWorkers];
         _m = new std::mutex[numWorkers];
 
         prepareForNewIteration();
@@ -147,7 +147,7 @@ struct dataLoader
         }
     }
 
-    void processBatches(std::mutex& m, std::vector<int>& indices, std::queue<halfKaSparseBatch>& queue)
+    void processBatches(std::mutex& m, std::vector<int>& indices, std::queue<halfKaSparseBatch*>& queue)
     {
         while (indices.size())
         {
@@ -156,36 +156,33 @@ struct dataLoader
             {
                 int idx = indices.back();
                 indices.pop_back();
-                queue.emplace(std::min(chunkSize - idx, batchSize), chunk + idx);
+                queue.emplace(new halfKaSparseBatch(std::min(chunkSize - idx, batchSize), chunk + idx));
             }
         }
     }
 
-    halfKaSparseBatch next()
+    halfKaSparseBatch* next()
     {
         bool isChunkFinished = batchCounter == ((chunkSize / batchSize) + (bool)(chunkSize % batchSize));
         if (isChunkFinished)
         {
             bool isIterationFinished = chunkIndex == chunkFiles.size() - 1;
-            if (isIterationFinished) {return halfKaSparseBatch();}
+            if (isIterationFinished) {return nullptr;}
             refreshChunk(++chunkIndex);
             return next();
         }
 
         int worker = batchCounter++ % numWorkers;
-        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
         while (true)
         {
             std::unique_lock<std::mutex> lock(_m[worker]);
             if (batchQueue[worker].size())
             {
-                halfKaSparseBatch batch = batchQueue[worker].front();
+                halfKaSparseBatch* batch = batchQueue[worker].front();
                 batchQueue[worker].pop();
                 return batch;
             }
-            lock.unlock();
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     }
 
@@ -200,14 +197,18 @@ struct dataLoader
 
 int main()
 {
-    dataLoader dataloader(std::filesystem::current_path() / "dataset" / "training", 1024, 1);
+    dataLoader dataloader(std::filesystem::current_path() / "dataset" / "training", 1024, 6);
 
     auto startTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     int batchCounter = 0;
-    while (dataloader.next().totalFeatures)
+    while (true)
     {
-        if ((++batchCounter) % 100 == 0) {std::cout << batchCounter << std::endl;}
+        halfKaSparseBatch* batch = dataloader.next();
+        if (batch == nullptr) {break;}
+        if (batchCounter % 1000 == 0) {std::cout << batchCounter << std::endl;}
+        ++batchCounter;
+        delete batch;
     }
 
     auto finishTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
