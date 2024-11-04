@@ -45,29 +45,28 @@ struct halfKaSparseBatch
 
         for (size_t i=0;i<4;++i)
         {
-            for (size_t j=0;j<16;++j)
+            U64 x = ~datum.pos[i];
+            while (x)
             {
-                size_t pieceType = (datum.pos[i] & masks[j]) >> (4 * j);
-
-                if (pieceType != 15)
+                U64 j = __builtin_ctzll(x) / 4ull;
+                U64 square = 16ull * i + j;
+                U64 pieceType = 15ull - ((x & masks[j]) >> (j << 2ull));
+                x &= ~masks[j];
+                switch(pieceType)
                 {
-                    size_t square = 16 * i + j;
-                    switch (pieceType)
-                    {
-                        case 0:
-                            blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + (square ^ 56);
-                            break;
-                        case 1:
-                            whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + square;
-                            break;
-                        default:
-                            whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + 64 * (pieceType - 1) + square;
-                            blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56);
-                            break;
-                    }
-                    indices[totalFeatures] = idx;
-                    ++totalFeatures;
+                    case 0:
+                        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + (square ^ 56ull);
+                        break;
+                    case 1:
+                        whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + square;
+                        break;
+                    default:
+                        whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + 64ull * (pieceType - 1ull) + square;
+                        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + 64ull * (pieceType - 2ull * (pieceType & 1ull)) + (square ^ 56ull);
+                        break;
                 }
+                indices[totalFeatures] = idx;
+                ++totalFeatures;
             }
         }
 
@@ -154,9 +153,12 @@ struct dataLoader
             std::unique_lock<std::mutex> lock(m);
             if (queue.size() < qLength)
             {
+                lock.unlock();
                 int idx = indices.back();
                 indices.pop_back();
-                queue.emplace(new halfKaSparseBatch(std::min(chunkSize - idx, batchSize), chunk + idx));
+                halfKaSparseBatch* batch = new halfKaSparseBatch(std::min(chunkSize - idx, batchSize), chunk + idx);
+                lock.lock();
+                queue.push(batch);
             }
         }
     }
