@@ -13,9 +13,9 @@
 
 struct halfKaSparseBatch
 {
-    U64* indices;
-    U64* firstFeatures;
-    U64* secondFeatures;
+    int* indices;
+    int* firstFeatures;
+    int* secondFeatures;
     double* result;
     short* eval;
     int totalFeatures = 0;
@@ -24,9 +24,9 @@ struct halfKaSparseBatch
 
     halfKaSparseBatch(size_t batchSize, datum* data)
     {
-        indices = new U64[batchSize * 31];
-        firstFeatures = new U64[batchSize * 31];
-        secondFeatures = new U64[batchSize * 31];
+        indices = new int[batchSize * 31];
+        firstFeatures = new int[batchSize * 31];
+        secondFeatures = new int[batchSize * 31];
         result = new double[batchSize];
         eval = new short[batchSize];
 
@@ -38,8 +38,8 @@ struct halfKaSparseBatch
         result[idx] = datum.isDraw ? 0.5 : datum.result;
         eval[idx] = datum.eval;
 
-        U64* whiteFeatures = datum.side ? secondFeatures : firstFeatures;
-        U64* blackFeatures = datum.side ? firstFeatures : secondFeatures;
+        int* whiteFeatures = datum.side ? secondFeatures : firstFeatures;
+        int* blackFeatures = datum.side ? firstFeatures : secondFeatures;
 
         int startFeatures = totalFeatures;
 
@@ -55,14 +55,14 @@ struct halfKaSparseBatch
                 switch(pieceType)
                 {
                     case 0:
-                        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + (square ^ 56ull);
+                        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + (square ^ 56);
                         break;
                     case 1:
                         whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + square;
                         break;
                     default:
-                        whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + 64ull * (pieceType - 1ull) + square;
-                        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + 64ull * (pieceType - 2ull * (pieceType & 1ull)) + (square ^ 56ull);
+                        whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + 64 * (pieceType - 1) + square;
+                        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56);
                         break;
                 }
                 indices[totalFeatures] = idx;
