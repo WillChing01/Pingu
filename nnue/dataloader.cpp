@@ -11,6 +11,10 @@
 
 #include "utils.h"
 
+extern "C" {
+    int main();
+}
+
 struct halfKaSparseBatch
 {
     U64* indices;

@@ -7,6 +7,7 @@ EXE = parse.exe
 SRC2 = dataloader.cpp
 OBJ2 = dataloader.o
 EXE2 = dataloader.exe
+DLL2 = dataloader.dll
 
 RM = del /q
 
@@ -16,13 +17,16 @@ LDFLAGS = -s -static -static-libstdc++ -static-libgcc
 
 .PHONY: all clean
 
-all: $(EXE) $(EXE2)
+all: $(EXE) $(EXE2) $(DLL2)
 
 $(EXE): $(OBJ)
 	$(CXX) $(OBJ) -o $(EXE) $(LDFLAGS)
 
 $(EXE2): $(OBJ2)
 	$(CXX) $(OBJ2) -o $(EXE2) $(LDFLAGS)
+
+$(DLL2): $(OBJ2)
+	$(CXX) $(OBJ2) -o $(DLL2) $(LDFLAGS) -shared
 
 $(OBJ): $(SRC)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(SRC) -o $(OBJ)
@@ -32,4 +36,4 @@ $(OBJ2): $(SRC2)
 
 clean:
 	$(RM) $(OBJ) $(EXE)
-	$(RM) $(OBJ2) $(EXE2)
+	$(RM) $(OBJ2) $(EXE2) $(DLL2)
