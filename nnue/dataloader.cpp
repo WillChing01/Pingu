@@ -11,10 +11,6 @@
 
 #include "utils.h"
 
-extern "C" {
-    int main();
-}
-
 struct halfKaSparseBatch
 {
     U64* indices;
@@ -200,6 +196,30 @@ struct dataLoader
         delete[] _m;
     }
 };
+
+extern "C" {
+    void* constructDataLoader(const char* path, const int batchSize, const int numWorkers)
+    {
+        return new dataLoader(std::filesystem::path(std::string(path)), batchSize, numWorkers);
+    }
+
+    void destructDataLoader(void* dataloader)
+    {
+        delete static_cast<dataLoader*>(dataloader);
+    }
+
+    halfKaSparseBatch* getBatch(dataLoader* dataloader)
+    {
+        return dataloader->next();
+    }
+
+    void destructBatch(halfKaSparseBatch* batch)
+    {
+        delete batch;
+    }
+
+    int main();
+}
 
 int main()
 {
