@@ -20,10 +20,11 @@ struct halfKaSparseBatch
     double* result;
     short* eval;
     int totalFeatures = 0;
+    int size = 0;
 
     halfKaSparseBatch() {}
 
-    halfKaSparseBatch(size_t batchSize, datum* data)
+    halfKaSparseBatch(size_t batchSize, datum* data): size(batchSize)
     {
         indices = new U64[batchSize * 31];
         firstFeatures = new U64[batchSize * 31];
@@ -166,7 +167,6 @@ struct chunkLoader
 
 struct dataLoader
 {
-    std::filesystem::path path;
     size_t batchSize;
     size_t numWorkers;
 
@@ -182,7 +182,7 @@ struct dataLoader
     std::atomic<bool>* stopFlags;
     std::atomic<bool>* finishFlags;
 
-    dataLoader(const std::filesystem::path& x, size_t y, size_t z) : path(x), batchSize(y), numWorkers(z)
+    dataLoader(const std::filesystem::path& path, size_t x, size_t y): batchSize(x), numWorkers(y)
     {
         batchQueue = new std::queue<halfKaSparseBatch*>[numWorkers];
         _m = new std::mutex[numWorkers];
@@ -301,6 +301,16 @@ extern "C" {
     void destructDataLoader(void* dataloader)
     {
         delete static_cast<dataLoader*>(dataloader);
+    }
+
+    U64 length(const char* path)
+    {
+        U64 res = 0;
+        for (const auto& file: getFiles(std::filesystem::path(path), ".dat"))
+        {
+            res += std::filesystem::file_size(file) / sizeof(datum);
+        }
+        return res;
     }
 
     halfKaSparseBatch* getBatch(void* dataloader)
