@@ -110,7 +110,7 @@ struct chunkLoader
         _mt = std::mt19937_64{std::random_device{}()};
 
         chunkFiles = getFiles(path, ".dat");
-        // std::shuffle(chunkFiles.begin(), chunkFiles.end(), _mt);
+        std::shuffle(chunkFiles.begin(), chunkFiles.end(), _mt);
 
         loadNext();
     }
@@ -132,7 +132,7 @@ struct chunkLoader
         chunkBuffer[chunkToggle] = new datum[chunkSizeBuffer[chunkToggle]];
         data.read((char*)chunkBuffer[chunkToggle], chunkSizeBuffer[chunkToggle] * sizeof(datum));
 
-        // std::shuffle(&chunkBuffer[chunkToggle][0], &chunkBuffer[chunkToggle][chunkSizeBuffer[chunkToggle]], _mt);
+        std::shuffle(&chunkBuffer[chunkToggle][0], &chunkBuffer[chunkToggle][chunkSizeBuffer[chunkToggle]], _mt);
 
         finishFlag = true;
     }
