@@ -105,18 +105,20 @@ struct chunkLoader
 
     std::mt19937_64 _mt;
 
-    chunkLoader(const std::filesystem::path& path): path(path)
+    chunkLoader(const std::filesystem::path& x): path(x)
     {
         _mt = std::mt19937_64{std::random_device{}()};
 
         chunkFiles = getFiles(path, ".dat");
-        std::shuffle(chunkFiles.begin(), chunkFiles.end(), _mt);
+        // std::shuffle(chunkFiles.begin(), chunkFiles.end(), _mt);
 
         loadNext();
     }
 
     void loadNext()
     {
+        delete[] chunkBuffer[chunkToggle];
+
         if (chunkIndex == chunkFiles.size())
         {
             chunkBuffer[chunkToggle] = nullptr;
@@ -127,10 +129,10 @@ struct chunkLoader
         chunkSizeBuffer[chunkToggle] = std::filesystem::file_size(chunkFiles[chunkIndex]) / sizeof(datum);
         std::ifstream data(chunkFiles[chunkIndex], std::ios::binary);
 
-        chunkBuffer[chunkToggle] = new datum[chunkSize];
+        chunkBuffer[chunkToggle] = new datum[chunkSizeBuffer[chunkToggle]];
         data.read((char*)chunkBuffer[chunkToggle], chunkSizeBuffer[chunkToggle] * sizeof(datum));
 
-        std::shuffle(chunkBuffer[chunkToggle], chunkBuffer[chunkToggle]+chunkSizeBuffer[chunkToggle], _mt);
+        // std::shuffle(&chunkBuffer[chunkToggle][0], &chunkBuffer[chunkToggle][chunkSizeBuffer[chunkToggle]], _mt);
 
         finishFlag = true;
     }
@@ -142,15 +144,12 @@ struct chunkLoader
         // wait for pre-loaded chunk.
         while (!finishFlag) {}
 
-        delete[] chunkBuffer[!chunkToggle];
-
         chunk = chunkBuffer[chunkToggle];
         chunkSize = chunkSizeBuffer[chunkToggle];
 
-        chunkToggle = !chunkToggle;
-
         //start pre-loading the next chunk.
         ++chunkIndex;
+        chunkToggle = !chunkToggle;
         finishFlag = false;
         std::thread(&chunkLoader::loadNext, this).detach();
 
@@ -171,63 +170,42 @@ struct dataLoader
     size_t batchSize;
     size_t numWorkers;
 
-    size_t chunkIndex = 0;
-    std::vector<std::filesystem::path> chunkFiles = {};
-
+    chunkLoader* chunkloader = nullptr;
     datum* chunk = nullptr;
     size_t chunkSize;
 
     size_t qLength = 8;
     size_t batchCounter = 0;
-    std::vector<int>* batchIndices;
     std::queue<halfKaSparseBatch*>* batchQueue;
     std::mutex* _m;
 
     std::atomic<bool>* stopFlags;
     std::atomic<bool>* finishFlags;
 
-    std::mt19937_64 _mt;
-
     dataLoader(const std::filesystem::path& x, size_t y, size_t z) : path(x), batchSize(y), numWorkers(z)
     {
-        chunkFiles = getFiles(path, ".dat");
-        _mt = std::mt19937_64{std::random_device{}()};
-
-        batchIndices = new std::vector<int>[numWorkers];
         batchQueue = new std::queue<halfKaSparseBatch*>[numWorkers];
         _m = new std::mutex[numWorkers];
 
         stopFlags = new std::atomic<bool>[numWorkers];
         finishFlags = new std::atomic<bool>[numWorkers];
 
-        prepareForNewIteration();
-        refreshChunk(0);
+        std::fill(stopFlags, stopFlags+numWorkers, true);
+        std::fill(finishFlags, finishFlags+numWorkers, true);
+
+        chunkloader = new chunkLoader(path);
+        getNextChunk();
     }
 
-    void prepareForNewIteration()
-    {
-        chunkIndex = 0;
-        // std::shuffle(chunkFiles.begin(), chunkFiles.end(), _mt);
-    }
-
-    void refreshChunk(size_t index)
+    void getNextChunk()
     {
         stopThreads();
 
-        delete[] chunk;
-        chunkSize = std::filesystem::file_size(chunkFiles[index]) / sizeof(datum);
-        chunk = new datum[chunkSize];
-
-        std::ifstream data(chunkFiles[index], std::ios::binary);
-        data.read((char*)chunk, chunkSize * sizeof(datum));
-
-        // std::shuffle(chunk, chunk + chunkSize, _mt);
+        std::pair<datum*, size_t> res = chunkloader->next();
+        chunk = res.first;
+        chunkSize = res.second;
 
         batchCounter = 0;
-        for (size_t i=0;i<chunkSize;i+=batchSize)
-        {
-            batchIndices[(i/batchSize) % numWorkers].push_back(i);
-        }
         startThreads();
     }
 
@@ -237,34 +215,31 @@ struct dataLoader
         std::fill(finishFlags, finishFlags+numWorkers, false);
         for (size_t i=0;i<numWorkers;++i)
         {
-            std::thread(
-                &dataLoader::processBatches,
-                this,
-                std::ref(_m[i]),
-                stopFlags+i,
-                finishFlags+i,
-                std::ref(batchIndices[i]),
-                std::ref(batchQueue[i])
-            ).detach();
+            std::thread(&dataLoader::processBatches, this, i).detach();
         }
     }
 
-    void processBatches(std::mutex& m, std::atomic<bool>* stopFlag, std::atomic<bool>* finishFlag, std::vector<int>& indices, std::queue<halfKaSparseBatch*>& queue)
+    void processBatches(int worker)
     {
-        while (indices.size() && !(*stopFlag))
+        for (size_t i=batchSize*worker;i<chunkSize;i+=batchSize*numWorkers)
         {
-            std::unique_lock<std::mutex> lock(m);
-            if (queue.size() < qLength)
+            if (stopFlags[worker]) {break;}
+
+            bool pushed = false;
+            while (!pushed && !stopFlags[worker])
             {
-                lock.unlock();
-                int idx = indices.back();
-                indices.pop_back();
-                halfKaSparseBatch* batch = new halfKaSparseBatch(std::min(chunkSize - idx, batchSize), chunk + idx);
-                lock.lock();
-                queue.push(batch);
+                std::unique_lock<std::mutex> lock(_m[worker]);
+                if (batchQueue[worker].size() < qLength)
+                {
+                    lock.unlock();
+                    halfKaSparseBatch* batch = new halfKaSparseBatch(std::min(chunkSize - i, batchSize), chunk + i);
+                    lock.lock();
+                    batchQueue[worker].push(batch);
+                    pushed = true;
+                }
             }
         }
-        *finishFlag = true;
+        finishFlags[worker] = true;
     }
 
     void stopThreads()
@@ -273,7 +248,6 @@ struct dataLoader
         for (size_t i=0;i<numWorkers;++i)
         {
             while (!finishFlags[i]) {}
-            batchIndices[i].clear();
             while (!batchQueue[i].empty())
             {
                 halfKaSparseBatch* batch = batchQueue[i].front();
@@ -288,9 +262,8 @@ struct dataLoader
         bool isChunkFinished = batchCounter == ((chunkSize / batchSize) + (bool)(chunkSize % batchSize));
         if (isChunkFinished)
         {
-            bool isIterationFinished = chunkIndex == chunkFiles.size() - 1;
-            if (isIterationFinished) {return nullptr;}
-            refreshChunk(++chunkIndex);
+            getNextChunk();
+            if (chunk == nullptr) {return nullptr;}
             return next();
         }
 
@@ -312,7 +285,6 @@ struct dataLoader
     {
         stopThreads();
         delete[] chunk;
-        delete[] batchIndices;
         delete[] batchQueue;
         delete[] _m;
         delete[] stopFlags;
