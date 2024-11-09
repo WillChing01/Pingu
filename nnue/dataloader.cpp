@@ -208,9 +208,9 @@ extern "C" {
         delete static_cast<dataLoader*>(dataloader);
     }
 
-    halfKaSparseBatch* getBatch(dataLoader* dataloader)
+    halfKaSparseBatch* getBatch(void* dataloader)
     {
-        return dataloader->next();
+        return static_cast<dataLoader*>(dataloader)->next();
     }
 
     void destructBatch(halfKaSparseBatch* batch)
