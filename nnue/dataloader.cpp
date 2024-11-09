@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <atomic>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -103,6 +104,9 @@ struct dataLoader
     std::queue<halfKaSparseBatch*>* batchQueue;
     std::mutex* _m;
 
+    std::atomic<bool>* stopFlags;
+    std::atomic<bool>* finishFlags;
+
     std::mt19937_64 _mt;
 
     dataLoader(const std::filesystem::path& x, size_t y, size_t z) : path(x), batchSize(y), numWorkers(z)
@@ -113,6 +117,9 @@ struct dataLoader
         batchIndices = new std::vector<int>[numWorkers];
         batchQueue = new std::queue<halfKaSparseBatch*>[numWorkers];
         _m = new std::mutex[numWorkers];
+
+        stopFlags = new std::atomic<bool>[numWorkers];
+        finishFlags = new std::atomic<bool>[numWorkers];
 
         prepareForNewIteration();
         refreshChunk(0);
@@ -126,6 +133,8 @@ struct dataLoader
 
     void refreshChunk(size_t index)
     {
+        stopThreads();
+
         delete[] chunk;
         chunkSize = std::filesystem::file_size(chunkFiles[index]) / sizeof(datum);
         chunk = new datum[chunkSize];
@@ -140,15 +149,30 @@ struct dataLoader
         {
             batchIndices[(i/batchSize) % numWorkers].push_back(i);
         }
+        startThreads();
+    }
+
+    void startThreads()
+    {
+        std::fill(stopFlags, stopFlags+numWorkers, false);
+        std::fill(finishFlags, finishFlags+numWorkers, false);
         for (size_t i=0;i<numWorkers;++i)
         {
-            std::thread(&dataLoader::processBatches, this, std::ref(_m[i]), std::ref(batchIndices[i]), std::ref(batchQueue[i])).detach();
+            std::thread(
+                &dataLoader::processBatches,
+                this,
+                std::ref(_m[i]),
+                stopFlags+i,
+                finishFlags+i,
+                std::ref(batchIndices[i]),
+                std::ref(batchQueue[i])
+            ).detach();
         }
     }
 
-    void processBatches(std::mutex& m, std::vector<int>& indices, std::queue<halfKaSparseBatch*>& queue)
+    void processBatches(std::mutex& m, std::atomic<bool>* stopFlag, std::atomic<bool>* finishFlag, std::vector<int>& indices, std::queue<halfKaSparseBatch*>& queue)
     {
-        while (indices.size())
+        while (indices.size() && !(*stopFlag))
         {
             std::unique_lock<std::mutex> lock(m);
             if (queue.size() < qLength)
@@ -159,6 +183,23 @@ struct dataLoader
                 halfKaSparseBatch* batch = new halfKaSparseBatch(std::min(chunkSize - idx, batchSize), chunk + idx);
                 lock.lock();
                 queue.push(batch);
+            }
+        }
+        *finishFlag = true;
+    }
+
+    void stopThreads()
+    {
+        std::fill(stopFlags, stopFlags+numWorkers, true);
+        for (size_t i=0;i<numWorkers;++i)
+        {
+            while (!finishFlags[i]) {}
+            batchIndices[i].clear();
+            while (!batchQueue[i].empty())
+            {
+                halfKaSparseBatch* batch = batchQueue[i].front();
+                batchQueue[i].pop();
+                delete batch;
             }
         }
     }
@@ -190,10 +231,13 @@ struct dataLoader
 
     ~dataLoader()
     {
+        stopThreads();
         delete[] chunk;
         delete[] batchIndices;
         delete[] batchQueue;
         delete[] _m;
+        delete[] stopFlags;
+        delete[] finishFlags;
     }
 };
 
