@@ -86,6 +86,85 @@ struct halfKaSparseBatch
     }
 };
 
+struct chunkLoader
+{
+    std::filesystem::path path;
+    
+    size_t chunkIndex = 0;
+    std::vector<std::filesystem::path> chunkFiles = {};
+
+    // preload only one chunk to save RAM.
+    datum* chunkBuffer[2] = {nullptr, nullptr};
+    size_t chunkSizeBuffer[2] = {0, 0};
+    bool chunkToggle = 0;
+
+    std::atomic<bool> finishFlag = true;
+
+    datum* chunk = nullptr;
+    size_t chunkSize = 0;
+
+    std::mt19937_64 _mt;
+
+    chunkLoader(const std::filesystem::path& path): path(path)
+    {
+        _mt = std::mt19937_64{std::random_device{}()};
+
+        chunkFiles = getFiles(path, ".dat");
+        std::shuffle(chunkFiles.begin(), chunkFiles.end(), _mt);
+
+        loadNext();
+    }
+
+    void loadNext()
+    {
+        if (chunkIndex == chunkFiles.size())
+        {
+            chunkBuffer[chunkToggle] = nullptr;
+            finishFlag = true;
+            return;
+        }
+
+        chunkSizeBuffer[chunkToggle] = std::filesystem::file_size(chunkFiles[chunkIndex]) / sizeof(datum);
+        std::ifstream data(chunkFiles[chunkIndex], std::ios::binary);
+
+        chunkBuffer[chunkToggle] = new datum[chunkSize];
+        data.read((char*)chunkBuffer[chunkToggle], chunkSizeBuffer[chunkToggle] * sizeof(datum));
+
+        std::shuffle(chunkBuffer[chunkToggle], chunkBuffer[chunkToggle]+chunkSizeBuffer[chunkToggle], _mt);
+
+        finishFlag = true;
+    }
+
+    std::pair<datum*, size_t> next()
+    {
+        if (chunkIndex == chunkFiles.size()) {return {nullptr, 0};}
+
+        // wait for pre-loaded chunk.
+        while (!finishFlag) {}
+
+        delete[] chunkBuffer[!chunkToggle];
+
+        chunk = chunkBuffer[chunkToggle];
+        chunkSize = chunkSizeBuffer[chunkToggle];
+
+        chunkToggle = !chunkToggle;
+
+        //start pre-loading the next chunk.
+        ++chunkIndex;
+        finishFlag = false;
+        std::thread(&chunkLoader::loadNext, this).detach();
+
+        return {chunk, chunkSize};
+    }
+
+    ~chunkLoader()
+    {
+        while (!finishFlag) {}
+        delete[] chunkBuffer[0];
+        delete[] chunkBuffer[1];
+    }
+};
+
 struct dataLoader
 {
     std::filesystem::path path;
