@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 NUM_FEATURES = 45056
-BATCH_SIZE = 1024
+BATCH_SIZE = 32768
 NUM_WORKERS = 6
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 

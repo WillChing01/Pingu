@@ -138,6 +138,16 @@ def run_epoch(model, kind, **kwargs):
 MODEL_PATH = f"{os.getcwd()}\\saved_models"
 
 
+def get_epoch(file_name):
+    return int(file_name.split("\\")[-1].split("_")[0])
+
+
+def get_vloss(file_name):
+    return float(
+        file_name.split("\\")[-1].split(".")[0].split("_")[-1].replace(",", ".")
+    )
+
+
 def format_loss(loss):
     N_DIGITS = 10
     return str(round(loss, N_DIGITS)).replace(".", ",")
@@ -148,8 +158,8 @@ def load_model():
     model = HalfKaNetwork(INPUT_COUNT, L1_COUNT, OUTPUT_COUNT).to(DEVICE)
 
     if model_files := glob.glob(f"{MODEL_PATH}\\*.pth"):
-        latest_file = max(model_files, key=lambda x: int(x.split("_")[0]))
-        start_epoch = int(latest_file.split("_")[0]) + 1
+        latest_file = max(model_files, key=lambda x: get_epoch(x))
+        start_epoch = get_epoch(latest_file) + 1
         model.load_state_dict(torch.load(latest_file))
 
     optimizer = OPTIMIZER(model.parameters())
@@ -160,11 +170,9 @@ def load_model():
 def save_model(model, t_loss, v_loss):
     latest_epoch = 0
     if model_files := glob.glob(f"{MODEL_PATH}\\*.pth"):
-        latest_epoch = max(int(x.split("_")[0]) for x in model_files)
+        latest_epoch = max(get_epoch(x) for x in model_files)
 
-    save_file = (
-        f"{latest_epoch+1}_tloss_{format_loss(t_loss)}_vloss_{format_loss(v_loss)}.pth"
-    )
+    save_file = f"{MODEL_PATH}\\{latest_epoch+1}_tloss_{format_loss(t_loss)}_vloss_{format_loss(v_loss)}.pth"
     torch.save(model.state_dict(), save_file)
 
 
@@ -175,16 +183,12 @@ def early_stop():
     RECENT_LOOKBACK = 4
     DISTANT_LOOKBACK = 16
 
-    if (
-        model_files := glob.glob(f"{MODEL_PATH}\\*.pth")
-        and len(model_files) >= DISTANT_LOOKBACK
-    ):
-        format = lambda x: float(x.split(".")[0].split("_")[-1].replace(",", "."))
+    model_files = glob.glob(f"{MODEL_PATH}\\*.pth")
+
+    if len(model_files) >= DISTANT_LOOKBACK:
         v_loss = [
-            format(x)
-            for x in sorted(
-                model_files, key=lambda x: int(x.split("_")[0]), reverse=True
-            )
+            get_vloss(x)
+            for x in sorted(model_files, key=lambda x: get_epoch(x), reverse=True)
         ]
 
         recent_loss = sum(v_loss[0:RECENT_LOOKBACK]) / RECENT_LOOKBACK
