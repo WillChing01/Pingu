@@ -66,7 +66,7 @@ class HalfKaNetwork(nn.Module):
                 PerspectiveNetwork(input_count, l1_count),
             ),
             nn.Linear(2 * l1_count, output_count),
-            Scale(512),
+            Scale(127 * 64),
         )
         self.net.apply(self.init_weights)
 
@@ -74,6 +74,20 @@ class HalfKaNetwork(nn.Module):
         if type(x) == nn.Linear:
             torch.nn.init.kaiming_normal_(x.weight, nonlinearity="relu")
             torch.nn.init.zeros_(x.bias)
+
+    def clamp(self):
+        self.net.apply(self._clamp)
+
+    def _clamp(self, x):
+        if type(x) == nn.Linear:
+            if x.weight.shape == (OUTPUT_COUNT, 2 * L1_COUNT):
+                weight_limit = 127 / 64
+                bias_limit = 32767 / (64 * 127)
+            elif x.weight.shape == (L1_COUNT, INPUT_COUNT):
+                weight_limit = 32767 / 127
+                bias_limit = 32767 / 127
+            torch.clamp(x.weight, min=-weight_limit, max=weight_limit)
+            torch.clamp(x.bias, min=-bias_limit, max=bias_limit)
 
     def forward(self, x):
         return self.net(x)
@@ -125,6 +139,7 @@ def run_epoch(model, kind, **kwargs):
             if kind == "training":
                 l.backward()
                 optimizer.step()
+                model.clamp()
 
             progress.update(batch_size)
 
