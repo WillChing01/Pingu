@@ -127,9 +127,6 @@ def run_epoch(model, kind, **kwargs):
 
     with context:
         for x, y, evals, results in dataLoader.iterator():
-            if kind == "training":
-                optimizer.zero_grad()
-
             output = model((x, y))
 
             l = custom_loss(output, evals, results)
@@ -137,6 +134,7 @@ def run_epoch(model, kind, **kwargs):
             loss += l.item() * batch_size / length
 
             if kind == "training":
+                optimizer.zero_grad()
                 l.backward()
                 optimizer.step()
                 model.clamp()
