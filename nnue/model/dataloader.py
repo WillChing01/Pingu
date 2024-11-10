@@ -79,11 +79,11 @@ class HalfKaSparseBatch(ctypes.Structure):
 
         evals = torch.from_numpy(
             np.ctypeslib.as_array(self.eval, shape=(self.size,))
-        ).to(device)
+        ).reshape((self.size, 1)).to(device)
 
         results = torch.from_numpy(
             np.ctypeslib.as_array(self.result, shape=(self.size,))
-        ).to(device)
+        ).reshape((self.size, 1)).to(device)
 
         return (firstBatch, secondBatch, evals, results)
 
