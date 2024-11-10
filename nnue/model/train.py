@@ -33,6 +33,19 @@ class Scale(nn.Module):
         return torch.mul(x, self.factor)
 
 
+class Concat(nn.Module):
+    def __init__(self, model_1, model_2):
+        super().__init__()
+
+        self.model_1 = model_1
+        self.model_2 = model_2
+
+    def forward(self, x):
+        return torch.cat(
+            (self.model_1.forward(x[0]), self.model_2.forward(x[1])), dim=-1
+        )
+
+
 class PerspectiveNetwork(nn.Module):
     def __init__(self, input_count, output_count):
         super().__init__()
@@ -47,15 +60,14 @@ class HalfKaNetwork(nn.Module):
     def __init__(self, input_count, l1_count, output_count):
         super().__init__()
 
-        self.perspectiveNets = [
-            PerspectiveNetwork(input_count, l1_count),
-            PerspectiveNetwork(input_count, l1_count),
-        ]
-
-        self.net = nn.Sequential(nn.Linear(2 * l1_count, output_count), Scale(512))
-
-        self.perspectiveNets[0].apply(self.init_weights)
-        self.perspectiveNets[1].apply(self.init_weights)
+        self.net = nn.Sequential(
+            Concat(
+                PerspectiveNetwork(input_count, l1_count),
+                PerspectiveNetwork(input_count, l1_count),
+            ),
+            nn.Linear(2 * l1_count, output_count),
+            Scale(512),
+        )
         self.net.apply(self.init_weights)
 
     def init_weights(self, x):
@@ -63,15 +75,8 @@ class HalfKaNetwork(nn.Module):
             torch.nn.init.kaiming_normal_(x.weight, nonlinearity="relu")
             torch.nn.init.zeros_(x.bias)
 
-    def forward(self, x, y):
-        return self.net(
-            torch.cat(
-                (
-                    self.perspectiveNets[0](x),
-                    self.perspectiveNets[1](y),
-                )
-            )
-        )
+    def forward(self, x):
+        return self.net(x)
 
 
 """Training"""
@@ -111,7 +116,7 @@ def run_epoch(model, kind, **kwargs):
             if kind == "training":
                 optimizer.zero_grad()
 
-            output = model(x, y)
+            output = model((x, y))
 
             l = custom_loss(output, evals, results)
             batch_size = evals.size(0)

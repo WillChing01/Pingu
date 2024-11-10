@@ -44,6 +44,11 @@ struct halfKaSparseBatch
         U64* blackFeatures = datum.side ? firstFeatures : secondFeatures;
 
         int startFeatures = totalFeatures;
+    
+        //king indices.
+        whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + datum.kingPos[1];
+        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + (datum.kingPos[0] ^ 56);
+        ++totalFeatures;
 
         for (size_t i=0;i<4;++i)
         {
@@ -54,23 +59,17 @@ struct halfKaSparseBatch
                 U64 square = 16ull * i + j;
                 U64 pieceType = 15ull - ((x & masks[j]) >> (j << 2ull));
                 x &= ~masks[j];
-                switch(pieceType)
+
+                if (pieceType >= 2)
                 {
-                    case 0:
-                        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + (square ^ 56ull);
-                        break;
-                    case 1:
-                        whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + square;
-                        break;
-                    default:
-                        whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + 64ull * (pieceType - 1ull) + square;
-                        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + 64ull * (pieceType - 2ull * (pieceType & 1ull)) + (square ^ 56ull);
-                        break;
+                    whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + 64ull * (pieceType - 1ull) + square;
+                    blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + 64ull * (pieceType - 2ull * (pieceType & 1ull)) + (square ^ 56ull);
+                    ++totalFeatures;
                 }
-                indices[totalFeatures] = idx;
-                ++totalFeatures;
             }
         }
+
+        std::fill(indices + startFeatures, indices + totalFeatures, idx);
 
         //order indices in ascending order.
         std::sort(firstFeatures + startFeatures, firstFeatures + totalFeatures);
