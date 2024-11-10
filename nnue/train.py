@@ -38,6 +38,7 @@ class DataLoader:
 
         while batch := dll.getBatch(dataLoader):
             yield batch.contents.reformat(DEVICE)
+            dll.destructBatch(batch)
 
         dll.destructDataLoader(dataLoader)
 
