@@ -18,18 +18,18 @@ class HalfKaSparseBatch(ctypes.Structure):
     ]
 
     def reformat(self, device):
-        values = torch.ones(self.totalFeatures, dtype=torch.float32)
+        values = torch.ones(self.totalFeatures, dtype=torch.float32, device=device)
 
         firstFeaturesIndices = torch.stack(
             (
                 torch.from_numpy(
                     np.ctypeslib.as_array(self.indices, shape=(self.totalFeatures,))
-                ),
+                ).to(device),
                 torch.from_numpy(
                     np.ctypeslib.as_array(
                         self.firstFeatures, shape=(self.totalFeatures,)
                     )
-                ),
+                ).to(device),
             )
         )
 
@@ -37,12 +37,12 @@ class HalfKaSparseBatch(ctypes.Structure):
             (
                 torch.from_numpy(
                     np.ctypeslib.as_array(self.indices, shape=(self.totalFeatures,))
-                ),
+                ).to(device),
                 torch.from_numpy(
                     np.ctypeslib.as_array(
                         self.secondFeatures, shape=(self.totalFeatures,)
                     )
-                ),
+                ).to(device),
             )
         )
 
@@ -64,11 +64,13 @@ class HalfKaSparseBatch(ctypes.Structure):
             is_coalesced=True,
         )
 
-        evals = torch.from_numpy(np.ctypeslib.as_array(self.eval, shape=(self.size,)))
+        evals = torch.from_numpy(
+            np.ctypeslib.as_array(self.eval, shape=(self.size,))
+        ).to(device)
 
         results = torch.from_numpy(
             np.ctypeslib.as_array(self.result, shape=(self.size,))
-        )
+        ).to(device)
 
         return (firstBatch, secondBatch, evals, results)
 
