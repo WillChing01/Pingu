@@ -37,12 +37,12 @@ class HalfKaSparseBatch(ctypes.Structure):
             (
                 torch.from_numpy(
                     np.ctypeslib.as_array(self.indices, shape=(self.totalFeatures,))
-                ).to(device),
+                ).to(device, non_blocking=True),
                 torch.from_numpy(
                     np.ctypeslib.as_array(
                         self.firstFeatures, shape=(self.totalFeatures,)
                     )
-                ).to(device),
+                ).to(device, non_blocking=True),
             )
         )
 
@@ -50,12 +50,12 @@ class HalfKaSparseBatch(ctypes.Structure):
             (
                 torch.from_numpy(
                     np.ctypeslib.as_array(self.indices, shape=(self.totalFeatures,))
-                ).to(device),
+                ).to(device, non_blocking=True),
                 torch.from_numpy(
                     np.ctypeslib.as_array(
                         self.secondFeatures, shape=(self.totalFeatures,)
                     )
-                ).to(device),
+                ).to(device, non_blocking=True),
             )
         )
 
@@ -79,11 +79,11 @@ class HalfKaSparseBatch(ctypes.Structure):
 
         evals = torch.from_numpy(
             np.ctypeslib.as_array(self.eval, shape=(self.size,))
-        ).to(device)
+        ).to(device, non_blocking=True)
 
         results = torch.from_numpy(
             np.ctypeslib.as_array(self.result, shape=(self.size,))
-        ).to(device)
+        ).to(device, non_blocking=True)
 
         return (firstBatch, secondBatch, evals, results)
 
