@@ -197,7 +197,7 @@ def main():
     for epoch in range(start_epoch, start_epoch + MAX_EPOCHS):
         print(f"Epoch {epoch}\n-------------------------------")
 
-        t_loss = run_epoch(model, "training", {"optimizer": optimizer})
+        t_loss = run_epoch(model, "training", **{"optimizer": optimizer})
         v_loss = run_epoch(model, "validation")
 
         save_model(model, t_loss, v_loss)
