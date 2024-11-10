@@ -6,41 +6,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from dataloader import NUM_FEATURES, dll
-
-
-"""Dataloader"""
-
-BATCH_SIZE = 1024
-NUM_WORKERS = 6
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
-DATALOADER_CONFIGS = {
-    "training": {
-        "path": bytes(f"{os.getcwd()}\\dataset\\training", "utf-8"),
-    },
-    "validation": {
-        "path": bytes(f"{os.getcwd()}\\dataset\\validation", "utf-8"),
-    },
-}
-
-
-class DataLoader:
-    def __init__(self, kind):
-        self.path = DATALOADER_CONFIGS[kind]["path"]
-        self.length = dll.length(self.path)
-
-    def __len__(self):
-        return self.length
-
-    def iterator(self):
-        dataLoader = dll.constructDataLoader(self.path, BATCH_SIZE, NUM_WORKERS)
-
-        while batch := dll.getBatch(dataLoader):
-            yield batch.contents.reformat(DEVICE)
-            dll.destructBatch(batch)
-
-        dll.destructDataLoader(dataLoader)
+from dataloader import DEVICE, NUM_FEATURES, DataLoader
 
 
 """Model definition: (45056 -> 64 -> cReLU(64)) x 2 -> 1"""

@@ -8,7 +8,7 @@ import time
 from tqdm import tqdm
 import multiprocessing
 import huggingface_hub
-from utils import REPO_ID, PATH_IN_REPO, REPO_TYPE
+from repo import REPO_ID, PATH_IN_REPO, REPO_TYPE
 
 HASH = 64
 
@@ -19,6 +19,7 @@ RANDOMPLY = 4
 MAXPLY = 150
 EVALBOUND = 8192
 BOOK = "noob_3moves.epd"
+
 
 def get_book():
     if BOOK == "None":
@@ -35,6 +36,7 @@ def get_book():
 
     return True
 
+
 def progress_bar(total_positions: int, q: multiprocessing.Queue) -> None:
     n = 0
     with tqdm(total=total_positions, desc=f"Overall progress") as progress:
@@ -42,8 +44,10 @@ def progress_bar(total_positions: int, q: multiprocessing.Queue) -> None:
             progress.update(min(update, total_positions - n))
             n = min(n + update, total_positions)
 
+
 def gensfen_worker(token: str, q: multiprocessing.Queue) -> None:
     import engine
+
     cmd = f"Pingu.exe gensfen mindepth {MINDEPTH} maxdepth {MAXDEPTH} positions {POSITIONS} randomply {RANDOMPLY} maxply {MAXPLY} evalbound {EVALBOUND} hash {HASH} book {BOOK}"
     e = engine.Engine(name=cmd, path="\\..\\")
     previous_n = 0
@@ -57,7 +61,7 @@ def gensfen_worker(token: str, q: multiprocessing.Queue) -> None:
                     path_in_repo=f"/{PATH_IN_REPO}/{fileName}",
                     repo_id=REPO_ID,
                     repo_type=REPO_TYPE,
-                    token=token
+                    token=token,
                 )
                 os.remove(fileName)
             except:
@@ -68,11 +72,14 @@ def gensfen_worker(token: str, q: multiprocessing.Queue) -> None:
             q.put(n - previous_n)
             previous_n = n
 
+
 def main():
     user_args = sys.argv[1:]
     if not re.search(r"^-N [1-9][0-9]* -P [1-9][0-9]* -T \S+$", " ".join(user_args)):
         print("error: incorrect format of args")
-        print("usage: generate_data.py -N <num_threads> -P <max_positions> -T <api_token>")
+        print(
+            "usage: generate_data.py -N <num_threads> -P <max_positions> -T <api_token>"
+        )
         return
     elif int(user_args[1]) > multiprocessing.cpu_count():
         print("error: not enough cpu threads")
@@ -116,6 +123,7 @@ def main():
 
     q.put(None)
     progress.join()
+
 
 if __name__ == "__main__":
     main()

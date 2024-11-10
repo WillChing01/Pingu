@@ -328,7 +328,7 @@ extern "C" {
 
 int main()
 {
-    dataLoader dataloader(std::filesystem::current_path() / "dataset" / "training", 1024, 6);
+    dataLoader dataloader(std::filesystem::current_path() / ".." / "dataset" / "training", 1024, 6);
 
     auto startTime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 

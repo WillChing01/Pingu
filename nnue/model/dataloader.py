@@ -1,9 +1,22 @@
 import os
 import ctypes
+
 import numpy as np
 import torch
 
 NUM_FEATURES = 45056
+BATCH_SIZE = 1024
+NUM_WORKERS = 6
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+DATALOADER_CONFIGS = {
+    "training": {
+        "path": bytes(f"{os.getcwd()}\\..\\dataset\\training", "utf-8"),
+    },
+    "validation": {
+        "path": bytes(f"{os.getcwd()}\\..\\dataset\\validation", "utf-8"),
+    },
+}
 
 
 class HalfKaSparseBatch(ctypes.Structure):
@@ -91,3 +104,21 @@ dll.getBatch.argtypes = [ctypes.c_void_p]
 
 dll.destructBatch.restype = None
 dll.destructBatch.argtypes = [ctypes.POINTER(HalfKaSparseBatch)]
+
+
+class DataLoader:
+    def __init__(self, kind):
+        self.path = DATALOADER_CONFIGS[kind]["path"]
+        self.length = dll.length(self.path)
+
+    def __len__(self):
+        return self.length
+
+    def iterator(self):
+        dataLoader = dll.constructDataLoader(self.path, BATCH_SIZE, NUM_WORKERS)
+
+        while batch := dll.getBatch(dataLoader):
+            yield batch.contents.reformat(DEVICE)
+            dll.destructBatch(batch)
+
+        dll.destructDataLoader(dataLoader)
