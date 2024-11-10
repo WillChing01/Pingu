@@ -130,7 +130,7 @@ def run_epoch(model, kind, **kwargs):
 
 """Load/Save Model"""
 
-MODEL_PATH = f"{os.getcwd()}\\models"
+MODEL_PATH = f"{os.getcwd()}\\saved_models"
 
 
 def format_loss(loss):

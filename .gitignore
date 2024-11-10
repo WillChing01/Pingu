@@ -1,7 +1,7 @@
-/testing/__pycache__
-/nnue/__pycache__
-/nnue/dataset/_raw
-/nnue/parse/parsed_data
+**/__pycache__
+**/_raw
+**/saved_models
 *.dat
+*.dll
 *.o
 *.exe

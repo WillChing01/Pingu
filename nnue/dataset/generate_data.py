@@ -49,7 +49,7 @@ def gensfen_worker(token: str, q: multiprocessing.Queue) -> None:
     import engine
 
     cmd = f"Pingu.exe gensfen mindepth {MINDEPTH} maxdepth {MAXDEPTH} positions {POSITIONS} randomply {RANDOMPLY} maxply {MAXPLY} evalbound {EVALBOUND} hash {HASH} book {BOOK}"
-    e = engine.Engine(name=cmd, path="\\..\\")
+    e = engine.Engine(name=cmd, path="\\..\\..\\")
     previous_n = 0
     while True:
         res = e.readline()
@@ -88,7 +88,7 @@ def main():
     total_positions = int(user_args[3])
     token = user_args[5]
 
-    sys.path.insert(1, os.getcwd() + "\\..\\testing\\")
+    sys.path.insert(1, f"{os.getcwd()}\\..\\..\\testing")
 
     try:
         huggingface_hub.login(token=token)
