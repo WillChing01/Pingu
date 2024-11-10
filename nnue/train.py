@@ -174,7 +174,7 @@ def format_loss(loss):
 
 def load_model():
     start_epoch = 1
-    model = HalfKaNetwork(INPUT_COUNT, L1_COUNT, OUTPUT_COUNT)
+    model = HalfKaNetwork(INPUT_COUNT, L1_COUNT, OUTPUT_COUNT).to(DEVICE)
 
     if model_files := glob.glob(f"{MODEL_PATH}\\*.pth"):
         latest_file = max(model_files, key=lambda x: int(x.split("_")[0]))
