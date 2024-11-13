@@ -6,7 +6,7 @@ import torch
 
 NUM_FEATURES = 45056
 BATCH_SIZE = 32768
-NUM_WORKERS = 6
+NUM_WORKERS = 4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 DATALOADER_CONFIGS = {

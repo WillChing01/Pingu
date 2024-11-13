@@ -283,11 +283,11 @@ struct dataLoader
     ~dataLoader()
     {
         stopThreads();
-        delete[] chunk;
         delete[] batchQueue;
         delete[] _m;
         delete[] stopFlags;
         delete[] finishFlags;
+        delete chunkloader;
     }
 };
 
