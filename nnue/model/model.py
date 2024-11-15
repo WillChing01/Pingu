@@ -1,11 +1,9 @@
 import torch as torch
 from torch import nn
 
-"""Model definition: (45056 -> 64 -> cReLU(64)) x 2 -> 1"""
+from config import INPUT_COUNT, L1_COUNT, OUTPUT_COUNT
 
-INPUT_COUNT = 45056
-L1_COUNT = 64
-OUTPUT_COUNT = 1
+"""Model definition: (45056 -> 64 -> cReLU(64)) x 2 -> 1"""
 
 
 class ClippedReLU(nn.Module):

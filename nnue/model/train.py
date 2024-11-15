@@ -1,12 +1,12 @@
 import contextlib
-import glob
-import os
 
 import torch
 from tqdm import tqdm
 
-from dataloader import DEVICE, DataLoader
-from model import INPUT_COUNT, L1_COUNT, OUTPUT_COUNT, HalfKaNetwork
+from config import DEVICE, MODEL_PATH, INPUT_COUNT, L1_COUNT, OUTPUT_COUNT
+from utils import get_epoch, get_files, get_vloss, format_loss
+from dataloader import DataLoader
+from model import HalfKaNetwork
 
 """Training"""
 
@@ -62,27 +62,6 @@ def run_epoch(model, kind, **kwargs):
 
 
 """Load/Save Model"""
-
-MODEL_PATH = f"{os.getcwd()}\\checkpoints"
-
-
-def get_files():
-    return glob.glob(f"{MODEL_PATH}\\*.tar")
-
-
-def get_epoch(file_name):
-    return int(file_name.split("\\")[-1].split("_")[0])
-
-
-def get_vloss(file_name):
-    return float(
-        file_name.split("\\")[-1].split(".")[0].split("_")[-1].replace(",", ".")
-    )
-
-
-def format_loss(loss):
-    N_DIGITS = 10
-    return str(round(loss, N_DIGITS)).replace(".", ",")
 
 
 def load_model():

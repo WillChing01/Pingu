@@ -4,12 +4,11 @@ import ctypes
 import numpy as np
 import torch
 
-from model import INPUT_COUNT
+from config import DEVICE, INPUT_COUNT
 
 NUM_FEATURES = INPUT_COUNT
 BATCH_SIZE = 32768
 NUM_WORKERS = 4
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 DATALOADER_CONFIGS = {
     "training": {
