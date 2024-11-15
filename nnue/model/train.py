@@ -8,6 +8,40 @@ from utils import get_epoch, get_files, get_vloss, format_loss
 from dataloader import DataLoader
 from model import HalfKaNetwork
 
+"""Load/Save Model"""
+
+
+def load_model():
+    start_epoch = 1
+    model = HalfKaNetwork(INPUT_COUNT, L1_COUNT, OUTPUT_COUNT).to(DEVICE)
+    optimizer = OPTIMIZER(model.parameters())
+
+    if model_files := get_files():
+        latest_file = max(model_files, key=lambda x: get_epoch(x))
+        checkpoint = torch.load(latest_file)
+
+        start_epoch = get_epoch(latest_file) + 1
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+
+    return (model, optimizer, start_epoch)
+
+
+def save_model(model, optimizer, t_loss, v_loss):
+    latest_epoch = 0
+    if model_files := get_files():
+        latest_epoch = max(get_epoch(x) for x in model_files)
+
+    save_file = f"{MODEL_PATH}\\{latest_epoch+1}_tloss_{format_loss(t_loss)}_vloss_{format_loss(v_loss)}.tar"
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+        },
+        save_file,
+    )
+
+
 """Training"""
 
 MAX_EPOCHS = 10000
@@ -59,40 +93,6 @@ def run_epoch(model, kind, **kwargs):
     progress.close()
     print(f"{kind.capitalize()} Loss: {loss:>8f}")
     return loss
-
-
-"""Load/Save Model"""
-
-
-def load_model():
-    start_epoch = 1
-    model = HalfKaNetwork(INPUT_COUNT, L1_COUNT, OUTPUT_COUNT).to(DEVICE)
-    optimizer = OPTIMIZER(model.parameters())
-
-    if model_files := get_files():
-        latest_file = max(model_files, key=lambda x: get_epoch(x))
-        checkpoint = torch.load(latest_file)
-
-        start_epoch = get_epoch(latest_file) + 1
-        model.load_state_dict(checkpoint["model_state_dict"])
-        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
-
-    return (model, optimizer, start_epoch)
-
-
-def save_model(model, optimizer, t_loss, v_loss):
-    latest_epoch = 0
-    if model_files := get_files():
-        latest_epoch = max(get_epoch(x) for x in model_files)
-
-    save_file = f"{MODEL_PATH}\\{latest_epoch+1}_tloss_{format_loss(t_loss)}_vloss_{format_loss(v_loss)}.tar"
-    torch.save(
-        {
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-        },
-        save_file,
-    )
 
 
 """Early stopping"""
