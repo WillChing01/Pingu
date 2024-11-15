@@ -4,7 +4,9 @@ import ctypes
 import numpy as np
 import torch
 
-NUM_FEATURES = 45056
+from model import INPUT_COUNT
+
+NUM_FEATURES = INPUT_COUNT
 BATCH_SIZE = 32768
 NUM_WORKERS = 4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
