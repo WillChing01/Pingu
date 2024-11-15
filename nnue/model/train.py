@@ -100,7 +100,7 @@ OPTIMIZER = torch.optim.Adam
 
 
 def custom_loss(output, targetEval, targetResult):
-    K = 0.00475
+    K = 1 / 400
     GAMMA = 0.5
     output_scaled = torch.sigmoid(K * output)
     target_scaled = GAMMA * torch.sigmoid(K * targetEval) + (1.0 - GAMMA) * targetResult
@@ -148,7 +148,11 @@ def run_epoch(model, kind, **kwargs):
 
 """Load/Save Model"""
 
-MODEL_PATH = f"{os.getcwd()}\\saved_models"
+MODEL_PATH = f"{os.getcwd()}\\checkpoints"
+
+
+def get_files():
+    return glob.glob(f"{MODEL_PATH}\\*.tar")
 
 
 def get_epoch(file_name):
@@ -169,34 +173,42 @@ def format_loss(loss):
 def load_model():
     start_epoch = 1
     model = HalfKaNetwork(INPUT_COUNT, L1_COUNT, OUTPUT_COUNT).to(DEVICE)
-
-    if model_files := glob.glob(f"{MODEL_PATH}\\*.pth"):
-        latest_file = max(model_files, key=lambda x: get_epoch(x))
-        start_epoch = get_epoch(latest_file) + 1
-        model.load_state_dict(torch.load(latest_file))
-
     optimizer = OPTIMIZER(model.parameters())
+
+    if model_files := get_files():
+        latest_file = max(model_files, key=lambda x: get_epoch(x))
+        checkpoint = torch.load(latest_file)
+
+        start_epoch = get_epoch(latest_file) + 1
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
 
     return (model, optimizer, start_epoch)
 
 
-def save_model(model, t_loss, v_loss):
+def save_model(model, optimizer, t_loss, v_loss):
     latest_epoch = 0
-    if model_files := glob.glob(f"{MODEL_PATH}\\*.pth"):
+    if model_files := get_files():
         latest_epoch = max(get_epoch(x) for x in model_files)
 
-    save_file = f"{MODEL_PATH}\\{latest_epoch+1}_tloss_{format_loss(t_loss)}_vloss_{format_loss(v_loss)}.pth"
-    torch.save(model.state_dict(), save_file)
+    save_file = f"{MODEL_PATH}\\{latest_epoch+1}_tloss_{format_loss(t_loss)}_vloss_{format_loss(v_loss)}.tar"
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+        },
+        save_file,
+    )
 
 
 """Early stopping"""
 
 
 def early_stop():
-    RECENT_LOOKBACK = 4
-    DISTANT_LOOKBACK = 16
+    RECENT_LOOKBACK = 8
+    DISTANT_LOOKBACK = 32
 
-    model_files = glob.glob(f"{MODEL_PATH}\\*.pth")
+    model_files = get_files()
 
     if len(model_files) >= DISTANT_LOOKBACK:
         v_loss = [
@@ -222,7 +234,7 @@ def main():
         t_loss = run_epoch(model, "training", **{"optimizer": optimizer})
         v_loss = run_epoch(model, "validation")
 
-        save_model(model, t_loss, v_loss)
+        save_model(model, optimizer, t_loss, v_loss)
 
         if early_stop():
             return

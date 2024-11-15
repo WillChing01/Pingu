@@ -1,6 +1,6 @@
 **/__pycache__
 **/_raw
-**/saved_models
+**/checkpoints
 *.dat
 *.dll
 *.o
