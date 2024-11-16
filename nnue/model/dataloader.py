@@ -4,9 +4,9 @@ import ctypes
 import numpy as np
 import torch
 
-from config import DEVICE, INPUT_COUNT
+from config import CONFIG
 
-NUM_FEATURES = INPUT_COUNT
+NUM_FEATURES = CONFIG["modules"][0][0]
 BATCH_SIZE = 32768
 NUM_WORKERS = 4
 
@@ -123,7 +123,7 @@ class DataLoader:
         dataLoader = dll.constructDataLoader(self.path, BATCH_SIZE, NUM_WORKERS)
 
         while batch := dll.getBatch(dataLoader):
-            yield batch.contents.reformat(DEVICE)
+            yield batch.contents.reformat(CONFIG["device"])
             dll.destructBatch(batch)
 
         dll.destructDataLoader(dataLoader)

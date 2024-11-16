@@ -1,9 +1,7 @@
 import torch as torch
 from torch import nn
 
-from config import INPUT_COUNT, L1_COUNT, OUTPUT_COUNT
-
-"""Model definition: (45056 -> 64 -> cReLU(64)) x 2 -> 1"""
+from config import CONFIG
 
 
 class ClippedReLU(nn.Module):
@@ -37,26 +35,41 @@ class Concat(nn.Module):
 
 
 class PerspectiveNetwork(nn.Module):
-    def __init__(self, input_count, output_count):
+    def __init__(self, module_config):
         super().__init__()
 
-        self.net = nn.Sequential(nn.Linear(input_count, output_count), ClippedReLU())
+        self.net = nn.Sequential(
+            *(
+                x
+                for i in range(len(module_config) - 1)
+                for x in (nn.Linear(*module_config[i : i + 2]), ClippedReLU())
+            )
+        )
 
     def forward(self, x):
         return self.net(x)
 
 
 class HalfKaNetwork(nn.Module):
-    def __init__(self, input_count, l1_count, output_count):
+    def __init__(self):
         super().__init__()
 
+        modules = CONFIG["modules"]
         self.net = nn.Sequential(
-            Concat(
-                PerspectiveNetwork(input_count, l1_count),
-                PerspectiveNetwork(input_count, l1_count),
-            ),
-            nn.Linear(2 * l1_count, output_count),
-            Scale(127 * 64),
+            *(
+                (
+                    Concat(
+                        PerspectiveNetwork(modules[0]),
+                        PerspectiveNetwork(modules[0]),
+                    ),
+                )
+                + tuple(
+                    x
+                    for i in range(len(modules[1]) - 2)
+                    for x in (nn.Linear(*modules[1][i : i + 2]), ClippedReLU())
+                )
+                + (nn.Linear(*modules[1][-2:]), Scale(CONFIG["quant"]["scaling"]))
+            )
         )
         self.net.apply(self.init_weights)
 
@@ -70,14 +83,15 @@ class HalfKaNetwork(nn.Module):
 
     def _clamp(self, x):
         if type(x) == nn.Linear:
-            if x.weight.shape == (OUTPUT_COUNT, 2 * L1_COUNT):
-                weight_limit = 127 / 64
-                bias_limit = 32767 / (64 * 127)
-            elif x.weight.shape == (L1_COUNT, INPUT_COUNT):
-                weight_limit = 32767 / 127
-                bias_limit = 32767 / 127
-            torch.clamp(x.weight, min=-weight_limit, max=weight_limit)
-            torch.clamp(x.bias, min=-bias_limit, max=bias_limit)
+            if quant := CONFIG["quant"].get(x.weight.shape):
+                weight_limit = quant["w"]["clamp"] / quant["w"]["factor"]
+                bias_limit = quant["b"]["clamp"] / quant["b"]["factor"]
+                torch.clamp(x.weight, min=-weight_limit, max=weight_limit)
+                torch.clamp(x.bias, min=-bias_limit, max=bias_limit)
 
     def forward(self, x):
         return self.net(x)
+
+
+def network():
+    return HalfKaNetwork()
