@@ -96,8 +96,6 @@ class HalfKaNetwork(nn.Module):
 def quantize(model):
     def quant(x):
         if q := CONFIG["quant"].get(x.weight.shape):
-            print(x.weight)
-            print(x.bias)
             weights = torch.clamp(
                 torch.round(q["w"]["factor"] * x.weight).int(),
                 min=-q["w"]["clamp"],
