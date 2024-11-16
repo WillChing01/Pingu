@@ -35,7 +35,7 @@ def load_model():
 
     if model_files := get_files():
         latest_file = max(model_files, key=lambda x: get_epoch(x))
-        checkpoint = torch.load(latest_file)
+        checkpoint = torch.load(latest_file, weights_only=True)
 
         start_epoch = get_epoch(latest_file) + 1
         model.load_state_dict(checkpoint["model_state_dict"])
@@ -89,7 +89,7 @@ def early_stop():
 def load_best():
     if model_files := get_files():
         best_file = min(model_files, key=lambda x: get_vloss(x))
-        checkpoint = torch.load(best_file)
+        checkpoint = torch.load(best_file, weights_only=True)
 
         model = HalfKaNetwork(INPUT_COUNT, L1_COUNT, OUTPUT_COUNT).to("cpu")
         model.load_state_dict(checkpoint["model_state_dict"])
