@@ -4,6 +4,7 @@ import torch
 
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+OPTIMIZER = torch.optim.Adam
 
 MODEL_PATH = f"{os.getcwd()}\\checkpoints"
 
