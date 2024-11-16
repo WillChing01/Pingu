@@ -93,5 +93,37 @@ class HalfKaNetwork(nn.Module):
         return self.net(x)
 
 
+def quantize(model):
+    def quant(x):
+        if q := CONFIG["quant"].get(x.weight.shape):
+            print(x.weight)
+            print(x.bias)
+            weights = torch.clamp(
+                torch.round(q["w"]["factor"] * x.weight).int(),
+                min=-q["w"]["clamp"],
+                max=q["w"]["clamp"],
+            )
+            bias = torch.clamp(
+                torch.round(q["b"]["factor"] * x.bias).int(),
+                min=-q["b"]["clamp"],
+                max=q["b"]["clamp"],
+            )
+            return weights, bias
+
+    ret = []
+    for layer in model.net:
+        if isinstance(layer, Concat):
+            ret.append(
+                (
+                    quantize(layer.model_1),
+                    quantize(layer.model_2),
+                )
+            )
+        elif isinstance(layer, nn.Linear):
+            ret.append(quant(layer))
+
+    return tuple(ret)
+
+
 def network():
     return HalfKaNetwork()
