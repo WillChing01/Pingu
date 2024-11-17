@@ -36,7 +36,7 @@ CONFIG = {
 
 def main():
     for process in ("download", "parse", "train"):
-        config = CONFIG["process"]
+        config = CONFIG[process]
         for x in config["cmd"]:
             subprocess.run(x, cwd=config["dir"])
 
