@@ -1,0 +1,77 @@
+import contextlib
+
+import torch
+from tqdm import tqdm
+
+from checkpoint import load_model, save_model, early_stop
+from dataloader import DataLoader
+
+"""Training"""
+
+MAX_EPOCHS = 10000
+
+
+def custom_loss(output, targetEval, targetResult):
+    K = 1 / 400
+    GAMMA = 0.5
+    output_scaled = torch.sigmoid(K * output)
+    target_scaled = GAMMA * torch.sigmoid(K * targetEval) + (1.0 - GAMMA) * targetResult
+    return torch.mean((output_scaled - target_scaled) ** 2)
+
+
+def run_epoch(model, kind, **kwargs):
+    if kind == "training":
+        model.train()
+        optimizer = kwargs["optimizer"]
+        context = contextlib.nullcontext()
+    elif kind == "validation":
+        model.eval()
+        context = torch.no_grad()
+    else:
+        raise ValueError("kind must be one of [training, validation]")
+
+    loss = 0
+
+    dataLoader = DataLoader(kind)
+    length = len(dataLoader)
+
+    progress = tqdm(total=length)
+
+    with context:
+        for x, y, evals, results in dataLoader.iterator():
+            output = model((x, y))
+
+            l = custom_loss(output, evals, results)
+            batch_size = evals.size(0)
+            loss += l.item() * batch_size / length
+
+            if kind == "training":
+                optimizer.zero_grad()
+                l.backward()
+                optimizer.step()
+                model.clamp()
+
+            progress.update(batch_size)
+
+    progress.close()
+    print(f"{kind.capitalize()} Loss: {loss:>8f}")
+    return loss
+
+
+def main():
+    model, optimizer, start_epoch = load_model()
+
+    for epoch in range(start_epoch, start_epoch + MAX_EPOCHS):
+        print(f"Epoch {epoch}\n-------------------------------")
+
+        t_loss = run_epoch(model, "training", **{"optimizer": optimizer})
+        v_loss = run_epoch(model, "validation")
+
+        save_model(model, optimizer, t_loss, v_loss)
+
+        if early_stop():
+            return
+
+
+if __name__ == "__main__":
+    main()

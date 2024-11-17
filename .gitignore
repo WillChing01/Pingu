@@ -1,5 +1,8 @@
-/testing/__pycache__
-/tuning/__pycache__
-/tuning/datasets
+**/__pycache__
+**/_raw
+**/training
+**/validation
+**/checkpoints
+*.dll
 *.o
 *.exe
