@@ -13,20 +13,7 @@
 
 //activation is implicitly ReLU, except for L2 -> Out which is linear.
 
-const int INPUT_COUNT = 768;
-const int L1_COUNT = 64;
-const int L2_COUNT = 8;
-const int OUTPUT_COUNT = 1;
-
-const int INPUT_SCALING = 64;
-const int WEIGHT_SCALING = 64;
-const int OUTPUT_SCALING = 512;
-const int CRELU2_RSHIFT = 6; // INPUT_SCALING / (INPUT_SCALING * WEIGHT_SCALING)
-const int OUTPUT_FACTOR = (INPUT_SCALING * WEIGHT_SCALING) / OUTPUT_SCALING;
-
 const __m256i _ZERO = _mm256_setzero_si256();
-const __m256i _CRELU1 = _mm256_set1_epi16(INPUT_SCALING);
-const __m256i _CRELU2 = _mm256_set1_epi32(INPUT_SCALING * WEIGHT_SCALING);
 
 //horizontal sum of vector
 //https://stackoverflow.com/questions/60108658/fastest-method-to-calculate-sum-of-all-packed-32-bit-integers-using-avx512-or-av
@@ -49,7 +36,45 @@ inline int hsum_8x32(__m256i v)
     return hsum_epi32_avx(sum128);
 }
 
-//nnue definition.
+inline __m256i cvtepi16_epi8(__m256i low, __m256i high)
+{
+    __m256i res = _mm256_packs_epi16(low, high);
+    res = _mm256_permute4x64_epi64(res, 216);
+    return res;
+}
+
+class Accumulator
+{
+    public:
+        __m256i l1[4] = {};
+        __m256i cl1[2] = {};
+
+        Accumulator() {}
+
+        void setOne(int index)
+        {
+            for (size_t i=0;i<4;++i)
+            {
+                __m256i x = _mm256_loadu_si256((__m256i *)&w_0[index][i * 16]);
+                l1[i] = _mm256_add_epi16(l1[i], x);
+            }
+        }
+
+        void setZero(int index)
+        {
+            for (size_t i=0;i<4;++i)
+            {
+                __m256i x = _mm256_loadu_si256((__m256i *)&w_0[index][i * 16]);
+                l1[i] = _mm256_sub_epi16(l1[i], x);
+            }
+        }
+
+        void cReLU()
+        {
+            cl1[0] = _mm256_max_epi16(_ZERO, cvtepi16_epi8(l1[0], l1[1]));
+            cl1[1] = _mm256_max_epi16(_ZERO, cvtepi16_epi8(l1[2], l1[3]));
+        }
+};
 
 class NNUE
 {
@@ -62,25 +87,115 @@ class NNUE
         short l1[2][64] = {};
         char cl1[2][64] = {};
 
-        void setOne(U32 pieceType, U32 square)
+        std::pair<int, int> toIndices(U32 pieceType, U32 square)
         {
-            int whiteInd = 
+            // pieceType != king
+            return {
+                704 * kingPos[0] + 64 * (pieceType - 1) + square,
+                704 * kingPos[1] + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56),
+            };
         }
 
-        void setZero(U32 pieceType, U32 square) {}
+        void cRelu()
+        {
+            for (size_t i=0;i<64;++i)
+            {
+                cl1[0][i] = std::min(std::max(l1[0][i], (short)0), (short)127);
+            }
+            for (size_t i=0;i<64;++i)
+            {
+                cl1[1][i] = std::min(std::max(l1[1][i], (short)0), (short)127);
+            }
+        }
+
+        void setOne(U32 pieceType, U32 square)
+        {
+            std::pair<int, int> indices = toIndices(pieceType, square);
+            for (size_t i=0;i<64;++i)
+            {
+                l1[0][i] += w_0[indices.first][i];
+            }
+            for (size_t i=0;i<64;++i)
+            {
+                l1[1][i] += w_0[indices.second][i];
+            }
+            cRelu();
+        }
+
+        void setZero(U32 pieceType, U32 square)
+        {
+            std::pair<int, int> indices = toIndices(pieceType, square);
+            for (size_t i=0;i<64;++i)
+            {
+                l1[0][i] -= w_0[indices.first][i];
+            }
+            for (size_t i=0;i<64;++i)
+            {
+                l1[1][i] -= w_0[indices.second][i];
+            }
+            cRelu();
+        }
 
     public:
         NNUE() {}
 
         NNUE(const U64* _pieces, const bool* _side): pieces(_pieces), side(_side) {}
 
-        void refresh() {}
+        void makeMove(U32 move)
+        {
+            U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+            if (pieceType == 0)
+            {
+                
+            }
+        }
 
-        void makeMove(U32 move) {}
+        void refreshWhite(U32 square)
+        {
+            kingPos[0] = square;
+            
+            std::copy(b_0, b_0 + 64, l1[0]);
+        }
 
-        void unmakeMove(U32 move) {}
+        void refreshBlack() {}
 
-        int forward() {}
+        void refresh()
+        {
+            kingPos[0] = __builtin_ctzll(pieces[0]);
+            kingPos[1] = __builtin_ctzll(pieces[1]);
+
+            std::copy(b_0, b_0 + 64, l1[0]);
+            std::copy(b_0, b_0 + 64, l1[1]);
+
+            for (size_t i=0;i<64;++i)
+            {
+                l1[0][i] += w_0[704 * kingPos[0] + kingPos[1]][i];
+            }
+            for (size_t i=0;i<64;++i)
+            {
+                l1[1][i] += w_0[704 * kingPos[1] + (kingPos[0] ^ 56)][i];
+            }
+
+            for (size_t i=2;i<12;++i)
+            {
+                U64 x = pieces[i];
+                while (x) {setOne(i, popLSB(x));}
+            }
+        }
+
+        int forward()
+        {
+            int res = b_1[0];
+            for (size_t i=0;i<64;++i)
+            {
+                res += cl1[*side][i] * w_1[0][i];
+            }
+            for (size_t i=0;i<64;++i)
+            {
+                res += cl1[!(*side)][i] * w_1[0][i+64];
+            }
+            return res;
+        }
 };
 
 
