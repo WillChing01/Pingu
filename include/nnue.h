@@ -14,6 +14,7 @@
 //activation is implicitly ReLU, except for L2 -> Out which is linear.
 
 const __m256i _ZERO = _mm256_setzero_si256();
+const __m256i _ONE = _mm256_set1_epi16(1);
 
 //horizontal sum of vector
 //https://stackoverflow.com/questions/60108658/fastest-method-to-calculate-sum-of-all-packed-32-bit-integers-using-avx512-or-av
@@ -39,7 +40,14 @@ inline int hsum_8x32(__m256i v)
 inline __m256i cvtepi16_epi8(__m256i low, __m256i high)
 {
     __m256i res = _mm256_packs_epi16(low, high);
-    res = _mm256_permute4x64_epi64(res, 216);
+    res = _mm256_permute4x64_epi64(res, 0b11011000);
+    return res;
+}
+
+inline __m256i madd_epi8(__m256i a, __m256i b)
+{
+    __m256i res = _mm256_maddubs_epi16(a, b);
+    res = _mm256_madd_epi16(res, _ONE);
     return res;
 }
 
@@ -84,57 +92,8 @@ class NNUE
 
         int kingPos[2] = {};
 
-        short l1[2][64] = {};
-        char cl1[2][64] = {};
-
-        std::pair<int, int> toIndices(U32 pieceType, U32 square)
-        {
-            // pieceType != king
-            return {
-                704 * kingPos[0] + 64 * (pieceType - 1) + square,
-                704 * kingPos[1] + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56),
-            };
-        }
-
-        void cRelu()
-        {
-            for (size_t i=0;i<64;++i)
-            {
-                cl1[0][i] = std::min(std::max(l1[0][i], (short)0), (short)127);
-            }
-            for (size_t i=0;i<64;++i)
-            {
-                cl1[1][i] = std::min(std::max(l1[1][i], (short)0), (short)127);
-            }
-        }
-
-        void setOne(U32 pieceType, U32 square)
-        {
-            std::pair<int, int> indices = toIndices(pieceType, square);
-            for (size_t i=0;i<64;++i)
-            {
-                l1[0][i] += w_0[indices.first][i];
-            }
-            for (size_t i=0;i<64;++i)
-            {
-                l1[1][i] += w_0[indices.second][i];
-            }
-            cRelu();
-        }
-
-        void setZero(U32 pieceType, U32 square)
-        {
-            std::pair<int, int> indices = toIndices(pieceType, square);
-            for (size_t i=0;i<64;++i)
-            {
-                l1[0][i] -= w_0[indices.first][i];
-            }
-            for (size_t i=0;i<64;++i)
-            {
-                l1[1][i] -= w_0[indices.second][i];
-            }
-            cRelu();
-        }
+        Accumulator white;
+        Accumulator black;
 
     public:
         NNUE() {}
@@ -146,55 +105,66 @@ class NNUE
             U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
             if (pieceType == 0)
             {
-                
+                refreshWhite();
+            }
+            else if (pieceType == 1)
+            {
+                refreshBlack();
+            }
+            else
+            {
+                //TODO.
             }
         }
 
-        void refreshWhite(U32 square)
+        void fullRefresh()
         {
-            kingPos[0] = square;
-            
-            std::copy(b_0, b_0 + 64, l1[0]);
+            refreshWhite();
+            refreshBlack();
         }
 
-        void refreshBlack() {}
-
-        void refresh()
+        void refreshWhite()
         {
             kingPos[0] = __builtin_ctzll(pieces[0]);
-            kingPos[1] = __builtin_ctzll(pieces[1]);
+            std::copy(b_0, b_0 + 64, white.l1);
 
-            std::copy(b_0, b_0 + 64, l1[0]);
-            std::copy(b_0, b_0 + 64, l1[1]);
-
-            for (size_t i=0;i<64;++i)
-            {
-                l1[0][i] += w_0[704 * kingPos[0] + kingPos[1]][i];
-            }
-            for (size_t i=0;i<64;++i)
-            {
-                l1[1][i] += w_0[704 * kingPos[1] + (kingPos[0] ^ 56)][i];
-            }
-
+            white.setOne(704 * kingPos[0] + kingPos[1]);
             for (size_t i=2;i<12;++i)
             {
                 U64 x = pieces[i];
-                while (x) {setOne(i, popLSB(x));}
+                while (x) {setOne(704 * kingPos[0] + 64 * (i - 1) + popLSB(x));}
             }
+            white.cReLU();
+        }
+
+        void refreshBlack(U32 square)
+        {
+            kingPos[1] = __builtin_ctzll(pieces[1]);
+            std::copy(b_0, b_0 + 64, black.l1);
+
+            black.setOne(704 * kingPos[1] + (kingPos[0] ^ 56));
+            for (size_t i=2;i<12;++i)
+            {
+                U64 x = pieces[i];
+                while (x) {setOne(704 * kingPos[1] + 64 * (i - 2 * (i & 1)) + (popLSB(x) ^ 56));}
+            }
+            black.cReLU();
         }
 
         int forward()
         {
-            int res = b_1[0];
-            for (size_t i=0;i<64;++i)
+            __m256i sum = _ZERO;
+            for (size_t i=0;i<2;++i)
             {
-                res += cl1[*side][i] * w_1[0][i];
+                __m256i w = _mm256_loadu_si256((__m256i *)&w_1[0][64 * (*side) + 32 * i]);
+                sum = _mm256_add_epi32(sum, madd_epi8(white.cl1[i], w));
             }
-            for (size_t i=0;i<64;++i)
+            for (size_t i=0;i<2;++i)
             {
-                res += cl1[!(*side)][i] * w_1[0][i+64];
+                __m256i w = _mm256_loadu_si256((__m256i *)&w_1[0][64 * (!(*side)) + 32 * i]);
+                sum = _mm256_add_epi32(sum, madd_epi8(black.cl1[i], w));
             }
-            return res;
+            return hsum_8x32(sum) + b_1[0];
         }
 };
 
