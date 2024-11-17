@@ -1,7 +1,8 @@
 **/__pycache__
 **/_raw
+**/training
+**/validation
 **/checkpoints
-*.dat
 *.dll
 *.o
 *.exe
