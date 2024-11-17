@@ -55,9 +55,9 @@ def fenToHalfKa(fen):
 def main():
     model = load_best()
     model.eval()
-    fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-    score = model.forward(fenToHalfKa(fen))
-    print(score)
+    while True:
+        fen = input("fen: ")
+        print(model.forward(fenToHalfKa(fen)))
 
 
 if __name__ == "__main__":
