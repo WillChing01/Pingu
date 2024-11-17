@@ -107,6 +107,7 @@ def quantize(model):
                 max=q["b"]["clamp"],
             )
             return weights, bias
+        raise ValueError(f"no quantization scheme for {x.weight.shape}")
 
     ret = []
     for layer in model.net:
