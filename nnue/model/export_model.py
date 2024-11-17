@@ -1,55 +1,45 @@
-import numpy as np
 import torch
-from nnue.trainer.nnue_trainer import NeuralNetwork
 
-INPUT_COUNT = 768
-L1_COUNT = 64
-L2_COUNT = 8
-OUTPUT_COUNT = 1
+import os
 
-model_file = "saved_model.pth"
+from config import CONFIG
+from checkpoint import load_best
+from model import quantize
+
+
+def convert_shape(t, type):
+    if t.dim() == 1:
+        return f"std::array<{type}, {len(t)}>"
+    return f"std::array<{convert_shape(t[0], type)}, {len(t)}>"
+
+
+def convert_tensor(t):
+    if t.dim() == 1:
+        return f"\u007b\u007b{', '.join(str(x) for x in t.tolist())}\u007d\u007d"
+    return f"\u007b\u007b{', '.join(convert_tensor(t[i]) for i in range(t.shape[0]))}\u007d\u007d"
+
 
 def main():
-    model = NeuralNetwork(INPUT_COUNT, L1_COUNT, L2_COUNT, OUTPUT_COUNT)
-    model.load_state_dict(torch.load(model_file))
+    quant = quantize(load_best())
 
-    print("Successfully loaded saved model.")
-
-    with open("../include/weights.h", "w") as f:
-        f.write("#ifndef WEIGHTS_H_INCLUDED\n")
-        f.write("#define WEIGHTS_H_INCLUDED\n")
-        f.write("\n")
-        f.write("#include <array>\n")
-        f.write("\n")
-        for layer in model.net:
-            if type(layer) == torch.nn.Linear:
-                weight = layer.weight.detach().numpy()
-                bias = layer.bias.detach().numpy()
-
-                weight_name = '_'.join([str(i) for i in weight.shape])
-                bias_name = '_'.join([str(i) for i in bias.shape])
-
-                f.write("const std::array<std::array<float, "+str(weight.shape[1])+">, "+str(weight.shape[0])+"> weights_"+weight_name+" =\n")
-                f.write("{{\n")
-                for i in range(weight.shape[0]):
-                    f.write("\t{")
-                    for j in range(weight.shape[1]):
-                        f.write("{:.10f}".format(weight[i][j]))
-                        if j < weight.shape[1] - 1: f.write(", ")
-                    f.write("},\n")
-                f.write("}};\n")
-                f.write("\n")
-                f.write("const std::array<float, "+str(bias.shape[0])+"> bias_"+bias_name+" =\n")
-                f.write("{{\n")
-                for i in range(bias.shape[0]):
-                    f.write("\t")
-                    f.write("{:.10f}".format(bias[i]))
-                    f.write(",\n")
-                f.write("}};\n")
-                f.write("\n")
+    ind = 0
+    with open(f"{os.getcwd()}\\..\\..\\include\\weights.h", "w") as f:
+        f.write(
+            "#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n#include <array>\n\n"
+        )
+        for ind, layer in enumerate(quant):
+            w, b = layer
+            q = CONFIG["quant"][w.shape[-2:]]
+            if q["transpose"]:
+                w = torch.transpose(w, dim0=w.dim() - 2, dim1=w.dim() - 1)
+            f.write(
+                f"const {convert_shape(w, q['type'])} w_{ind} = {convert_tensor(w)};\n"
+            )
+            f.write(
+                f"const {convert_shape(b, q['type'])} b_{ind} = {convert_tensor(b)};\n\n"
+            )
         f.write("#endif // WEIGHTS_H_INCLUDED\n")
 
-    print("Successfully exported weights and biases.")
 
 if __name__ == "__main__":
     main()

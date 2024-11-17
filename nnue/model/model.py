@@ -112,9 +112,11 @@ def quantize(model):
     for layer in model.net:
         if isinstance(layer, Concat):
             ret.append(
-                (
-                    quantize(layer.model_1),
-                    quantize(layer.model_2),
+                tuple(
+                    torch.stack(x)
+                    for x in zip(
+                        *tuple(zip(quantize(layer.model_1), quantize(layer.model_2)))[0]
+                    )
                 )
             )
         elif isinstance(layer, nn.Linear):
