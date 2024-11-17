@@ -90,7 +90,7 @@ class HalfKaSparseBatch(ctypes.Structure):
             .to(device)
         )
 
-        return (firstBatch, secondBatch, evals, results)
+        return (firstBatch, secondBatch), evals, results
 
 
 dll = ctypes.CDLL(os.getcwd() + "\\dataloader.dll")
