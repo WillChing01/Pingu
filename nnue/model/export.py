@@ -27,11 +27,10 @@ def main():
         f.write(
             "#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n#include <array>\n\n"
         )
-        for ind, layer in enumerate(quant):
-            w, b = layer
-            q = CONFIG["quant"][w.shape[-2:]]
+        for ind, (w, b) in enumerate(quant):
+            q = CONFIG["quant"][w.shape]
             if q["transpose"]:
-                w = torch.transpose(w, dim0=w.dim() - 2, dim1=w.dim() - 1)
+                w = torch.transpose(w, dim0=0, dim1=1)
             f.write(
                 f"const {convert_shape(w, q['type'])} w_{ind} = {convert_tensor(w)};\n"
             )

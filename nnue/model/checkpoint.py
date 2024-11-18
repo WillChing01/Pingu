@@ -1,4 +1,5 @@
 import glob
+import os
 
 import torch
 
@@ -48,6 +49,9 @@ def save_model(model, optimizer, t_loss, v_loss):
     latest_epoch = 0
     if model_files := get_files():
         latest_epoch = max(get_epoch(x) for x in model_files)
+
+    if not os.path.isdir(CONFIG["path"]):
+        os.mkdir(CONFIG["path"])
 
     save_file = f"{CONFIG['path']}\\{latest_epoch+1}_tloss_{format_loss(t_loss)}_vloss_{format_loss(v_loss)}.tar"
     torch.save(
