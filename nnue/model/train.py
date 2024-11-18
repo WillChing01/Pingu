@@ -38,8 +38,8 @@ def run_epoch(model, kind, **kwargs):
     progress = tqdm(total=length)
 
     with context:
-        for x, y, evals, results in dataLoader.iterator():
-            output = model((x, y))
+        for x, evals, results in dataLoader.iterator():
+            output = model(x)
 
             l = custom_loss(output, evals, results)
             batch_size = evals.size(0)

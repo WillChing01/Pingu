@@ -22,16 +22,13 @@ class Scale(nn.Module):
 
 
 class Concat(nn.Module):
-    def __init__(self, model_1, model_2):
+    def __init__(self, model):
         super().__init__()
 
-        self.model_1 = model_1
-        self.model_2 = model_2
+        self.model = model
 
     def forward(self, x):
-        return torch.cat(
-            (self.model_1.forward(x[0]), self.model_2.forward(x[1])), dim=-1
-        )
+        return torch.cat((self.model.forward(x[0]), self.model.forward(x[1])), dim=-1)
 
 
 class PerspectiveNetwork(nn.Module):
@@ -57,12 +54,7 @@ class HalfKaNetwork(nn.Module):
         modules = CONFIG["modules"]
         self.net = nn.Sequential(
             *(
-                (
-                    Concat(
-                        PerspectiveNetwork(modules[0]),
-                        PerspectiveNetwork(modules[0]),
-                    ),
-                )
+                (Concat(PerspectiveNetwork(modules[0])),)
                 + tuple(
                     x
                     for i in range(len(modules[1]) - 2)
@@ -110,18 +102,11 @@ def quantize(model):
         raise ValueError(f"no quantization scheme for {x.weight.shape}")
 
     ret = []
-    for layer in model.net:
-        if isinstance(layer, Concat):
-            ret.append(
-                tuple(
-                    torch.stack(x)
-                    for x in zip(
-                        *tuple(zip(quantize(layer.model_1), quantize(layer.model_2)))[0]
-                    )
-                )
-            )
-        elif isinstance(layer, nn.Linear):
-            ret.append(quant(layer))
+    for x in model.net:
+        if isinstance(x, Concat):
+            ret.append(*quantize(x.model))
+        elif isinstance(x, nn.Linear):
+            ret.append(quant(x))
 
     return tuple(ret)
 
