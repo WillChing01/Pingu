@@ -13,28 +13,36 @@ CONFIG = {
     "quant": {
         "scaling": 64 * 127,
         (64, 45056): {
-            "type": "short",
             "w": {
+                "dtype": 16,
                 "factor": 127,
                 "clamp": 32767,
+                "avx": True,
+                "transpose": True,
             },
             "b": {
+                "dtype": 16,
                 "factor": 127,
                 "clamp": 32767,
+                "avx": True,
+                "transpose": False,
             },
-            "transpose": True,
         },
         (1, 128): {
-            "type": "char",
             "w": {
+                "dtype": 8,
                 "factor": 64,
                 "clamp": 127,
+                "avx": True,
+                "transpose": False,
             },
             "b": {
+                "dtype": 32,
                 "factor": 64 * 127,
                 "clamp": 32767,
+                "avx": False,
+                "transpose": False,
             },
-            "transpose": False,
         },
     },
 }
