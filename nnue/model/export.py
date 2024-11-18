@@ -15,7 +15,7 @@ TYPES = {
 
 def convert(name, t, **kwargs):
     if kwargs["transpose"]:
-        torch.transpose(t, dim0=0, dim1=1)
+        t = torch.transpose(t, dim0=0, dim1=1)
 
     dtype = kwargs["dtype"]
     avx = kwargs["avx"]
