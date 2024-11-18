@@ -197,6 +197,18 @@ public:
         black = Black(_pieces);
     }
 
+    void makeMove(U32 move)
+    {
+        white.makeMove(move);
+        black.makeMove(move);
+    }
+
+    void unmakeMove(U32 move)
+    {
+        white.unmakeMove(move);
+        black.unmakeMove(move);
+    }
+
     void fullRefresh()
     {
         white.refresh();
