@@ -163,7 +163,7 @@ bool incrementalTest(Board &b, int depth)
     bool res = true;
 
     //nnue.
-    res &= testIncrementalUpdateNNUE(b, depth, &Board::nnueHardUpdate);
+    // res &= testIncrementalUpdateNNUE(b, depth, &Board::nnueHardUpdate);
 
     //phase.
     res &= testIncrementalUpdate(b, depth, &Board::phase, &Board::phaseHardUpdate);

@@ -96,7 +96,7 @@ class Board {
             zHashPieces = b.zHashPieces;
             zHashState = b.zHashState;
 
-            nnueHardUpdate();
+            nnue.fullRefresh();
         }
 
         void zHashHardUpdate()
@@ -202,7 +202,7 @@ class Board {
 
             zHashHardUpdate();
             phaseHardUpdate();
-            nnueHardUpdate();
+            nnue.fullRefresh();
 
             //hash and state history.
             stateHistory.push_back(current);
@@ -877,6 +877,8 @@ class Board {
             if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
             if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
             if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
+
+            nnue.makeMove(chessMove);
         }
 
         void unmakeMove()
@@ -901,6 +903,8 @@ class Board {
             if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
             if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
             if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
+
+            nnue.unmakeMove(moveHistory.back());
 
             stateHistory.pop_back();
             moveHistory.pop_back();

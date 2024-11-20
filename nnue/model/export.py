@@ -14,35 +14,21 @@ TYPES = {
 
 
 def convert(name, t, **kwargs):
+    dtype = kwargs["dtype"]
     if kwargs["transpose"]:
         t = torch.transpose(t, dim0=0, dim1=1)
 
-    dtype = kwargs["dtype"]
-    avx = kwargs["avx"]
-
     def convert_dtype(t):
         if t.dim() == 1:
-            return (
-                f"std::array<__m256i, {len(t) // (256 // dtype)}>"
-                if avx
-                else f"std::array<{TYPES[dtype]}, {len(t)}>"
-            )
+            return f"std::array<{TYPES[dtype]}, {len(t)}>"
         return f"std::array<{convert_dtype(t[0])}, {len(t)}>"
 
     def convert_tensor(t):
         if t.dim() == 1:
-            contents = (
-                ", ".join(
-                    f"_mm256_setr_epi{dtype}({', '.join(str(x) for x in t[i:i+(256 // dtype)].tolist())})"
-                    for i in range(len(t) // (256 // dtype))
-                )
-                if avx
-                else ", ".join(str(x) for x in t.tolist())
-            )
-            return f"\u007b\u007b{contents}\u007d\u007d"
+            return f"\u007b\u007b{', '.join(str(x) for x in t.tolist())}\u007d\u007d"
         return f"\u007b\u007b{', '.join(convert_tensor(x) for x in t)}\u007d\u007d"
 
-    return f"const {convert_dtype(t)} {name} = {convert_tensor(t)}"
+    return f"alignas(32) const {convert_dtype(t)} {name} = {convert_tensor(t)}"
 
 
 def main():

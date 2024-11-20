@@ -12,14 +12,14 @@
 #include "simd.h"
 #include "weights.h"
 
-class Accumulator
+class alignas(32) Accumulator
 {
 public:
+    alignas(32) short l1[64] = {};
+    alignas(32) char cl1[64] = {};
     const U64 *pieces;
     bool side;
-    int kingPos;
-    __m256i l1[4] = {};
-    __m256i cl1[2] = {};
+    int kingPos = 0;
 
     Accumulator() {}
 
@@ -95,9 +95,13 @@ public:
     void setOne(U32 pieceType, U32 square)
     {
         U32 ind = index(pieceType, square);
-        for (size_t i = 0; i < 4; ++i)
+        __m256i w;
+        __m256i l;
+        for (size_t i = 0; i < 64; i += 16)
         {
-            l1[i] = _mm256_add_epi16(l1[i], w_0[ind][i]);
+            w = _mm256_loadu_si256((__m256i *)&w_0[ind][i]);
+            l = _mm256_loadu_si256((__m256i *)&l1[i]);
+            _mm256_storeu_si256((__m256i *)&l1[i], _mm256_add_epi16(l, w));
         }
         cReLU();
     }
@@ -105,17 +109,26 @@ public:
     void setZero(U32 pieceType, U32 square)
     {
         U32 ind = index(pieceType, square);
-        for (size_t i = 0; i < 4; ++i)
+        __m256i w;
+        __m256i l;
+        for (size_t i = 0; i < 64; i += 16)
         {
-            l1[i] = _mm256_sub_epi16(l1[i], w_0[ind][i]);
+            w = _mm256_loadu_si256((__m256i *)&w_0[ind][i]);
+            l = _mm256_loadu_si256((__m256i *)&l1[i]);
+            _mm256_storeu_si256((__m256i *)&l1[i], _mm256_sub_epi16(l, w));
         }
         cReLU();
     }
 
     void cReLU()
     {
-        cl1[0] = _mm256_max_epi16(_ZERO, cvtepi16_epi8(l1[0], l1[1]));
-        cl1[1] = _mm256_max_epi16(_ZERO, cvtepi16_epi8(l1[2], l1[3]));
+        __m256i x, y;
+        for (size_t i = 0; i < 64; i += 32)
+        {
+            x = _mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i *)&l1[i]));
+            y = _mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i *)&l1[i + 16]));
+            _mm256_storeu_si256((__m256i *)&cl1[i], cvtepi16_epi8(x, y));
+        }
     }
 };
 
@@ -181,10 +194,21 @@ public:
 
     int forward()
     {
-        __m256i sum = madd_epi8(white.cl1[0], w_1[0][2 * (*side)]);
-        sum = _mm256_add_epi32(sum, madd_epi8(white.cl1[1], w_1[0][2 * (*side) + 1]));
-        sum = _mm256_add_epi32(sum, madd_epi8(black.cl1[0], w_1[0][2 * (!(*side))]));
-        sum = _mm256_add_epi32(sum, madd_epi8(black.cl1[1], w_1[0][2 * (!(*side)) + 1]));
+        __m256i sum = _ZERO;
+        __m256i l, w;
+
+        for (size_t i = 0; i < 64; i += 32)
+        {
+            l = _mm256_loadu_si256((__m256i *)&white.cl1[i]);
+            w = _mm256_loadu_si256((__m256i *)&w_1[0][64 * (*side) + i]);
+            sum = _mm256_add_epi32(sum, madd_epi8(l, w));
+        }
+        for (size_t i = 0; i < 64; i += 32)
+        {
+            l = _mm256_loadu_si256((__m256i *)&black.cl1[i]);
+            w = _mm256_loadu_si256((__m256i *)&w_1[0][64 * (!(*side)) + i]);
+            sum = _mm256_add_epi32(sum, madd_epi8(l, w));
+        }
         return hsum_8x32(sum) + b_1[0];
     }
 };
