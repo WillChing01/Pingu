@@ -1,9 +1,10 @@
 import torch
 
+from model import QuantHalfKaNetwork
 from checkpoint import load_best
 
 
-def fenToHalfKa(fen):
+def fen_to_half_ka(fen):
     fen, side = fen.split(" ")[0:2]
 
     whiteFeatures = []
@@ -55,9 +56,12 @@ def fenToHalfKa(fen):
 def main():
     model = load_best()
     model.eval()
+    quant = QuantHalfKaNetwork(model.state_dict())
     while True:
         fen = input("fen: ")
-        print(model.forward(fenToHalfKa(fen)))
+        x = fen_to_half_ka(fen)
+        print(model.forward(x))
+        print(quant.forward(x))
 
 
 if __name__ == "__main__":

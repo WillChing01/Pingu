@@ -36,6 +36,7 @@ def run_epoch(model, kind, **kwargs):
     length = len(dataLoader)
 
     progress = tqdm(total=length)
+    counter = 0
 
     with context:
         for x, evals, results in dataLoader.iterator():
@@ -52,7 +53,11 @@ def run_epoch(model, kind, **kwargs):
                 model.clamp()
 
             progress.update(batch_size)
+            counter += 1
+            if counter % 100 == 0:
+                progress.set_description(f"Loss: {l.item():>8f}")
 
+    progress.set_description(None)
     progress.close()
     print(f"{kind.capitalize()} Loss: {loss:>8f}")
     return loss
