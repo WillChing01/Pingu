@@ -6,7 +6,7 @@ import torch
 
 
 CONFIG = {
-    "device": "cuda" if torch.cuda.is_available() else "cpu",
+    "device": "cuda",
     "optimizer": torch.optim.Adam,
     "path": f"{os.getcwd()}\\checkpoints",
     "modules": ((45056, 64), (2 * 64, 1)),

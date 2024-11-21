@@ -39,23 +39,22 @@ def run_epoch(model, kind, **kwargs):
     counter = 0
 
     with context:
-        for x, evals, results in dataLoader.iterator():
+        for batch_size, (x, evals, results) in dataLoader.iterator():
             output = model(x)
-
             l = custom_loss(output, evals, results)
-            batch_size = evals.size(0)
-            loss += l.item() * batch_size / length
+            _loss = l.item()
 
             if kind == "training":
-                optimizer.zero_grad()
+                optimizer.zero_grad(set_to_none=True)
                 l.backward()
                 optimizer.step()
                 model.clamp()
 
+            loss += _loss * batch_size / length
             progress.update(batch_size)
             counter += 1
             if counter % 100 == 0:
-                progress.set_description(f"Loss: {l.item():>8f}")
+                progress.set_description(f"Loss: {_loss:>8f}")
 
     progress.set_description(None)
     progress.close()

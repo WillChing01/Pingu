@@ -10,7 +10,7 @@ NUM_FEATURES = CONFIG["modules"][0][0]
 BATCH_SIZE = 32768
 NUM_WORKERS = 4
 
-DATALOADER_CONFIGS = {
+DATALOADER_CONFIG = {
     "training": {
         "path": bytes(f"{os.getcwd()}\\..\\dataset\\training", "utf-8"),
     },
@@ -90,7 +90,7 @@ class HalfKaSparseBatch(ctypes.Structure):
             .to(device)
         )
 
-        return (firstBatch, secondBatch), evals, results
+        return self.size, ((firstBatch, secondBatch), evals, results)
 
 
 dll = ctypes.CDLL(os.getcwd() + "\\dataloader.dll")
@@ -113,7 +113,7 @@ dll.destructBatch.argtypes = [ctypes.POINTER(HalfKaSparseBatch)]
 
 class DataLoader:
     def __init__(self, kind):
-        self.path = DATALOADER_CONFIGS[kind]["path"]
+        self.path = DATALOADER_CONFIG[kind]["path"]
         self.length = dll.length(self.path)
 
     def __len__(self):
