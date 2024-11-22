@@ -154,7 +154,7 @@ public:
 
     U32 index(U32 pieceType, U32 square)
     {
-        return 704 * kingPos + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56);
+        return 704 * (kingPos ^ 56) + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56);
     }
 };
 
