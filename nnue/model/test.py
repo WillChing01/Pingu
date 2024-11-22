@@ -31,7 +31,7 @@ def fen_to_half_ka(fen):
             square += 1
 
     whiteFeatures.append(704 * kingPos[0] + kingPos[1])
-    blackFeatures.append(704 * kingPos[1] + (kingPos[0] ^ 56))
+    blackFeatures.append(704 * (kingPos[1] ^ 56) + (kingPos[0] ^ 56))
     for x in features:
         pieceType = x // 64
         if pieceType < 2:
@@ -39,12 +39,11 @@ def fen_to_half_ka(fen):
 
         square = x % 64
         whiteFeatures.append(704 * kingPos[0] + 64 * (pieceType - 1) + square)
-
-        if pieceType % 2 == 0:
-            pieceType += 1
-        else:
-            pieceType -= 1
-        blackFeatures.append(704 * kingPos[1] + 64 * (pieceType - 1) + (square ^ 56))
+        blackFeatures.append(
+            704 * (kingPos[1] ^ 56)
+            + 64 * (pieceType - 2 * (pieceType % 2))
+            + (square ^ 56)
+        )
 
     whiteInput, blackInput = torch.zeros(45056), torch.zeros(45056)
     whiteInput[whiteFeatures] = 1

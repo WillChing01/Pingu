@@ -4,7 +4,7 @@ import os
 
 from config import CONFIG
 from checkpoint import load_best
-from model import quantize
+from model import QuantHalfKaNetwork
 
 TYPES = {
     8: "char",
@@ -32,7 +32,7 @@ def convert(name, t, **kwargs):
 
 
 def main():
-    quant = quantize(load_best())
+    quant = QuantHalfKaNetwork(load_best().state_dict()).get_quant_params()
 
     ind = 0
     with open(f"{os.getcwd()}\\..\\..\\include\\weights.h", "w") as f:
