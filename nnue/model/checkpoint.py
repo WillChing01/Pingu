@@ -32,7 +32,9 @@ def format_loss(loss):
 def load_model():
     start_epoch = 1
     model = network().to(CONFIG["device"])
-    optimizer = CONFIG["optimizer"](model.parameters())
+    optimizer = CONFIG["optimizer"]["optim"](
+        model.parameters(), **CONFIG["optimizer"]["kwargs"]
+    )
 
     if model_files := get_files():
         latest_file = max(model_files, key=lambda x: get_epoch(x))
