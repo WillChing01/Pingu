@@ -53,42 +53,37 @@ class HalfKaNetwork(nn.Module):
             torch.nn.init.zeros_(x.bias)
 
     def clamp(self):
-        self.net.apply(self._clamp)
+        def _clamp(x):
+            if type(x) == nn.Linear:
+                if quant := CONFIG["quant"].get(x.weight.shape):
+                    w = quant["w"]["clamp"]
+                    b = quant["b"]["clamp"]
+                    x.weight.data = torch.clamp(x.weight.data, min=-w, max=w)
+                    x.bias.data = torch.clamp(x.bias.data, min=-b, max=b)
 
-    def _clamp(self, x):
-        if type(x) == nn.Linear:
-            if quant := CONFIG["quant"].get(x.weight.shape):
-                w = quant["w"]["clamp"]
-                b = quant["b"]["clamp"]
-                x.weight.data = torch.clamp(x.weight.data, min=-w, max=w)
-                x.bias.data = torch.clamp(x.bias.data, min=-b, max=b)
+        self.net.apply(_clamp)
+
+    def quantize(self):
+        def _quantize(x):
+            if isinstance(x, nn.Linear):
+                x.weight.data = x.weight.data.round()
+                x.bias.data = x.bias.data.round()
+
+        self.net.apply(_quantize)
+
+    def gather(self):
+        ret = []
+
+        def _gather(x):
+            if isinstance(x, nn.Linear):
+                ret.append((x.weight.round().int(), x.bias.round().int()))
+
+        self.net.apply(_gather)
+
+        return ret
 
     def forward(self, x):
         return self.net(x)
-
-
-class QuantHalfKaNetwork(HalfKaNetwork):
-    def __init__(self, state_dict):
-        super().__init__()
-        self.load_state_dict(state_dict)
-        self.net.apply(self.quantize)
-
-    def quantize(self, x):
-        if isinstance(x, nn.Linear):
-            if q := CONFIG["quant"].get(x.weight.shape):
-                w = q["w"]["clamp"]
-                b = q["b"]["clamp"]
-                x.weight.data = torch.clamp(x.weight.data, min=-w, max=w).round()
-                x.bias.data = torch.clamp(x.bias.data, min=-b, max=b).round()
-
-    def get_quant_params(self):
-        ret = []
-        self.net.apply(lambda x: self.gather(x, ret))
-        return ret
-
-    def gather(self, x, ret):
-        if isinstance(x, nn.Linear):
-            ret.append((x.weight.int(), x.bias.int()))
 
 
 def network():
