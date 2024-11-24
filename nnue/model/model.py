@@ -56,29 +56,30 @@ class HalfKaNetwork(nn.Module):
         def _clamp(x):
             if type(x) == nn.Linear:
                 if quant := CONFIG["quant"].get(x.weight.shape):
-                    w = quant["w"]["clamp"]
-                    b = quant["b"]["clamp"]
+                    w = quant["w"]["clamp"] / quant["w"]["factor"]
+                    b = quant["b"]["clamp"] / quant["b"]["factor"]
                     x.weight.data = torch.clamp(x.weight.data, min=-w, max=w)
                     x.bias.data = torch.clamp(x.bias.data, min=-b, max=b)
 
         self.net.apply(_clamp)
 
     def quantize(self):
-        def _quantize(x):
-            if isinstance(x, nn.Linear):
-                x.weight.data = x.weight.data.round()
-                x.bias.data = x.bias.data.round()
-
-        self.net.apply(_quantize)
-
-    def gather(self):
         ret = []
 
-        def _gather(x):
+        def _quantize(x):
             if isinstance(x, nn.Linear):
-                ret.append((x.weight.round().int(), x.bias.round().int()))
+                if quant := CONFIG["quant"].get(x.weight.shape):
+                    w = quant["w"]["factor"], quant["w"]["clamp"]
+                    b = quant["b"]["factor"], quant["b"]["clamp"]
 
-        self.net.apply(_gather)
+                    q_w = (
+                        torch.clamp(x.weight * w[0], min=-w[1], max=w[1]).round().int()
+                    )
+                    q_b = torch.clamp(x.bias * b[0], min=-b[1], max=b[1]).round().int()
+
+                    ret.append((q_w, q_b))
+
+        self.net.apply(_quantize)
 
         return ret
 

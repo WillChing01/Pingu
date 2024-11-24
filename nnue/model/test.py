@@ -54,14 +54,10 @@ def fen_to_half_ka(fen):
 def main():
     model = load_best()
     model.eval()
-    quant = load_best()
-    quant.quantize()
-    quant.eval()
     while True:
         fen = input("fen: ")
         x = fen_to_half_ka(fen)
         print(model.forward(x))
-        print(quant.forward(x))
 
 
 if __name__ == "__main__":

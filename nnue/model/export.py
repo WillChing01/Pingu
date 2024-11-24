@@ -32,13 +32,12 @@ def convert(name, t, **kwargs):
 
 def main():
     model = load_best()
-    model.quantize()
-    quant = model.gather()
+    quant = model.quantize()
 
     ind = 0
     with open(f"{os.getcwd()}\\..\\..\\include\\weights.h", "w") as f:
         f.write("#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n")
-        f.write("#include <array>\n#include <immintrin.h>\n\n")
+        f.write("#include <array>\n\n")
         for ind, (w, b) in enumerate(quant):
             q = CONFIG["quant"][w.shape]
             f.write(f"{convert(f'w_{ind}', w, **q['w'])};\n\n")

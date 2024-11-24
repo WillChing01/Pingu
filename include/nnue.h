@@ -15,8 +15,8 @@
 class alignas(32) Accumulator
 {
 public:
-    alignas(32) short l1[64] = {};
-    alignas(32) char cl1[64] = {};
+    alignas(32) short l1[32] = {};
+    alignas(32) char cl1[32] = {};
     const U64 *pieces;
     bool side;
     int kingPos = 0;
@@ -73,6 +73,8 @@ public:
                 (this->*_one)(_nRooks + !side, QUEEN_ROOK_SQUARE[!side] + 3);
             }
         }
+
+        cReLU();
     }
 
     void refresh()
@@ -89,6 +91,7 @@ public:
                 setOne(i, popLSB(x));
             }
         }
+
         cReLU();
     }
 
@@ -97,13 +100,12 @@ public:
         U32 ind = index(pieceType, square);
         __m256i w;
         __m256i l;
-        for (size_t i = 0; i < 64; i += 16)
+        for (size_t i = 0; i < 32; i += 16)
         {
             w = _mm256_loadu_si256((__m256i *)&w_0[ind][i]);
             l = _mm256_loadu_si256((__m256i *)&l1[i]);
             _mm256_storeu_si256((__m256i *)&l1[i], _mm256_add_epi16(l, w));
         }
-        cReLU();
     }
 
     void setZero(U32 pieceType, U32 square)
@@ -111,22 +113,21 @@ public:
         U32 ind = index(pieceType, square);
         __m256i w;
         __m256i l;
-        for (size_t i = 0; i < 64; i += 16)
+        for (size_t i = 0; i < 32; i += 16)
         {
             w = _mm256_loadu_si256((__m256i *)&w_0[ind][i]);
             l = _mm256_loadu_si256((__m256i *)&l1[i]);
             _mm256_storeu_si256((__m256i *)&l1[i], _mm256_sub_epi16(l, w));
         }
-        cReLU();
     }
 
     void cReLU()
     {
         __m256i x, y;
-        for (size_t i = 0; i < 64; i += 32)
+        for (size_t i = 0; i < 32; i += 32)
         {
-            x = _mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i *)&l1[i]));
-            y = _mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i *)&l1[i + 16]));
+            x = _mm256_srai_epi16(_mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i *)&l1[i])), _HALF), 6);
+            y = _mm256_srai_epi16(_mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i *)&l1[i + 16])), _HALF), 6);
             _mm256_storeu_si256((__m256i *)&cl1[i], cvtepi16_epi8(x, y));
         }
     }
@@ -197,16 +198,16 @@ public:
         __m256i sum = _ZERO;
         __m256i l, w;
 
-        for (size_t i = 0; i < 64; i += 32)
+        for (size_t i = 0; i < 32; i += 32)
         {
             l = _mm256_loadu_si256((__m256i *)&white.cl1[i]);
-            w = _mm256_loadu_si256((__m256i *)&w_1[0][64 * (*side) + i]);
+            w = _mm256_loadu_si256((__m256i *)&w_1[0][32 * (*side) + i]);
             sum = _mm256_add_epi32(sum, madd_epi8(l, w));
         }
-        for (size_t i = 0; i < 64; i += 32)
+        for (size_t i = 0; i < 32; i += 32)
         {
             l = _mm256_loadu_si256((__m256i *)&black.cl1[i]);
-            w = _mm256_loadu_si256((__m256i *)&w_1[0][64 * (!(*side)) + i]);
+            w = _mm256_loadu_si256((__m256i *)&w_1[0][32 * (!(*side)) + i]);
             sum = _mm256_add_epi32(sum, madd_epi8(l, w));
         }
         return hsum_8x32(sum) + b_1[0];

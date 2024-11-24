@@ -13,7 +13,7 @@ MAX_EPOCHS = 10000
 
 def custom_loss(output, targetEval, targetResult):
     K = 1 / 400
-    GAMMA = 0.5
+    GAMMA = 0.75
     output_scaled = torch.sigmoid(K * output)
     target_scaled = GAMMA * torch.sigmoid(K * targetEval) + (1.0 - GAMMA) * targetResult
     return torch.mean((output_scaled - target_scaled) ** 2)

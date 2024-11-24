@@ -5,6 +5,7 @@
 
 const __m256i _ZERO = _mm256_setzero_si256();
 const __m256i _ONE = _mm256_set1_epi16(1);
+const __m256i _HALF = _mm256_set1_epi16(32);
 
 // horizontal sum of vector
 // https://stackoverflow.com/questions/60108658/fastest-method-to-calculate-sum-of-all-packed-32-bit-integers-using-avx512-or-av
