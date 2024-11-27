@@ -2,39 +2,42 @@ import os
 
 import torch
 
-"""Model definition: (45056 -> 64 -> cReLU(64)) x 2 -> 1"""
-
-
 CONFIG = {
-    "device": "cuda" if torch.cuda.is_available() else "cpu",
-    "optimizer": torch.optim.Adam,
+    "device": "cuda",
+    "optimizer": {
+        "optim": torch.optim.Adam,
+        "kwargs": {"eps": 1e-07},
+    },
     "path": f"{os.getcwd()}\\checkpoints",
-    "modules": ((45056, 64), (2 * 64, 1)),
+    "modules": ((45056, 32), (2 * 32, 1)),
     "quant": {
-        "scaling": 64 * 127,
-        (64, 45056): {
-            "type": "short",
+        (32, 45056): {
             "w": {
-                "factor": 127,
-                "clamp": 32767,
-            },
-            "b": {
-                "factor": 127,
-                "clamp": 32767,
-            },
-            "transpose": True,
-        },
-        (1, 128): {
-            "type": "char",
-            "w": {
+                "dtype": 16,
                 "factor": 64,
-                "clamp": 127,
+                "clamp": 32767,
+                "transpose": True,
             },
             "b": {
-                "factor": 64 * 127,
+                "dtype": 16,
+                "factor": 64,
                 "clamp": 32767,
+                "transpose": False,
             },
-            "transpose": False,
+        },
+        (1, 64): {
+            "w": {
+                "dtype": 8,
+                "factor": 1,
+                "clamp": 127,
+                "transpose": False,
+            },
+            "b": {
+                "dtype": 32,
+                "factor": 1,
+                "clamp": 32767,
+                "transpose": False,
+            },
         },
     },
 }

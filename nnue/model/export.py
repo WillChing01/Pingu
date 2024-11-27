@@ -4,39 +4,44 @@ import os
 
 from config import CONFIG
 from checkpoint import load_best
-from model import quantize
+
+TYPES = {
+    8: "char",
+    16: "short",
+    32: "int",
+}
 
 
-def convert_shape(t, type):
-    if t.dim() == 1:
-        return f"std::array<{type}, {len(t)}>"
-    return f"std::array<{convert_shape(t[0], type)}, {len(t)}>"
+def convert(name, t, **kwargs):
+    dtype = kwargs["dtype"]
+    if kwargs["transpose"]:
+        t = torch.transpose(t, dim0=0, dim1=1)
 
+    def convert_dtype(t):
+        if t.dim() == 1:
+            return f"std::array<{TYPES[dtype]}, {len(t)}>"
+        return f"std::array<{convert_dtype(t[0])}, {len(t)}>"
 
-def convert_tensor(t):
-    if t.dim() == 1:
-        return f"\u007b\u007b{', '.join(str(x) for x in t.tolist())}\u007d\u007d"
-    return f"\u007b\u007b{', '.join(convert_tensor(t[i]) for i in range(t.shape[0]))}\u007d\u007d"
+    def convert_tensor(t):
+        if t.dim() == 1:
+            return f"\u007b\u007b{', '.join(str(x) for x in t.tolist())}\u007d\u007d"
+        return f"\u007b\u007b{', '.join(convert_tensor(x) for x in t)}\u007d\u007d"
+
+    return f"alignas(32) const {convert_dtype(t)} {name} = {convert_tensor(t)}"
 
 
 def main():
-    quant = quantize(load_best())
+    model = load_best()
+    quant = model.quantize()
 
     ind = 0
     with open(f"{os.getcwd()}\\..\\..\\include\\weights.h", "w") as f:
-        f.write(
-            "#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n#include <array>\n\n"
-        )
+        f.write("#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n")
+        f.write("#include <array>\n\n")
         for ind, (w, b) in enumerate(quant):
             q = CONFIG["quant"][w.shape]
-            if q["transpose"]:
-                w = torch.transpose(w, dim0=0, dim1=1)
-            f.write(
-                f"const {convert_shape(w, q['type'])} w_{ind} = {convert_tensor(w)};\n"
-            )
-            f.write(
-                f"const {convert_shape(b, q['type'])} b_{ind} = {convert_tensor(b)};\n\n"
-            )
+            f.write(f"{convert(f'w_{ind}', w, **q['w'])};\n\n")
+            f.write(f"{convert(f'b_{ind}', b, **q['b'])};\n\n")
         f.write("#endif // WEIGHTS_H_INCLUDED\n")
 
 

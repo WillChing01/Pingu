@@ -5,30 +5,12 @@ from config import CONFIG
 
 
 class ClippedReLU(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x):
-        return torch.clamp(x, 0.0, 1.0)
-
-
-class Scale(nn.Module):
     def __init__(self, factor):
         super().__init__()
         self.factor = factor
 
     def forward(self, x):
-        return torch.mul(x, self.factor)
-
-
-class Concat(nn.Module):
-    def __init__(self, model):
-        super().__init__()
-
-        self.model = model
-
-    def forward(self, x):
-        return torch.cat((self.model.forward(x[0]), self.model.forward(x[1])), dim=-1)
+        return torch.clamp(x, 0.0, self.factor)
 
 
 class PerspectiveNetwork(nn.Module):
@@ -39,12 +21,12 @@ class PerspectiveNetwork(nn.Module):
             *(
                 x
                 for i in range(len(module_config) - 1)
-                for x in (nn.Linear(*module_config[i : i + 2]), ClippedReLU())
+                for x in (nn.Linear(*module_config[i : i + 2]), ClippedReLU(127))
             )
         )
 
     def forward(self, x):
-        return self.net(x)
+        return torch.cat((self.net(x[0]), self.net(x[1])), dim=-1)
 
 
 class HalfKaNetwork(nn.Module):
@@ -54,13 +36,13 @@ class HalfKaNetwork(nn.Module):
         modules = CONFIG["modules"]
         self.net = nn.Sequential(
             *(
-                (Concat(PerspectiveNetwork(modules[0])),)
+                (PerspectiveNetwork(modules[0]),)
                 + tuple(
                     x
                     for i in range(len(modules[1]) - 2)
-                    for x in (nn.Linear(*modules[1][i : i + 2]), ClippedReLU())
+                    for x in (nn.Linear(*modules[1][i : i + 2]), ClippedReLU(127))
                 )
-                + (nn.Linear(*modules[1][-2:]), Scale(CONFIG["quant"]["scaling"]))
+                + (nn.Linear(*modules[1][-2:]),)
             )
         )
         self.net.apply(self.init_weights)
@@ -71,44 +53,38 @@ class HalfKaNetwork(nn.Module):
             torch.nn.init.zeros_(x.bias)
 
     def clamp(self):
-        self.net.apply(self._clamp)
+        def _clamp(x):
+            if type(x) == nn.Linear:
+                if quant := CONFIG["quant"].get(x.weight.shape):
+                    w = quant["w"]["clamp"] / quant["w"]["factor"]
+                    b = quant["b"]["clamp"] / quant["b"]["factor"]
+                    x.weight.data = torch.clamp(x.weight.data, min=-w, max=w)
+                    x.bias.data = torch.clamp(x.bias.data, min=-b, max=b)
 
-    def _clamp(self, x):
-        if type(x) == nn.Linear:
-            if quant := CONFIG["quant"].get(x.weight.shape):
-                weight_limit = quant["w"]["clamp"] / quant["w"]["factor"]
-                bias_limit = quant["b"]["clamp"] / quant["b"]["factor"]
-                torch.clamp(x.weight, min=-weight_limit, max=weight_limit)
-                torch.clamp(x.bias, min=-bias_limit, max=bias_limit)
+        self.net.apply(_clamp)
+
+    def quantize(self):
+        ret = []
+
+        def _quantize(x):
+            if isinstance(x, nn.Linear):
+                if quant := CONFIG["quant"].get(x.weight.shape):
+                    w = quant["w"]["factor"], quant["w"]["clamp"]
+                    b = quant["b"]["factor"], quant["b"]["clamp"]
+
+                    q_w = (
+                        torch.clamp(x.weight * w[0], min=-w[1], max=w[1]).round().int()
+                    )
+                    q_b = torch.clamp(x.bias * b[0], min=-b[1], max=b[1]).round().int()
+
+                    ret.append((q_w, q_b))
+
+        self.net.apply(_quantize)
+
+        return ret
 
     def forward(self, x):
         return self.net(x)
-
-
-def quantize(model):
-    def quant(x):
-        if q := CONFIG["quant"].get(x.weight.shape):
-            weights = torch.clamp(
-                torch.round(q["w"]["factor"] * x.weight).int(),
-                min=-q["w"]["clamp"],
-                max=q["w"]["clamp"],
-            )
-            bias = torch.clamp(
-                torch.round(q["b"]["factor"] * x.bias).int(),
-                min=-q["b"]["clamp"],
-                max=q["b"]["clamp"],
-            )
-            return weights, bias
-        raise ValueError(f"no quantization scheme for {x.weight.shape}")
-
-    ret = []
-    for x in model.net:
-        if isinstance(x, Concat):
-            ret.append(*quantize(x.model))
-        elif isinstance(x, nn.Linear):
-            ret.append(quant(x))
-
-    return tuple(ret)
 
 
 def network():

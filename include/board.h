@@ -73,8 +73,8 @@ class Board {
         Board()
         {
             //connect modules.
-            see = SEE(this->pieces, this->occupied);
-            nnue = NNUE(this->pieces);
+            see = SEE(pieces, occupied);
+            nnue = NNUE(pieces, &side);
 
             //start position default.
             setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -96,7 +96,7 @@ class Board {
             zHashPieces = b.zHashPieces;
             zHashState = b.zHashState;
 
-            nnueHardUpdate();
+            nnue.fullRefresh();
         }
 
         void zHashHardUpdate()
@@ -136,8 +136,6 @@ class Board {
                 }
             }
         }
-
-        void nnueHardUpdate() {nnue.refreshInput();}
 
         void setPositionFen(const std::string &fen)
         {
@@ -204,7 +202,7 @@ class Board {
 
             zHashHardUpdate();
             phaseHardUpdate();
-            nnueHardUpdate();
+            nnue.fullRefresh();
 
             //hash and state history.
             stateHistory.push_back(current);
@@ -701,10 +699,6 @@ class Board {
             pieces[currentMove.finishPieceType] += 1ull << (currentMove.finishSquare);
             zHashPieces ^= randomNums[64 * currentMove.finishPieceType + currentMove.finishSquare];
 
-            //update nnue.
-            nnue.zeroInput(64 * currentMove.pieceType + currentMove.startSquare);
-            nnue.oneInput(64 * currentMove.finishPieceType + currentMove.finishSquare);
-
             //update phase on promotion.
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
@@ -720,9 +714,6 @@ class Board {
 
                 //update the game phase.
                 phase -= piecePhases[currentMove.capturedPieceType >> 1];
-
-                //update nnue.
-                nnue.zeroInput(64 * currentMove.capturedPieceType + capturedSquare);
             }
 
             //if castles, then move the rook too.
@@ -736,10 +727,6 @@ class Board {
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
-
-                    //update nnue.
-                    nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]);
-                    nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2);
                 }
                 else
                 {
@@ -749,10 +736,6 @@ class Board {
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
-
-                    //update nnue.
-                    nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]);
-                    nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
                 }
             }
 
@@ -769,10 +752,6 @@ class Board {
             pieces[currentMove.pieceType] += 1ull << (currentMove.startSquare);
             zHashPieces ^= randomNums[64 * currentMove.pieceType + currentMove.startSquare];
 
-            //update nnue.
-            nnue.oneInput(64 * currentMove.pieceType + currentMove.startSquare);
-            nnue.zeroInput(64 * currentMove.finishPieceType + currentMove.finishSquare);
-
             //update phase on promotion.
             if (currentMove.pieceType != currentMove.finishPieceType)
             {
@@ -788,9 +767,6 @@ class Board {
 
                 //update the game phase.
                 phase += piecePhases[currentMove.capturedPieceType >> 1];
-
-                //update nnue.
-                nnue.oneInput(64 * currentMove.capturedPieceType + capturedSquare);
             }
 
             //if castles move the rook back.
@@ -804,10 +780,6 @@ class Board {
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2];
-
-                    //update nnue.
-                    nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1]);
-                    nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + KING_ROOK_SQUARE[currentMove.pieceType & 1] - 2);
                 }
                 else
                 {
@@ -817,10 +789,6 @@ class Board {
 
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]];
                     zHashPieces ^= randomNums[64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3];
-
-                    //update nnue.
-                    nnue.oneInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1]);
-                    nnue.zeroInput(64 * (_nRooks+(currentMove.pieceType & 1)) + QUEEN_ROOK_SQUARE[currentMove.pieceType & 1] + 3);
                 }
             }
 
@@ -909,6 +877,8 @@ class Board {
             if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
             if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
             if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
+
+            nnue.makeMove(chessMove);
         }
 
         void unmakeMove()
@@ -933,6 +903,8 @@ class Board {
             if (current.canKingCastle[1]) {zHashState ^= randomNums[ZHASH_CASTLES[1]];}
             if (current.canQueenCastle[0]){zHashState ^= randomNums[ZHASH_CASTLES[2]];}
             if (current.canQueenCastle[1]){zHashState ^= randomNums[ZHASH_CASTLES[3]];}
+
+            nnue.unmakeMove(moveHistory.back());
 
             stateHistory.pop_back();
             moveHistory.pop_back();
@@ -991,7 +963,7 @@ class Board {
 
         int evaluateBoard()
         {
-            return nnue.forward() * (1-2*(int)(side));
+            return nnue.forward();
         }
 
         void orderCaptures(int ply)

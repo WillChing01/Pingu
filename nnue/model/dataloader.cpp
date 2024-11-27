@@ -47,7 +47,7 @@ struct halfKaSparseBatch
     
         //king indices.
         whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + datum.kingPos[1];
-        blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + (datum.kingPos[0] ^ 56);
+        blackFeatures[totalFeatures] = (704 * (datum.kingPos[1] ^ 56)) + (datum.kingPos[0] ^ 56);
         ++totalFeatures;
 
         for (size_t i=0;i<4;++i)
@@ -63,7 +63,7 @@ struct halfKaSparseBatch
                 if (pieceType >= 2)
                 {
                     whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + 64ull * (pieceType - 1ull) + square;
-                    blackFeatures[totalFeatures] = (704 * datum.kingPos[1]) + 64ull * (pieceType - 2ull * (pieceType & 1ull)) + (square ^ 56ull);
+                    blackFeatures[totalFeatures] = (704 * (datum.kingPos[1] ^ 56)) + 64ull * (pieceType - 2ull * (pieceType & 1ull)) + (square ^ 56ull);
                     ++totalFeatures;
                 }
             }
