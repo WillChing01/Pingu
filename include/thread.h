@@ -24,6 +24,19 @@ const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {6, 10
 const std::array<int, 3> aspirationDelta = {50, 200, 2 * MATE_SCORE};
 const std::array<int, 4> betaDelta = {1, 50, 200, 2 * MATE_SCORE};
 
+std::array<std::array<int, 256>, MAXDEPTH> lmrTable = {};
+
+void populateLmrTable()
+{
+    for (int depth=1;depth<=MAXDEPTH;++depth)
+    {
+        for (int c=1;c<=256;++c)
+        {
+            lmrTable[depth-1][c-1] = int(0.5 * std::log((double)depth) * std::log((double)c));
+        }
+    }
+}
+
 inline int formatScore(int score)
 {
     return
@@ -274,7 +287,7 @@ class Thread
                         }
                         break;
                     case QUIET_MOVES:
-                        if (canLateMoveReduce && movesPlayed > 0) {reduction = int(0.5 * std::log((double)depth) * std::log((double)(movesPlayed+1)));}
+                        if (canLateMoveReduce && movesPlayed > 0) {reduction = lmrTable[depth-1][movesPlayed];}
                         break;
                 }
 
