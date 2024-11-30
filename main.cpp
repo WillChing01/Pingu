@@ -9,6 +9,7 @@ int main(int argc, const char** argv)
 {
     populateMagicTables();
     populateRandomNums();
+    populateLmrTable();
 
     if (argc == 1) {uciLoop();}
     else
