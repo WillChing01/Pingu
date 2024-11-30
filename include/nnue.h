@@ -27,17 +27,8 @@ public:
 
     virtual U32 index(U32 pieceType, U32 square) = 0;
 
-    void makeMove(U32 move)
-    {
-        _move(move, &Accumulator::setZero, &Accumulator::setOne);
-    }
-
-    void unmakeMove(U32 move)
-    {
-        _move(move, &Accumulator::setOne, &Accumulator::setZero);
-    }
-
-    void _move(U32 move, void (Accumulator::*_zero)(U32 x, U32 y), void (Accumulator::*_one)(U32 x, U32 y))
+    template<void (Accumulator::*_zero)(U32, U32), void (Accumulator::*_one)(U32, U32)>
+    void _move(U32 move)
     {
         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
         if (pieceType == side)
@@ -75,6 +66,16 @@ public:
         }
 
         cReLU();
+    }
+
+    void makeMove(U32 move)
+    {
+        _move<&Accumulator::setZero, &Accumulator::setOne>(move);
+    }
+
+    void unmakeMove(U32 move)
+    {
+        _move<&Accumulator::setOne, &Accumulator::setZero>(move);
     }
 
     void refresh()
