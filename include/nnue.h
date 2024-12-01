@@ -12,32 +12,21 @@
 #include "simd.h"
 #include "weights.h"
 
+template<int (*index)(U32 kingPos, U32 pieceType, U32 square), bool side>
 class alignas(32) Accumulator
 {
 public:
     alignas(32) short l1[32] = {};
     alignas(32) char cl1[32] = {};
     const U64 *pieces;
-    bool side;
     int kingPos = 0;
 
     Accumulator() {}
 
-    Accumulator(const U64 *_pieces, bool _side) : pieces(_pieces), side(_side) {}
+    Accumulator(const U64 *_pieces) : pieces(_pieces) {}
 
-    virtual U32 index(U32 pieceType, U32 square) = 0;
-
-    void makeMove(U32 move)
-    {
-        _move(move, &Accumulator::setZero, &Accumulator::setOne);
-    }
-
-    void unmakeMove(U32 move)
-    {
-        _move(move, &Accumulator::setOne, &Accumulator::setZero);
-    }
-
-    void _move(U32 move, void (Accumulator::*_zero)(U32 x, U32 y), void (Accumulator::*_one)(U32 x, U32 y))
+    template<void (Accumulator::*_zero)(U32, U32), void (Accumulator::*_one)(U32, U32)>
+    void _move(U32 move)
     {
         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
         if (pieceType == side)
@@ -77,6 +66,16 @@ public:
         cReLU();
     }
 
+    void makeMove(U32 move)
+    {
+        _move<&Accumulator::setZero, &Accumulator::setOne>(move);
+    }
+
+    void unmakeMove(U32 move)
+    {
+        _move<&Accumulator::setOne, &Accumulator::setZero>(move);
+    }
+
     void refresh()
     {
         kingPos = __builtin_ctzll(pieces[side]);
@@ -97,7 +96,7 @@ public:
 
     void setOne(U32 pieceType, U32 square)
     {
-        U32 ind = index(pieceType, square);
+        U32 ind = index(kingPos, pieceType, square);
         __m256i w;
         __m256i l;
         for (size_t i = 0; i < 32; i += 16)
@@ -110,7 +109,7 @@ public:
 
     void setZero(U32 pieceType, U32 square)
     {
-        U32 ind = index(pieceType, square);
+        U32 ind = index(kingPos, pieceType, square);
         __m256i w;
         __m256i l;
         for (size_t i = 0; i < 32; i += 16)
@@ -133,31 +132,18 @@ public:
     }
 };
 
-class White : public Accumulator
+inline int whiteIndex(U32 kingPos, U32 pieceType, U32 square)
 {
-public:
-    White() : Accumulator() {}
+    return 704 * kingPos + 64 * (pieceType - 1) + square;
+}
 
-    White(const U64 *_pieces) : Accumulator(_pieces, 0) {}
-
-    U32 index(U32 pieceType, U32 square)
-    {
-        return 704 * kingPos + 64 * (pieceType - 1) + square;
-    }
-};
-
-class Black : public Accumulator
+inline int blackIndex(U32 kingPos, U32 pieceType, U32 square)
 {
-public:
-    Black() : Accumulator() {}
+    return 704 * (kingPos ^ 56) + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56);
+}
 
-    Black(const U64 *_pieces) : Accumulator(_pieces, 1) {}
-
-    U32 index(U32 pieceType, U32 square)
-    {
-        return 704 * (kingPos ^ 56) + 64 * (pieceType - 2 * (pieceType & 1)) + (square ^ 56);
-    }
-};
+typedef Accumulator<&whiteIndex, 0> White;
+typedef Accumulator<&blackIndex, 1> Black;
 
 class NNUE
 {
