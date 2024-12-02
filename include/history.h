@@ -13,25 +13,23 @@ class History
     public:
         //history table, scores[pieceType][to_square]
         int scores[12][64] = {};
+        const size_t historySize = 12 * 64;
 
         History() {}
 
         void clear()
         {
-            for (int i=0;i<12;i++)
+            for (size_t i=0;i<historySize;++i)
             {
-                for (int j=0;j<64;j++) {scores[i][j] = 0;}
+                (&scores[0][0])[i] = 0;
             }
         }
 
         void age(const int factor = 16)
         {
-            for (int i=0;i<12;i++)
+            for (size_t i=0;i<historySize;++i)
             {
-                for (int j=0;j<64;j++)
-                {
-                    scores[i][j] /= factor;
-                }
+                (&scores[0][0])[i] /= factor;
             }
         }
 
