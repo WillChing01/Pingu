@@ -997,7 +997,15 @@ class Board {
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                 U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                 U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+
                 int moveScore = history.scores[pieceType][finishSquare];
+                if (moveHistory.size() && moveHistory.back() != 0)
+                {
+                    U32 prevPieceType = (moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                    U32 prevFinishSquare = (moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                    moveScore += 2 * history.extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare];
+                }
+
                 if (pieceType & 1)
                 {
                     moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare] - PIECE_TABLES_START[pieceType >> 1][startSquare];
@@ -1006,6 +1014,7 @@ class Board {
                 {
                     moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare ^ 56] - PIECE_TABLES_START[pieceType >> 1][startSquare ^ 56];
                 }
+
                 moveCache[ply].push_back(std::pair<U32, int>(move, moveScore));
             }
 
