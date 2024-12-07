@@ -30,6 +30,9 @@ const std::vector<std::string> optionsDescription =
     "option name Hash type spin default 1 min 1 max 8192",
     "option name Clear Hash type button",
     "option name Threads type spin default 1 min 1 max 64",
+    "option name inverseFutilityMargin type spin default 120 min 40 max 240",
+    "option name futilityMarginOne type spin default 150 min 50 max 400",
+    "option name futilityMarginTwo type spin default 400 min 100 max 800",
 };
 
 void uciCommand()
@@ -53,6 +56,18 @@ void setOptionCommand(Search &s, const std::vector<std::string> &words)
     if (words[2] == "Hash") {resizeTT(std::stoi(words[4]));}
     else if (words[2] == "Clear" && words[3] == "Hash") {clearTT();}
     else if (words[2] == "Threads" && words[3] == "value" && isNumber(words[4])) {s.setThreads(std::stoi(words[4]));}
+    else if (words[2] == "inverseFutilityMargin" && words[3] == "value" && isNumber(words[4]))
+    {
+        inverseFutilityMargin = std::stoi(words[4]);
+    }
+    else if (words[2] == "futilityMarginOne" && words[3] == "value" && isNumber(words[4]))
+    {
+        futilityMargins[0] = std::stoi(words[4]);
+    }
+    else if (words[2] == "futilityMarginTwo" && words[3] == "value" && isNumber(words[4]))
+    {
+        futilityMargins[1] = std::stoi(words[4]);
+    }
 }
 
 void positionCommand(Search &s, const std::vector<std::string> &words)
