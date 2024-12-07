@@ -1003,7 +1003,7 @@ class Board {
                 {
                     U32 prevPieceType = (moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                     U32 prevFinishSquare = (moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                    moveScore += 2 * history.extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare];
+                    moveScore += 32 * history.extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare];
                 }
 
                 if (pieceType & 1)
