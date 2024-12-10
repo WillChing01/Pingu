@@ -130,10 +130,6 @@ inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, 
 {
     U64 index = zHash & hashTableMask;
 
-    U64 deepInfo = hashTable[index].deepEntry.info;
-    int deepDepth = getHashDepth(deepInfo);
-    int deepAge = getHashAge(deepInfo);
-
     evaluation = ttSaveScore(evaluation, ply);
 
     U64 info =
@@ -145,15 +141,24 @@ inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, 
         ((U64)(isBeta) << BETAFLAGSHIFT) +
         (((U64)(rootCounter) << AGESHIFT) & AGEMASK);
 
-    if (depth >= deepDepth || (rootCounter > deepAge + ageLimit))
+    U64 deepInfo = hashTable[index].deepEntry.info;
+    int deepDepth = getHashDepth(deepInfo);
+    int deepAge = getHashAge(deepInfo);
+
+    U64 alwaysInfo = hashTable[index].alwaysEntry.info;
+    int alwaysDepth = getHashDepth(alwaysInfo);
+    int alwaysAge = getHashAge(alwaysInfo);
+
+    int deepScore = deepDepth - 3 * (rootCounter - deepAge);
+    int alwaysScore = alwaysDepth - 3 * (rootCounter - alwaysAge);
+
+    if (deepScore < alwaysScore)
     {
-        //fits in deep table.
         hashTable[index].deepEntry.zHash = zHash;
         hashTable[index].deepEntry.info = info;
     }
     else
     {
-        //fits in always table.
         hashTable[index].alwaysEntry.zHash = zHash;
         hashTable[index].alwaysEntry.info = info;
     }
