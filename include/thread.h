@@ -336,7 +336,12 @@ class Thread
             }
 
             //stalemate or checkmate.
-            if (movesPlayed == 0) {return inCheck ? -MATE_SCORE + ply : 0;}
+            if (!movesPlayed)
+            {
+                nodeBestScore = inCheck ? -MATE_SCORE + ply : 0;
+                isExact = true;
+                depth = MAXDEPTH;
+            }
 
             if (!isSearchAborted) {ttSave(bHash, ply, depth, nodeBestMove, nodeBestScore, isExact, false);}
             return nodeBestScore;
