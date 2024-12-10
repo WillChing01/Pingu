@@ -9,14 +9,16 @@
 
 const int maximumPruningDepth = 8;
 
-const int inverseFutilityMargin = 100;
+const int inverseFutilityBase = 127;
+const int inverseFutilityIncrement = 102;
 const int inverseFutilityDepthLimit = 8;
 
 const int nullMoveR = 2;
 const int nullMoveDepthLimit = 3;
 
-const int futilityDepthLimit = 2;
-const std::array<int, futilityDepthLimit> futilityMargins = {145, 376};
+const int futilityDepthLimit = 4;
+const int futilityBase = 140;
+const int futilityIncrement = 239;
 
 const int lateMovePruningDepthLimit = 4;
 const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {6, 10, 14, 18};
@@ -218,7 +220,7 @@ class Thread
             //inverse futility pruning.
             if (canPrune && depth <= inverseFutilityDepthLimit)
             {
-                int margin = inverseFutilityMargin * depth;
+                int margin = inverseFutilityBase + inverseFutilityIncrement * (depth - 1);
                 if (staticEval - margin >= beta) {return beta;}
             }
 
@@ -249,7 +251,7 @@ class Thread
             bool canLateMovePrune = canPrune && depth <= lateMovePruningDepthLimit;
 
             bool canFutilityPrune = canPrune && depth <= futilityDepthLimit &&
-                                    staticEval + futilityMargins[depth-1] <= alpha;
+                                    (staticEval + futilityBase + futilityIncrement * (depth - 1)) <= alpha;
 
             //loop through moves and search them.
             while (U32 move = movePicker.getNext())
