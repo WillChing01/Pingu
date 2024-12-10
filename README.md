@@ -22,7 +22,7 @@ Pingu accepts many of the usual UCI commands (go/stop/position etc.) and it has 
 
 | Version | CCRL Blitz | CCRL 40/15 |
 | ------: | ---------: | ---------: |
-| 4.0.0   | 2988       | N/A        |
+| 4.0.0   | 2989       | 3021       |
 | 3.0.0   | N/A        | 2820       |
 | 2.0.0   | 2527       | 2614       |
 | 1.0.0   | 2162       | N/A        |
