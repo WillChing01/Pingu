@@ -186,29 +186,21 @@ class Thread
             U64 hashInfo = ttProbe(bHash);
 
             //check for early TT cutoff.
-            if (hashInfo)
+            if (hashInfo && getHashDepth(hashInfo) >= depth)
             {
-                int hashEval = getHashEval(hashInfo, ply);
-
-                if (hashEval > MATE_BOUND || hashEval < -MATE_BOUND) {return hashEval;}
-
-                if (getHashDepth(hashInfo) >= depth)
+                //PV node.
+                if (getHashExactFlag(hashInfo)) {return getHashEval(hashInfo, ply);}
+                //Cut node.
+                else if (getHashBetaFlag(hashInfo))
                 {
-                    //PV node.
-                    if (getHashExactFlag(hashInfo))
-                    {
-                        return hashEval;
-                    }
-                    //Cut node.
-                    else if (getHashBetaFlag(hashInfo))
-                    {
-                        if (hashEval >= beta) {return hashEval;}
-                    }
-                    //All node.
-                    else
-                    {
-                        if (hashEval <= alpha) {return hashEval;}
-                    }
+                    int hashEval = getHashEval(hashInfo, ply);
+                    if (hashEval >= beta) {return hashEval;}
+                }
+                //All node.
+                else
+                {
+                    int hashEval = getHashEval(hashInfo, ply);
+                    if (hashEval <= alpha) {return hashEval;}
                 }
             }
 
@@ -348,6 +340,7 @@ class Thread
             {
                 nodeBestScore = inCheck ? -MATE_SCORE + ply : 0;
                 isExact = true;
+                depth = MAXDEPTH;
             }
 
             if (!isSearchAborted) {ttSave(bHash, ply, depth, nodeBestMove, nodeBestScore, isExact, false);}
