@@ -9,14 +9,14 @@
 
 const int maximumPruningDepth = 8;
 
-const int inverseFutilityMargin = 100;
-const int inverseFutilityDepthLimit = 8;
+const int reverseFutilityMargin = 102;
+const int reverseFutilityDepthLimit = 8;
 
 const int nullMoveR = 2;
 const int nullMoveDepthLimit = 3;
 
 const int futilityDepthLimit = 2;
-const std::array<int, futilityDepthLimit> futilityMargins = {145, 376};
+const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
 
 const int lateMovePruningDepthLimit = 4;
 const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {6, 10, 14, 18};
@@ -215,10 +215,10 @@ class Thread
             bool canPrune = (alpha == beta - 1) && !inCheck && abs(alpha) < MATE_BOUND;
             if (canPrune && depth <= maximumPruningDepth) {staticEval = b.evaluateBoard();}
 
-            //inverse futility pruning.
-            if (canPrune && depth <= inverseFutilityDepthLimit)
+            //reverse futility pruning.
+            if (canPrune && depth <= reverseFutilityDepthLimit)
             {
-                int margin = inverseFutilityMargin * depth;
+                int margin = 25 + reverseFutilityMargin * depth;
                 if (staticEval - margin >= beta) {return beta;}
             }
 
