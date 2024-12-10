@@ -190,24 +190,22 @@ class Thread
             {
                 int hashEval = getHashEval(hashInfo, ply);
 
-                if (hashEval > MATE_BOUND || hashEval < -MATE_BOUND) {return hashEval;}
+                bool exactFlag = getHashExactFlag(hashInfo);
+                bool betaFlag = getHashBetaFlag(hashInfo);
+                bool alphaFlag = !exactFlag && !betaFlag;
 
-                if (getHashDepth(hashInfo) >= depth)
+                if (std::abs(hashEval) > MATE_BOUND)
                 {
-                    //PV node.
-                    if (getHashExactFlag(hashInfo))
+                    if (exactFlag || (betaFlag && hashEval > MATE_BOUND) || (alphaFlag && hashEval < -MATE_BOUND))
                     {
                         return hashEval;
                     }
-                    //Cut node.
-                    else if (getHashBetaFlag(hashInfo))
+                }
+                else if (getHashDepth(hashInfo) >= depth)
+                {
+                    if (exactFlag || (betaFlag && hashEval >= beta) || (alphaFlag && hashEval <= alpha))
                     {
-                        if (hashEval >= beta) {return hashEval;}
-                    }
-                    //All node.
-                    else
-                    {
-                        if (hashEval <= alpha) {return hashEval;}
+                        return hashEval;
                     }
                 }
             }
