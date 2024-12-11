@@ -1,7 +1,6 @@
 #ifndef TRANSPOSITION_H_INCLUDED
 #define TRANSPOSITION_H_INCLUDED
 
-#include <atomic>
 #include <random>
 
 #include "constants.h"
@@ -39,10 +38,10 @@ struct hashEntry
 struct tableEntry
 {
     hashEntry deepEntry;
-    hashEntry alwaysEntry;
+    hashEntry alwaysEntries[3];
 };
 
-U64 hashTableMask = 32767ull; //start with a 1MB hash.
+U64 hashTableMask = 16383ull; //start with a 1MB hash.
 tableEntry * hashTable = new tableEntry[hashTableMask + 1]();
 
 U64 randomNums[781] = {};
@@ -59,8 +58,11 @@ void clearTT()
     {
         hashTable[i].deepEntry.zHash = 0;
         hashTable[i].deepEntry.info = 0;
-        hashTable[i].alwaysEntry.zHash = 0;
-        hashTable[i].alwaysEntry.info = 0;
+        for (int j=0;j<3;++j)
+        {
+            hashTable[i].alwaysEntries[j].zHash = 0;
+            hashTable[i].alwaysEntries[j].info = 0;
+        }
     }
 }
 
@@ -145,23 +147,29 @@ inline void ttSave(U64 zHash, int ply, int depth, U32 bestMove, int evaluation, 
     int deepDepth = getHashDepth(deepInfo);
     int deepAge = getHashAge(deepInfo);
 
-    U64 alwaysInfo = hashTable[index].alwaysEntry.info;
-    int alwaysDepth = getHashDepth(alwaysInfo);
-    int alwaysAge = getHashAge(alwaysInfo);
-
-    int deepScore = deepDepth - 3 * (rootCounter - deepAge);
-    int alwaysScore = alwaysDepth - 3 * (rootCounter - alwaysAge);
-
-    if (deepScore < alwaysScore)
+    if (depth >= deepDepth || (rootCounter - deepAge) > ageLimit)
     {
         hashTable[index].deepEntry.zHash = zHash;
         hashTable[index].deepEntry.info = info;
+        return;
     }
-    else
+
+    hashEntry* always = hashTable[index].alwaysEntries;
+    int replaceSlot = 0;
+    int replaceScore = getHashDepth(always[0].info) - 3 * (rootCounter - getHashAge(always[0].info));
+
+    for (int i=1;i<3;++i)
     {
-        hashTable[index].alwaysEntry.zHash = zHash;
-        hashTable[index].alwaysEntry.info = info;
+        int nextScore = getHashDepth(always[i].info) - 3 * (rootCounter - getHashAge(always[i].info));
+        if (nextScore < replaceScore)
+        {
+            replaceSlot = i;
+            replaceScore = nextScore;
+        }
     }
+
+    always[replaceSlot].zHash = zHash;
+    always[replaceSlot].info = info;
 }
 
 inline U64 ttProbe(const U64 zHash)
@@ -172,7 +180,10 @@ inline U64 ttProbe(const U64 zHash)
     if (hashTable[index].deepEntry.zHash == zHash) {return hashTable[index].deepEntry.info;}
 
     //check always table.
-    if (hashTable[index].alwaysEntry.zHash == zHash) {return hashTable[index].alwaysEntry.info;}
+    for (int i=0;i<3;++i)
+    {
+        if (hashTable[index].alwaysEntries[i].zHash == zHash) {return hashTable[index].alwaysEntries[i].info;}
+    }
 
     return 0;
 }
