@@ -48,7 +48,7 @@ public:
         }
     }
 
-    void increment_(short * entry, int bonus)
+    void increment_(short *entry, int bonus)
     {
         int delta = 32 * bonus - ((int)(*entry) * std::abs(bonus)) / 512;
         *entry += delta;
@@ -71,11 +71,11 @@ public:
         }
     }
 
-    void update(int depth, U32 cutMove, int quietsPlayed, const std::unordered_set<U32> &singles, const std::vector<std::pair<U32, int> > &quiets, const std::vector<U32> &moveHistory)
+    void update(int depth, U32 cutMove, int quietsPlayed, const std::unordered_set<U32> &singles, const std::vector<std::pair<U32, int>> &quiets, const std::vector<U32> &moveHistory)
     {
         int bonus = std::min(depth * depth, 400);
 
-        short (*currentContinuation[2])[12][64] = {nullptr, nullptr};
+        short(*currentContinuation[2])[12][64] = {nullptr, nullptr};
         for (size_t i = 0; i < 2; ++i)
         {
             if (moveHistory.size() > i)
