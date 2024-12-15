@@ -319,29 +319,7 @@ class Thread
                                 //update history.
                                 if (depth >= 5)
                                 {
-                                    bool hasPrevMove = b.moveHistory.size() && b.moveHistory.back() != 0;
-                                    if (movePicker.stage == QUIET_MOVES)
-                                    {
-                                        if (hasPrevMove)
-                                        {
-                                            b.history.update(b.moveHistory.back(), movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);
-                                        }
-                                        else
-                                        {
-                                            b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (hasPrevMove)
-                                        {
-                                            b.history.update(b.moveHistory.back(), movePicker.singleQuiets, move, depth);
-                                        }
-                                        else
-                                        {
-                                            b.history.update(movePicker.singleQuiets, move, depth);
-                                        }
-                                    }
+                                    b.history.update(depth, move, quietsPlayed, movePicker.singleQuiets, b.moveCache[ply], b.moveHistory);
                                 }
                             }
 

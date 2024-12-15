@@ -9,12 +9,14 @@
 class History
 {
 public:
-    // history table, scores[pieceType][to_square]
-    int scores[12][64] = {};
     static const size_t historySize = 12 * 64;
+    short scores[12][64] = {};
 
-    short extendedScores[12][64][6][64] = {};
-    static const size_t extendedHistorySize = 12 * 64 * 6 * 64;
+    static const size_t butterflyHistorySize = 64 * 64;
+    short butterflyScores[2][64][64] = {};
+
+    static const size_t continuationHistorySize = 2 * 6 * 64 * 12 * 64;
+    short continuationScores[2][6][64][12][64] = {};
 
     History() {}
 
@@ -24,9 +26,13 @@ public:
         {
             (&scores[0][0])[i] = 0;
         }
-        for (size_t i = 0; i < extendedHistorySize; ++i)
+        for (size_t i = 0; i < butterflyHistorySize; ++i)
         {
-            (&extendedScores[0][0][0][0])[i] = 0;
+            (&butterflyScores[0][0][0])[i] = 0;
+        }
+        for (size_t i = 0; i < continuationHistorySize; ++i)
+        {
+            (&continuationScores[0][0][0][0][0])[i] = 0;
         }
     }
 
@@ -36,94 +42,79 @@ public:
         {
             (&scores[0][0])[i] /= factor;
         }
+        for (size_t i = 0; i < butterflyHistorySize; ++i)
+        {
+            (&butterflyScores[0][0][0])[i] /= factor;
+        }
     }
 
-    void increment(U32 move, int bonus)
+    void increment_(short * entry, int bonus)
+    {
+        int delta = 32 * bonus - ((int)(*entry) * std::abs(bonus)) / 512;
+        *entry += delta;
+    }
+
+    void increment(U32 move, int bonus, short (*currentContinuation[2])[12][64])
     {
         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
         U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
 
-        int delta = 32 * bonus - ((int)scores[pieceType][finishSquare] * std::abs(bonus)) / 512;
-        scores[pieceType][finishSquare] += delta;
-    }
-
-    void increment(U32 prevMove, U32 move, int bonus)
-    {
-        U32 prevPieceType = (prevMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-        U32 prevFinishSquare = (prevMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-
-        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-        U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-
-        int delta;
-
-        delta = 32 * bonus - ((int)scores[pieceType][finishSquare] * std::abs(bonus)) / 512;
-        scores[pieceType][finishSquare] += delta;
-
-        delta = 32 * bonus - ((int)extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare] * std::abs(bonus)) / 512;
-        extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare] += delta;
-    }
-
-    void update(const std::unordered_set<U32> &singles, U32 cutMove, int depth)
-    {
-        int bonus = std::min(depth * depth, 400);
-
-        for (const auto &move : singles)
+        increment_(&scores[pieceType][finishSquare], bonus);
+        increment_(&butterflyScores[pieceType % 2][startSquare][finishSquare], bonus);
+        for (size_t i = 0; i < 2; ++i)
         {
-            increment(move, move == cutMove ? bonus : -bonus);
-        }
-    }
-
-    void update(U32 prevMove, const std::unordered_set<U32> &singles, U32 cutMove, int depth)
-    {
-        int bonus = std::min(depth * depth, 400);
-
-        for (const auto &move : singles)
-        {
-            increment(prevMove, move, move == cutMove ? bonus : -bonus);
-        }
-    }
-
-    void update(const std::unordered_set<U32> &singles, const std::vector<std::pair<U32, int>> &quiets, U32 index, U32 cutMove, int depth)
-    {
-        int bonus = std::min(depth * depth, 400);
-
-        for (const auto &move : singles)
-        {
-            increment(move, -bonus);
-        }
-
-        for (size_t i = 0; i < index; ++i)
-        {
-            if (singles.contains(quiets[i].first))
+            if (*currentContinuation[i])
             {
-                continue;
+                increment_(&(*currentContinuation[i])[pieceType][finishSquare], bonus);
             }
-            increment(quiets[i].first, -bonus);
         }
-
-        increment(cutMove, bonus);
     }
 
-    void update(U32 prevMove, const std::unordered_set<U32> &singles, const std::vector<std::pair<U32, int>> &quiets, U32 index, U32 cutMove, int depth)
+    void update(int depth, U32 cutMove, int quietsPlayed, const std::unordered_set<U32> &singles, const std::vector<std::pair<U32, int> > &quiets, const std::vector<U32> &moveHistory)
     {
         int bonus = std::min(depth * depth, 400);
 
-        for (const auto &move : singles)
+        short (*currentContinuation[2])[12][64] = {nullptr, nullptr};
+        for (size_t i = 0; i < 2; ++i)
         {
-            increment(prevMove, move, -bonus);
-        }
-
-        for (size_t i = 0; i < index; ++i)
-        {
-            if (singles.contains(quiets[i].first))
+            if (moveHistory.size() > i)
             {
-                continue;
+                if (U32 move = moveHistory[moveHistory.size() - 1 - i])
+                {
+                    U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                    U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                    currentContinuation[i] = &continuationScores[i][pieceType / 2][finishSquare];
+                }
             }
-            increment(prevMove, quiets[i].first, -bonus);
         }
 
-        increment(prevMove, cutMove, bonus);
+        if (!quietsPlayed)
+        {
+            for (const auto &move : singles)
+            {
+                increment(move, move == cutMove ? bonus : -bonus, currentContinuation);
+            }
+            return;
+        }
+        else
+        {
+            for (const auto &move : singles)
+            {
+                increment(move, -bonus, currentContinuation);
+            }
+
+            for (size_t i = 0; i < (U32)quietsPlayed - 1; ++i)
+            {
+                if (singles.contains(quiets[i].first))
+                {
+                    continue;
+                }
+                increment(quiets[i].first, -bonus, currentContinuation);
+            }
+
+            increment(quiets[quietsPlayed - 1].first, bonus, currentContinuation);
+        }
     }
 };
 

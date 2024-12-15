@@ -992,27 +992,33 @@ class Board {
             //order quiet moves by history.
             moveCache[ply].clear();
 
+            short (*currentContinuation[2])[12][64] = {nullptr, nullptr};
+            for (size_t i = 0; i < 2; ++i)
+            {
+                if (moveHistory.size() > i)
+                {
+                    if (U32 move = moveHistory[moveHistory.size() - 1 - i])
+                    {
+                        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                        U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                        currentContinuation[i] = &history.continuationScores[i][pieceType / 2][finishSquare];
+                    }
+                }
+            }
+
             for (const auto &move: moveBuffer)
             {
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
                 U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                 U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
 
-                int moveScore = history.scores[pieceType][finishSquare];
-                if (moveHistory.size() && moveHistory.back() != 0)
+                int moveScore = history.scores[pieceType][finishSquare] + history.butterflyScores[pieceType % 2][startSquare][finishSquare];
+                for (size_t i = 0; i < 2; ++i)
                 {
-                    U32 prevPieceType = (moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    U32 prevFinishSquare = (moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                    moveScore += 32 * history.extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare];
-                }
-
-                if (pieceType & 1)
-                {
-                    moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare] - PIECE_TABLES_START[pieceType >> 1][startSquare];
-                }
-                else
-                {
-                    moveScore += PIECE_TABLES_START[pieceType >> 1][finishSquare ^ 56] - PIECE_TABLES_START[pieceType >> 1][startSquare ^ 56];
+                    if (*currentContinuation[i])
+                    {
+                        moveScore += (32 - 16 * i) * (*currentContinuation[i])[pieceType][finishSquare];
+                    }
                 }
 
                 moveCache[ply].push_back(std::pair<U32, int>(move, moveScore));
