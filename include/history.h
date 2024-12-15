@@ -13,6 +13,9 @@ public:
     static const size_t historySize = 12 * 64;
     int scores[12][64] = {};
 
+    static const size_t butterflyHistorySize = 2 * 64 * 64;
+    short butterflyScores[2][64][64] = {};
+
     static const size_t continuationHistorySize = 6 * 64 * 12 * 64;
     short continuationScores[6][64][12][64] = {};
 
@@ -23,6 +26,10 @@ public:
         for (size_t i = 0; i < historySize; ++i)
         {
             (&scores[0][0])[i] = 0;
+        }
+        for (size_t i = 0; i < butterflyHistorySize; ++i)
+        {
+            (&butterflyScores[0][0][0])[i] = 0;
         }
         for (size_t i = 0; i < continuationHistorySize; ++i)
         {
@@ -41,10 +48,16 @@ public:
     void increment(U32 move, int bonus)
     {
         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
         U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
 
-        int delta = 32 * bonus - ((int)scores[pieceType][finishSquare] * std::abs(bonus)) / 512;
+        int delta;
+
+        delta = 32 * bonus - ((int)scores[pieceType][finishSquare] * std::abs(bonus)) / 512;
         scores[pieceType][finishSquare] += delta;
+
+        delta = 32 * bonus - ((int)butterflyScores[pieceType & 1][startSquare][finishSquare] * std::abs(bonus)) / 512;
+        butterflyScores[pieceType & 1][startSquare][finishSquare] += delta;
     }
 
     void increment(U32 prevMove, U32 move, int bonus)
@@ -53,12 +66,16 @@ public:
         U32 prevFinishSquare = (prevMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
 
         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
         U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
 
         int delta;
 
         delta = 32 * bonus - ((int)scores[pieceType][finishSquare] * std::abs(bonus)) / 512;
         scores[pieceType][finishSquare] += delta;
+
+        delta = 32 * bonus - ((int)butterflyScores[pieceType & 1][startSquare][finishSquare] * std::abs(bonus)) / 512;
+        butterflyScores[pieceType & 1][startSquare][finishSquare] += delta;
 
         delta = 32 * bonus - ((int)continuationScores[prevPieceType >> 1][prevFinishSquare][pieceType][finishSquare] * std::abs(bonus)) / 512;
         continuationScores[prevPieceType >> 1][prevFinishSquare][pieceType][finishSquare] += delta;

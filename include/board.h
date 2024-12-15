@@ -1006,7 +1006,7 @@ class Board {
                 U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
                 U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
 
-                int moveScore = history.scores[pieceType][finishSquare];
+                int moveScore = history.scores[pieceType][finishSquare] + history.butterflyScores[pieceType & 1][startSquare][finishSquare];
                 if (continuationScores)
                 {
                     moveScore += 32 * (*continuationScores)[pieceType][finishSquare];
