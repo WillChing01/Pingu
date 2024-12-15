@@ -1021,6 +1021,11 @@ class Board {
                     }
                 }
 
+                U32 start = pieceType & 1 ? startSquare : startSquare ^ 56;
+                U32 finish = pieceType & 1 ? finishSquare : finishSquare ^ 56;
+
+                moveScore += PIECE_TABLES_START[pieceType >> 1][finish] - PIECE_TABLES_START[pieceType >> 1][start];
+
                 moveCache[ply].push_back(std::pair<U32, int>(move, moveScore));
             }
 
