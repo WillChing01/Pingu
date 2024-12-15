@@ -992,6 +992,14 @@ class Board {
             //order quiet moves by history.
             moveCache[ply].clear();
 
+            short (*continuationScores)[12][64] = nullptr;
+            if (moveHistory.size() && moveHistory.back())
+            {
+                U32 prevPieceType = (moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+                U32 prevFinishSquare = (moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+                continuationScores = &history.continuationScores[prevPieceType >> 1][prevFinishSquare];
+            }
+
             for (const auto &move: moveBuffer)
             {
                 U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
@@ -999,11 +1007,9 @@ class Board {
                 U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
 
                 int moveScore = history.scores[pieceType][finishSquare];
-                if (moveHistory.size() && moveHistory.back() != 0)
+                if (continuationScores)
                 {
-                    U32 prevPieceType = (moveHistory.back() & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                    U32 prevFinishSquare = (moveHistory.back() & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                    moveScore += 32 * history.extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare];
+                    moveScore += 32 * (*continuationScores)[pieceType][finishSquare];
                 }
 
                 if (pieceType & 1)

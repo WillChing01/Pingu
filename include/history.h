@@ -10,11 +10,11 @@ class History
 {
 public:
     // history table, scores[pieceType][to_square]
-    int scores[12][64] = {};
     static const size_t historySize = 12 * 64;
+    int scores[12][64] = {};
 
-    short extendedScores[12][64][6][64] = {};
-    static const size_t extendedHistorySize = 12 * 64 * 6 * 64;
+    static const size_t continuationHistorySize = 6 * 64 * 12 * 64;
+    short continuationScores[6][64][12][64] = {};
 
     History() {}
 
@@ -24,9 +24,9 @@ public:
         {
             (&scores[0][0])[i] = 0;
         }
-        for (size_t i = 0; i < extendedHistorySize; ++i)
+        for (size_t i = 0; i < continuationHistorySize; ++i)
         {
-            (&extendedScores[0][0][0][0])[i] = 0;
+            (&continuationScores[0][0][0][0])[i] = 0;
         }
     }
 
@@ -60,8 +60,8 @@ public:
         delta = 32 * bonus - ((int)scores[pieceType][finishSquare] * std::abs(bonus)) / 512;
         scores[pieceType][finishSquare] += delta;
 
-        delta = 32 * bonus - ((int)extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare] * std::abs(bonus)) / 512;
-        extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare] += delta;
+        delta = 32 * bonus - ((int)continuationScores[prevPieceType >> 1][prevFinishSquare][pieceType][finishSquare] * std::abs(bonus)) / 512;
+        continuationScores[prevPieceType >> 1][prevFinishSquare][pieceType][finishSquare] += delta;
     }
 
     void update(const std::unordered_set<U32> &singles, U32 cutMove, int depth)
