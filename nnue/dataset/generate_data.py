@@ -1,37 +1,67 @@
 """Continuously generate self-play data"""
 
+import multiprocessing
 import os
 import re
 import requests
 import sys
 import time
 from tqdm import tqdm
-import multiprocessing
+import zipfile
+
 import huggingface_hub
+
 from repo import REPO_ID, PATH_IN_REPO, REPO_TYPE
 
-HASH = 64
+BASE_CONFIG = {
+    "hash": 64,
+    "positions": 1000000,
+    "maxply": 150,
+    "evalbound": 8192,
+}
 
-MINDEPTH = 8
-MAXDEPTH = 10
-POSITIONS = 1000000
-RANDOMPLY = 4
-MAXPLY = 150
-EVALBOUND = 8192
-BOOK = "noob_3moves.epd"
+CONFIGS = {
+    "default": BASE_CONFIG
+    | {
+        "book": "None",
+        "mindepth": 8,
+        "maxdepth": 10,
+        "randomply": 6,
+    },
+    "noob3": BASE_CONFIG
+    | {
+        "book": "noob_3moves.epd",
+        "mindepth": 8,
+        "maxdepth": 10,
+        "randomply": 0,
+    },
+    "endgames": BASE_CONFIG
+    | {
+        "book": "endgames.epd",
+        "mindepth": 10,
+        "maxdepth": 12,
+        "randomply": 0,
+    },
+}
 
 
-def get_book():
-    if BOOK == "None":
+def get_book(book: str) -> bool:
+    if book == "None":
         return True
 
-    url = f"https://raw.githubusercontent.com/WillChing01/pingu-books/refs/heads/master/{BOOK}"
+    url = f"https://raw.githubusercontent.com/WillChing01/pingu-books/refs/heads/master/{book}"
     res = requests.get(url)
+
+    retries = 0
+    while retries < 3 and res.status_code != 200:
+        time.sleep(3)
+        res = requests.get(url)
+        retries += 1
 
     if res.status_code != 200:
         return False
 
-    with open(BOOK, "wb") as f:
+    with open(book, "wb") as f:
         f.write(res.content)
 
     return True
@@ -45,30 +75,47 @@ def progress_bar(total_positions: int, q: multiprocessing.Queue) -> None:
             n = min(n + update, total_positions)
 
 
-def gensfen_worker(token: str, q: multiprocessing.Queue) -> None:
+def upload_file(config: dict, file_name: str, token: str) -> None:
+    book_name = config["book"].split(".")[0]
+    zip_name = f"{file_name.replace('.txt', '')}.zip"
+    zipfile.ZipFile(
+        zip_name, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
+    ).write(file_name)
+
+    retries = 0
+    while retries < 3:
+        try:
+            huggingface_hub.upload_file(
+                path_or_fileobj=zip_name,
+                path_in_repo=f"/{PATH_IN_REPO}/{book_name}/{zip_name}",
+                repo_id=REPO_ID,
+                repo_type=REPO_TYPE,
+                token=token,
+            )
+            break
+        except:
+            print(f"Error uploading file - {file_name}")
+            time.sleep(3)
+            retries += 1
+
+    os.remove(file_name)
+    os.remove(zip_name)
+
+
+def gensfen_worker(config: dict, q: multiprocessing.Queue, token: str) -> None:
     import engine
 
-    cmd = f"Pingu.exe gensfen mindepth {MINDEPTH} maxdepth {MAXDEPTH} positions {POSITIONS} randomply {RANDOMPLY} maxply {MAXPLY} evalbound {EVALBOUND} hash {HASH} book {BOOK}"
+    cmd = f"Pingu.exe gensfen mindepth {config['mindepth']} maxdepth {config['maxdepth']} positions {config['positions']} randomply {config['randomply']} maxply {config['maxply']} evalbound {config['evalbound']} hash {config['hash']} book {config['book']}"
     e = engine.Engine(name=cmd, path="\\..\\..\\")
     previous_n = 0
     while True:
         res = e.readline()
         if "Finished generating positions" in res:
-            fileName = res.split(" - ")[1]
-            try:
-                huggingface_hub.upload_file(
-                    path_or_fileobj=fileName,
-                    path_in_repo=f"/{PATH_IN_REPO}/{fileName}",
-                    repo_id=REPO_ID,
-                    repo_type=REPO_TYPE,
-                    token=token,
-                )
-                os.remove(fileName)
-            except:
-                print(f"Error uploading file - {fileName}")
+            file_name = res.split(" - ")[1]
+            upload_file(config, file_name, token)
             break
         elif "Finished game" in res:
-            n = min(int(res.split("; ")[1].split(" ")[0]), POSITIONS)
+            n = min(int(res.split("; ")[1].split(" ")[0]), config["positions"])
             q.put(n - previous_n)
             previous_n = n
 
@@ -96,33 +143,44 @@ def main():
         print("Invalid token.")
         return
 
-    if not get_book():
-        print("error: could not download book")
-        return
+    for _, config in CONFIGS.items():
+        if not get_book(config["book"]):
+            print(f"error: could not download book - {book}")
+            return
 
     q = multiprocessing.Manager().Queue()
     pool = multiprocessing.Pool(num_cpu)
-    result = [None for i in range(num_cpu)]
+    results = [None for i in range(num_cpu)]
     total = 0
 
     progress = multiprocessing.Process(target=progress_bar, args=(total_positions, q))
     progress.start()
 
+    counter = 0
     finished = False
     while not finished:
         for i in range(num_cpu):
-            if result[i] is None or result[i].ready():
-                if result[i] is not None:
-                    total += POSITIONS
-                    if total >= total_positions:
-                        finished = True
-                        break
-                result[i] = pool.apply_async(gensfen_worker, args=(token, q))
-                time.sleep(5)
+            if results[i] is None or results[i].ready():
+                if results[i] is not None:
+                    total += BASE_CONFIG["positions"]
+                if total < total_positions:
+                    counter = (counter + 1) % len(CONFIGS)
+                    config = CONFIGS[list(CONFIGS)[counter]]
+                    results[i] = pool.apply_async(
+                        gensfen_worker, args=(config, q, token)
+                    )
+                    time.sleep(5)
+        if total >= total_positions:
+            finished = all(x is None or x.ready() for x in results)
         time.sleep(0.5)
 
     q.put(None)
     progress.join()
+
+    for _, config in CONFIGS.items():
+        book = config["book"]
+        if os.path.exists(book):
+            os.remove(book)
 
 
 if __name__ == "__main__":
