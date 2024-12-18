@@ -126,14 +126,14 @@ void goCommand(Search &s, const std::vector<std::string> &words)
 {
     isSearching = true;
 
-    bool isInfinite = false;
     double whiteTime = 0;
     double blackTime = 0;
     double whiteInc = 0;
     double blackInc = 0;
-    double moveTime = 0;
     int movesToGo = 0;
-    int depth = 0;
+    int depth = MAXDEPTH;
+    U64 nodes = ULLONG_MAX;
+    double moveTime = std::numeric_limits<double>::infinity();
 
     for (int i=1;i<(int)words.size();i++)
     {
@@ -143,36 +143,17 @@ void goCommand(Search &s, const std::vector<std::string> &words)
         else if (words[i] == "binc") {blackInc = std::stoi(words[i+1]);}
         else if (words[i] == "movestogo") {movesToGo = std::stoi(words[i+1]);}
         else if (words[i] == "depth") {depth = std::stoi(words[i+1]);}
-        else if (words[i] == "nodes") {}
+        else if (words[i] == "nodes") {nodes = std::stoi(words[i+1]);}
         else if (words[i] == "mate") {}
         else if (words[i] == "movetime") {moveTime = std::stoi(words[i+1]);}
-        else if (words[i] == "infinite") {isInfinite = true;}
     }
 
-    if (isInfinite)
-    {
-        //infinite search.
-        depth = 100;
-        moveTime = std::numeric_limits<double>::infinity();
-    }
-    else if (depth > 0)
-    {
-        //search to specified depth.
-        moveTime = std::numeric_limits<double>::infinity();
-    }
-    else if (moveTime > 0)
-    {
-        //search for a specified time.
-        depth = 100;
-    }
-    else
+    if (whiteTime || blackTime)
     {
         //allocate the time to search for.
 
         //use 5% of remaining time plus 50% of increment.
         //if this exceeds time left, then use 80% of time left.
-
-        depth = 100;
 
         double timeLeft = s.mainThread.b.side ? blackTime : whiteTime;
         double increment = s.mainThread.b.side ? blackInc : whiteInc;
@@ -181,7 +162,7 @@ void goCommand(Search &s, const std::vector<std::string> &words)
         if (moveTime > timeLeft) {moveTime = 0.8 * timeLeft;}
     }
 
-    U32 bestMove = s.go(depth, moveTime, false, true);
+    U32 bestMove = s.go(depth, moveTime, nodes, false, true);
     std::cout << "bestmove " << moveToString(bestMove) << std::endl;
     isSearching = false;
 }

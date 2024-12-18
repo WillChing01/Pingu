@@ -14,8 +14,9 @@ import huggingface_hub
 from repo import REPO_ID, PATH_IN_REPO, REPO_TYPE
 
 BASE_CONFIG = {
-    "hash": 64,
+    "nodes": 40000,
     "positions": 1000000,
+    "hash": 64,
     "maxply": 150,
     "evalbound": 8192,
 }
@@ -24,23 +25,17 @@ CONFIGS = {
     "default": BASE_CONFIG
     | {
         "book": "None",
-        "mindepth": 8,
-        "maxdepth": 10,
         "randomply": 6,
     },
     "noob3": BASE_CONFIG
     | {
         "book": "noob_3moves.epd",
-        "mindepth": 8,
-        "maxdepth": 10,
-        "randomply": 0,
+        "randomply": 2,
     },
     "endgames": BASE_CONFIG
     | {
         "book": "endgames.epd",
-        "mindepth": 10,
-        "maxdepth": 12,
-        "randomply": 0,
+        "randomply": 2,
     },
 }
 
@@ -105,7 +100,7 @@ def upload_file(config: dict, file_name: str, token: str) -> None:
 def gensfen_worker(config: dict, q: multiprocessing.Queue, token: str) -> None:
     import engine
 
-    cmd = f"Pingu.exe gensfen mindepth {config['mindepth']} maxdepth {config['maxdepth']} positions {config['positions']} randomply {config['randomply']} maxply {config['maxply']} evalbound {config['evalbound']} hash {config['hash']} book {config['book']}"
+    cmd = f"Pingu.exe gensfen nodes {config['nodes']} positions {config['positions']} randomply {config['randomply']} maxply {config['maxply']} evalbound {config['evalbound']} hash {config['hash']} book {config['book']}"
     e = engine.Engine(name=cmd, path="\\..\\..\\")
     previous_n = 0
     while True:
