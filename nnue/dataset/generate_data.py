@@ -14,7 +14,7 @@ import huggingface_hub
 from repo import REPO_ID, PATH_IN_REPO, REPO_TYPE
 
 BASE_CONFIG = {
-    "nodes": 40000,
+    "nodes": 25000,
     "positions": 1000000,
     "hash": 64,
     "maxply": 150,
