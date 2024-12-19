@@ -230,7 +230,7 @@ void gensfenCommand(int argc, const char** argv)
     //write output to file.
     std::string fileName = "gensfen_"+ ENGINE_NAME_NO_SPACE +
                            "_n" + std::to_string(output.size()) +
-                           "_d" + std::to_string(mindepth) + "-" + std::to_string(maxdepth) +
+                           (argc == 16 ? "_x" + std::to_string(nodes) : "_d" + std::to_string(mindepth) + "-" + std::to_string(maxdepth)) +
                            "_r" + std::to_string(randomply) +
                            "_m" + std::to_string(maxply) +
                            "_b" + std::to_string(evalbound) +
