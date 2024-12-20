@@ -100,8 +100,26 @@ def upload_file(config: dict, file_name: str, token: str) -> None:
 def gensfen_worker(config: dict, q: multiprocessing.Queue, token: str) -> None:
     import engine
 
-    cmd = f"Pingu.exe gensfen nodes {config['nodes']} positions {config['positions']} randomply {config['randomply']} maxply {config['maxply']} evalbound {config['evalbound']} hash {config['hash']} book {config['book']}"
-    e = engine.Engine(name=cmd, path="\\..\\..\\")
+    args = [
+        "..\\..\\Pingu.exe" if sys.platform == "win32" else "../../Pingu",
+        "gensfen",
+        "nodes",
+        str(config["nodes"]),
+        "positions",
+        str(config["positions"]),
+        "randomply",
+        str(config["randomply"]),
+        "maxply",
+        str(config["maxply"]),
+        "evalbound",
+        str(config["evalbound"]),
+        "hash",
+        str(config["hash"]),
+        "book",
+        config["book"],
+    ]
+
+    e = engine.Engine(args=args)
     previous_n = 0
     while True:
         res = e.readline()
@@ -130,7 +148,10 @@ def main():
     total_positions = int(user_args[3])
     token = user_args[5]
 
-    sys.path.insert(1, f"{os.getcwd()}\\..\\..\\testing")
+    if sys.platform == "win32":
+        sys.path.insert(1, f"{os.getcwd()}\\..\\..\\testing")
+    else:
+        sys.path.insert(1, f"{os.getcwd()}/../../testing")
 
     try:
         huggingface_hub.login(token=token)
