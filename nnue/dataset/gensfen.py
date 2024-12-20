@@ -64,7 +64,7 @@ def get_book(book: str) -> bool:
 
 def progress_bar(total_positions: int, q: multiprocessing.Queue) -> None:
     n = 0
-    with tqdm(total=total_positions, desc=f"Overall progress") as progress:
+    with tqdm(total=total_positions, desc=f"Overall progress", smoothing=0) as progress:
         for update in iter(q.get, None):
             progress.update(min(update, total_positions - n))
             n = min(n + update, total_positions)
