@@ -1,18 +1,14 @@
-"""
-Expects to find 'Pingu.exe' in parent folder.
+"""Expects to find 'Pingu.exe' in parent folder."""
 
-"""
-
-import os
 from subprocess import Popen, PIPE
+import sys
 
-ENGINE_EXE = "Pingu.exe"
-REL_PATH = "\\..\\"
+ARGS = ["..\\Pingu.exe" if sys.platform == "win32" else "../Pingu"]
 
 class Engine:
 
-    def __init__(self, name = ENGINE_EXE, path = REL_PATH):
-        self._process = Popen(os.getcwd() + path + name, stdin = PIPE, stdout = PIPE)
+    def __init__(self, args=ARGS):
+        self._process = Popen(args, stdin=PIPE, stdout=PIPE)
 
     def stdin(self, string):
         self._process.stdin.write((string + "\n").encode())

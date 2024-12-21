@@ -97,10 +97,11 @@ class Search
             }
         }
 
-        U32 go(int depth, double searchTime, bool analysisMode, bool verbose)
+        U32 go(int depth, double searchTime, U64 nodes, bool analysisMode, bool verbose)
         {
             ++rootCounter;
             globalNodeCount = 0;
+            globalNodeLimit = nodes;
 
             //set helper threads to start searching.
             for (Thread* thread: threads)
