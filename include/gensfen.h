@@ -201,15 +201,17 @@ void gensfenCommand(int argc, const char** argv)
             int score = s.mainThread.bestScore;
             if (s.mainThread.b.side) {score *= -1;}
 
+            //exit if above eval bound.
+            if (std::abs(score) > evalbound) {result = score > evalbound ? 2 : 0; break;}
+
             //record move if quiet, below maxply, and within eval bound.
             U32 pieceType = (bestMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
             U32 capturedPieceType = (bestMove & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
             U32 finishPieceType = (bestMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
             bool isQuiet = !inCheck && capturedPieceType == 15 && pieceType == finishPieceType;
             bool isBelowMaxPly = (int)s.mainThread.b.moveHistory.size() < maxply;
-            bool isWithinEvalBound = std::abs(score) < evalbound;
 
-            if (isQuiet && isBelowMaxPly && isWithinEvalBound)
+            if (isQuiet && isBelowMaxPly)
             {
                 std::string fen = positionToFen(s.mainThread.b.pieces, s.mainThread.b.current, s.mainThread.b.side);
                 outputBuffer.push_back(gensfenData(fen, score, 1));
