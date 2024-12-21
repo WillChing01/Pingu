@@ -32,11 +32,6 @@ CONFIGS = {
         "book": "noob_3moves.epd",
         "randomply": 2,
     },
-    "endgames": BASE_CONFIG
-    | {
-        "book": "endgames.epd",
-        "randomply": 2,
-    },
 }
 
 
