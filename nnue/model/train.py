@@ -11,9 +11,9 @@ from dataloader import DataLoader
 MAX_EPOCHS = 10000
 
 
-def custom_loss(output, targetEval, targetResult):
+def custom_loss(output, targetEval, targetResult, pieceCounts):
     K = 1 / 400
-    GAMMA = 0.5
+    GAMMA = 0.8 * (pieceCounts - 2) / 30
     output_scaled = torch.sigmoid(K * output)
     target_scaled = GAMMA * torch.sigmoid(K * targetEval) + (1.0 - GAMMA) * targetResult
     return torch.mean((output_scaled - target_scaled) ** 2)
@@ -39,9 +39,9 @@ def run_epoch(model, kind, **kwargs):
     counter = 0
 
     with context:
-        for batch_size, (x, evals, results) in dataLoader.iterator():
+        for batch_size, (x, evals, results, pieceCounts) in dataLoader.iterator():
             output = model(x)
-            l = custom_loss(output, evals, results)
+            l = custom_loss(output, evals, results, pieceCounts)
             _loss = l.item()
 
             if kind == "training":

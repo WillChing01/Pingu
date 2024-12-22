@@ -25,8 +25,9 @@ class HalfKaSparseBatch(ctypes.Structure):
         ("indices", ctypes.POINTER(ctypes.c_ulonglong)),
         ("firstFeatures", ctypes.POINTER(ctypes.c_ulonglong)),
         ("secondFeatures", ctypes.POINTER(ctypes.c_ulonglong)),
-        ("result", ctypes.POINTER(ctypes.c_double)),
         ("eval", ctypes.POINTER(ctypes.c_short)),
+        ("result", ctypes.POINTER(ctypes.c_double)),
+        ("pieceCount", ctypes.POINTER(ctypes.c_short)),
         ("totalFeatures", ctypes.c_int),
         ("size", ctypes.c_int),
     ]
@@ -90,7 +91,13 @@ class HalfKaSparseBatch(ctypes.Structure):
             .to(device)
         )
 
-        return self.size, ((firstBatch, secondBatch), evals, results)
+        pieceCounts = (
+            torch.from_numpy(np.ctypeslib.as_array(self.pieceCount, shape=(self.size,)))
+            .reshape((self.size, 1))
+            .to(device)
+        )
+
+        return self.size, ((firstBatch, secondBatch), evals, results, pieceCounts)
 
 
 dll = ctypes.CDLL(os.getcwd() + "\\dataloader.dll")
