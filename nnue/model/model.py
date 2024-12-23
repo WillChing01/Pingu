@@ -14,14 +14,14 @@ class ClippedReLU(nn.Module):
 
 
 class PerspectiveNetwork(nn.Module):
-    def __init__(self, module_config):
+    def __init__(self):
         super().__init__()
-
+        config = CONFIG["modules"][0]
         self.net = nn.Sequential(
             *(
                 x
-                for i in range(len(module_config) - 1)
-                for x in (nn.Linear(*module_config[i : i + 2]), ClippedReLU(127))
+                for i in range(len(config) - 1)
+                for x in (nn.Linear(*config[i : i + 2]), ClippedReLU(127))
             )
         )
 
@@ -29,23 +29,37 @@ class PerspectiveNetwork(nn.Module):
         return torch.cat((self.net(x[0]), self.net(x[1])), dim=-1)
 
 
+class Stack(nn.Module):
+    def __init__(self):
+        super().__init__()
+        config = CONFIG["modules"][1]
+        self.net = nn.Sequential(
+            *(
+                tuple(
+                    x
+                    for i in range(len(config) - 2)
+                    for x in (nn.Linear(*config[i : i + 2]), ClippedReLU(127))
+                )
+                + (nn.Linear(*config[-2:]),)
+            )
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
 class HalfKaNetwork(nn.Module):
     def __init__(self):
         super().__init__()
 
-        modules = CONFIG["modules"]
-        self.net = nn.Sequential(
-            *(
-                (PerspectiveNetwork(modules[0]),)
-                + tuple(
-                    x
-                    for i in range(len(modules[1]) - 2)
-                    for x in (nn.Linear(*modules[1][i : i + 2]), ClippedReLU(127))
-                )
-                + (nn.Linear(*modules[1][-2:]),)
-            )
-        )
-        self.net.apply(self.init_weights)
+        self.num_stacks = 4
+        self.stacks = [Stack() for _ in range(self.num_stacks)]
+
+        self.add_module("perspective", PerspectiveNetwork())
+        for i in range(self.num_stacks):
+            self.add_module(f"stack_{i}", self.stacks[i])
+
+        self.apply(self.init_weights)
 
     def init_weights(self, x):
         if type(x) == nn.Linear:
@@ -61,7 +75,7 @@ class HalfKaNetwork(nn.Module):
                     x.weight.data = torch.clamp(x.weight.data, min=-w, max=w)
                     x.bias.data = torch.clamp(x.bias.data, min=-b, max=b)
 
-        self.net.apply(_clamp)
+        self.apply(_clamp)
 
     def quantize(self):
         ret = []
@@ -79,12 +93,15 @@ class HalfKaNetwork(nn.Module):
 
                     ret.append((q_w, q_b))
 
-        self.net.apply(_quantize)
+        self.apply(_quantize)
 
         return ret
 
-    def forward(self, x):
-        return self.net(x)
+    def forward(self, x, piece_counts):
+        p_out = self.perspective.forward(x)
+        out = torch.concat(*(stack.forward(p_out) for stack in self.stacks), dim=-1)
+        indices = torch.floor((piece_counts) - 1 * self.num_stacks / 32).int()
+        return out[..., indices]
 
 
 def network():
