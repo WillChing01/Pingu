@@ -57,9 +57,13 @@ void setOptionCommand(Search &s, const std::vector<std::string> &words)
     if (words[2] == "Hash") {resizeTT(std::stoi(words[4]));}
     else if (words[2] == "Clear" && words[3] == "Hash") {clearTT();}
     else if (words[2] == "Threads" && words[3] == "value" && isNumber(words[4])) {s.setThreads(std::stoi(words[4]));}
-    else if (words[2] == "inverseFutilityMargin" && words[3] == "value" && isNumber(words[4]))
+    else if (words[2] == "inverseFutilityBase" && words[3] == "value" && isNumber(words[4]))
     {
-        inverseFutilityMargin = std::stoi(words[4]);
+        inverseFutilityBase = std::stoi(words[4]);
+    }
+    else if (words[2] == "inverseFutilityIncrement" && words[3] == "value" && isNumber(words[4]))
+    {
+        inverseFutilityIncrement = std::stoi(words[4]);
     }
     else if (words[2] == "futilityMarginOne" && words[3] == "value" && isNumber(words[4]))
     {
