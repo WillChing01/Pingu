@@ -30,10 +30,9 @@ const std::vector<std::string> optionsDescription =
     "option name Hash type spin default 1 min 1 max 8192",
     "option name Clear Hash type button",
     "option name Threads type spin default 1 min 1 max 64",
-    "option name inverseFutilityBase type spin default 120 min 40 max 240",
-    "option name inverseFutilityIncrement type spin default 120 min 40 max 240",
-    "option name futilityBase type spin default 150 min 50 max 400",
-    "option name futilityIncrement type spin default 250 min 100 max 500",
+    "option name inverseFutilityMargin type spin default 120 min 40 max 240",
+    "option name futilityMarginOne type spin default 150 min 50 max 400",
+    "option name futilityMarginTwo type spin default 400 min 100 max 800",
 };
 
 void uciCommand()
@@ -57,21 +56,17 @@ void setOptionCommand(Search &s, const std::vector<std::string> &words)
     if (words[2] == "Hash") {resizeTT(std::stoi(words[4]));}
     else if (words[2] == "Clear" && words[3] == "Hash") {clearTT();}
     else if (words[2] == "Threads" && words[3] == "value" && isNumber(words[4])) {s.setThreads(std::stoi(words[4]));}
-    else if (words[2] == "inverseFutilityBase" && words[3] == "value" && isNumber(words[4]))
+    else if (words[2] == "inverseFutilityMargin" && words[3] == "value" && isNumber(words[4]))
     {
-        inverseFutilityBase = std::stoi(words[4]);
+        inverseFutilityMargin = std::stoi(words[4]);
     }
-    else if (words[2] == "inverseFutilityIncrement" && words[3] == "value" && isNumber(words[4]))
+    else if (words[2] == "futilityMarginOne" && words[3] == "value" && isNumber(words[4]))
     {
-        inverseFutilityIncrement = std::stoi(words[4]);
+        futilityMargins[0] = std::stoi(words[4]);
     }
-    else if (words[2] == "futilityBase" && words[3] == "value" && isNumber(words[4]))
+    else if (words[2] == "futilityMarginTwo" && words[3] == "value" && isNumber(words[4]))
     {
-        futilityBase = std::stoi(words[4]);
-    }
-    else if (words[2] == "futilityIncrement" && words[3] == "value" && isNumber(words[4]))
-    {
-        futilityIncrement = std::stoi(words[4]);
+        futilityMargins[1] = std::stoi(words[4]);
     }
 }
 
