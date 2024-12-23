@@ -121,11 +121,13 @@ inline void parseFile(const std::filesystem::path& filePath, std::mt19937_64& _m
         if (splitDist(_mt) < TRAINING_RATIO) {trainingBuffer[trainingDist(_mt)].push_back(res);}
         else {validationBuffer[validationDist(_mt)].push_back(res);}
     }
+    file.close();
+    std::filesystem::remove(filePath);
 
     //write results to chunks.
     std::filesystem::path cwd = std::filesystem::current_path();
-    std::filesystem::path trainingDir = cwd / "dataset" / "training";
-    std::filesystem::path validationDir = cwd / "dataset" / "validation";
+    std::filesystem::path trainingDir = cwd / "training";
+    std::filesystem::path validationDir = cwd / "validation";
 
     for (size_t i=0;i<trainingChunks;++i)
     {
