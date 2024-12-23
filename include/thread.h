@@ -9,7 +9,8 @@
 
 const int maximumPruningDepth = 8;
 
-int inverseFutilityMargin = 120;
+int inverseFutilityBase = 0;
+int inverseFutilityIncrement = 120;
 const int inverseFutilityDepthLimit = 8;
 
 const int nullMoveR = 2;
@@ -226,7 +227,7 @@ class Thread
             //inverse futility pruning.
             if (canPrune && depth <= inverseFutilityDepthLimit)
             {
-                int margin = inverseFutilityMargin * depth;
+                int margin = inverseFutilityBase + inverseFutilityIncrement * depth;
                 if (staticEval - margin >= beta) {return beta;}
             }
 
