@@ -45,7 +45,7 @@ def main():
             for args in (["make", "clean"], ["make"]):
                 subprocess.run(args, cwd=config["cwd"])
 
-        subprocess.run(config["args"], cwd=config["cwd"])
+        subprocess.run(config["args"], cwd=config["cwd"], shell=True)
 
         if config.get("make"):
             subprocess.run(["make", "clean"], cwd=config["cwd"])
