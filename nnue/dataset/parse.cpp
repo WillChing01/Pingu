@@ -13,7 +13,7 @@
 
 #include "utils.h"
 
-const double TRAINING_RATIO = 0.95;
+const double TRAINING_RATIO = 0.975;
 
 inline datum parseLine(const std::string &line)
 {
@@ -103,7 +103,7 @@ inline datum parseLine(const std::string &line)
     return res;
 }
 
-inline void parseFile(const std::filesystem::path& filePath, std::mt19937_64& _mt, const double trainingRatio, const U64 trainingChunks, const U64 validationChunks, std::mutex* const trainingMutex, std::mutex* const validationMutex)
+inline void parseFile(const std::filesystem::path& filePath, std::mt19937_64& _mt, const U64 trainingChunks, const U64 validationChunks, std::mutex* const trainingMutex, std::mutex* const validationMutex)
 {
     std::uniform_int_distribution<U64> trainingDist(0, trainingChunks-1);
     std::uniform_int_distribution<U64> validationDist(0, validationChunks-1);
@@ -197,9 +197,8 @@ int main(int argc, const char** argv)
     std::cout << "Found " << rawFiles.size() << " files containing " << total << " pieces of data" << std::endl;
 
     const U64 chunkSize = 25000000ull;
-    const double trainingRatio = 0.95;
 
-    const U64 expectedTraining = (U64)(trainingRatio * total);
+    const U64 expectedTraining = (U64)(TRAINING_RATIO * total);
     const U64 expectedValidation = total - expectedTraining;
 
     const U64 trainingChunks = std::max(1ull, expectedTraining / chunkSize);
@@ -212,7 +211,7 @@ int main(int argc, const char** argv)
     {
         std::cout << "Iteration: " << i+1 << " / " << rawFiles.size() << std::endl;
         const size_t cpu = i % numCpu;
-        threads[cpu] = std::thread(parseFile, std::ref(rawFiles[i]), std::ref(_mt[cpu]), trainingRatio, trainingChunks, validationChunks, trainingMutex, validationMutex);
+        threads[cpu] = std::thread(parseFile, std::ref(rawFiles[i]), std::ref(_mt[cpu]), trainingChunks, validationChunks, trainingMutex, validationMutex);
         if (cpu == numCpu - 1) {for (size_t j=0;j<numCpu;++j) {threads[j].join();}}
     }
     for (size_t i=0;i<rawFiles.size()%numCpu;++i) {threads[i].join();}
