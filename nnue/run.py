@@ -20,7 +20,7 @@ CONFIG = {
     },
     "train": {
         "cwd": f"{os.getcwd()}\\model",
-        "dirs": ["checkpoint"],
+        "dirs": ["checkpoints"],
         "make": True,
         "args": ["python", "train.py"],
     },
