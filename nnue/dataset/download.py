@@ -7,13 +7,13 @@ from repo import REPO_ID, REPO_TYPE
 DIR = f"{os.getcwd()}\\_raw"
 
 
-def main(args):
+def main():
     huggingface_hub.snapshot_download(
         repo_id=REPO_ID,
         repo_type=REPO_TYPE,
         cache_dir=f"\\\\?\\{DIR}",
         local_dir=f"\\\\?\\{DIR}",
-        allow_patterns="*.txt",
+        allow_patterns="*.zip",
     )
 
 
