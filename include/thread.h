@@ -65,6 +65,7 @@ inline void collectPV(std::vector<U32> &pvMoves, Board &b, int depth)
 }
 
 std::atomic<U64> globalNodeCount = 0;
+std::atomic<U64> globalNodeLimit = ULLONG_MAX;
 
 class Thread
 {
@@ -90,12 +91,13 @@ class Thread
 
         Thread() {}
 
-        void checkTime()
+        bool isTimeUp()
         {
             if (std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now()-startTime).count() > searchTime)
             {
-                isSearchAborted = true;
+                return true;
             }
+            return false;
         }
 
         bool isDrawByMaterial()
@@ -126,7 +128,10 @@ class Thread
         int qSearch(int ply, int alpha, int beta)
         {
             //check time.
-            if (!(nodeCount & 2047u)) {checkTime();}
+            if (!(nodeCount & 2047u) && (isTimeUp() || globalNodeCount > globalNodeLimit))
+            {
+                isSearchAborted = true;
+            }
             if (isSearchAborted) {return 0;}
             ++nodeCount; ++globalNodeCount;
 
@@ -174,7 +179,10 @@ class Thread
         int search(int alpha, int beta, int depth, int ply, bool nullMoveAllowed)
         {
             //check time.
-            if (!(nodeCount & 2047u)) {checkTime();}
+            if (!(nodeCount & 2047u) && (isTimeUp() || globalNodeCount > globalNodeLimit))
+            {
+                isSearchAborted = true;
+            }
             if (isSearchAborted) {return 0;}
             ++nodeCount; ++globalNodeCount;
 
@@ -319,8 +327,29 @@ class Thread
                                 //update history.
                                 if (depth >= 5)
                                 {
-                                    if (movePicker.stage == QUIET_MOVES) {b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);}
-                                    else {b.history.update(movePicker.singleQuiets, move, depth);}
+                                    bool hasPrevMove = b.moveHistory.size() && b.moveHistory.back() != 0;
+                                    if (movePicker.stage == QUIET_MOVES)
+                                    {
+                                        if (hasPrevMove)
+                                        {
+                                            b.history.update(b.moveHistory.back(), movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);
+                                        }
+                                        else
+                                        {
+                                            b.history.update(movePicker.singleQuiets, b.moveCache[ply], movePicker.moveIndex - 1, move, depth);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (hasPrevMove)
+                                        {
+                                            b.history.update(b.moveHistory.back(), movePicker.singleQuiets, move, depth);
+                                        }
+                                        else
+                                        {
+                                            b.history.update(movePicker.singleQuiets, move, depth);
+                                        }
+                                    }
                                 }
                             }
 

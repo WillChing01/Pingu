@@ -18,42 +18,55 @@ struct gensfenData
 
 bool isValidInput(int argc, const char** argv)
 {
-    if (argc != 18)
+    if (argc != 16 && argc != 18)
     {
         std::cout << "Error - expected to find exactly 8 arguments and their values" << std::endl;
         return false;
     }
 
-    const std::array<std::pair<const char*, const char*>, 8> requiredArgs = {{
-        {"mindepth", "int"},
-        {"maxdepth", "int"},
-        {"positions", "int"},
-        {"randomply", "int"},
-        {"maxply", "int"},
-        {"evalbound", "int"},
-        {"hash", "int"},
-        {"book", "file"},
-    }};
+    const std::unordered_map<int, std::vector<std::pair<const char*, const char*> > > requiredArgs = {
+        {16, {
+            {"nodes", "int"},
+            {"positions", "int"},
+            {"randomply", "int"},
+            {"maxply", "int"},
+            {"evalbound", "int"},
+            {"hash", "int"},
+            {"book", "file"},
+        }},
+        {18, {
+            {"mindepth", "int"},
+            {"maxdepth", "int"},
+            {"positions", "int"},
+            {"randomply", "int"},
+            {"maxply", "int"},
+            {"evalbound", "int"},
+            {"hash", "int"},
+            {"book", "file"},
+        }},
+    };
 
-    for (int i=0;i<(int)requiredArgs.size();++i)
+    for (size_t i=0;i<requiredArgs.at(argc).size();++i)
     {
+        const auto &[name, type] = requiredArgs.at(argc)[i];
+
         //check field name.
-        if (std::strcmp(requiredArgs[i].first, argv[2+2*i]))
+        if (std::strcmp(name, argv[2+2*i]))
         {
-            std::cout << "Error - expected to find argument '" << requiredArgs[i].first << "'" << std::endl;
+            std::cout << "Error - expected to find argument '" << name << "'" << std::endl;
             return false;
         }
 
         //check field type.
-        if (!std::strcmp(requiredArgs[i].second, "int"))
+        if (!std::strcmp(type, "int"))
         {
             if (!isNumber(argv[3+2*i]))
             {
-                std::cout << "Error - expected value of '" << requiredArgs[i].first << "' to be an integer" << std::endl;
+                std::cout << "Error - expected value of '" << name << "' to be an integer" << std::endl;
                 return false;
             }
         }
-        if (!std::strcmp(requiredArgs[i].second, "file"))
+        if (!std::strcmp(type, "file"))
         {
             //check if file exists.
             if (std::strcmp(argv[3+2*i], "None") && !std::filesystem::exists(argv[3+2*i]))
@@ -139,14 +152,15 @@ void gensfenCommand(int argc, const char** argv)
         }
     );
 
-    int mindepth = std::stoi(argv[3]);
-    int maxdepth = std::stoi(argv[5]);
-    int positions = std::stoi(argv[7]);
-    int randomply = std::stoi(argv[9]);
-    int maxply = std::stoi(argv[11]);
-    int evalbound = std::stoi(argv[13]);
-    int hashSize = std::stoi(argv[15]);
-    std::string bookFile = argv[17];
+    int mindepth = argc == 16 ? MAXDEPTH : std::stoi(argv[3]);
+    int maxdepth = argc == 16 ? MAXDEPTH : std::stoi(argv[5]);
+    U64 nodes = argc == 16 ? std::stoull(argv[3]) : ULLONG_MAX;
+    int positions = std::stoi(argv[argc-11]);
+    int randomply = std::stoi(argv[argc-9]);
+    int maxply = std::stoi(argv[argc-7]);
+    int evalbound = std::stoi(argv[argc-5]);
+    int hashSize = std::stoi(argv[argc-3]);
+    std::string bookFile = argv[argc-1];
 
     resizeTT(hashSize);
 
@@ -183,9 +197,12 @@ void gensfenCommand(int argc, const char** argv)
 
             //scale depth based on game phase.
             int searchDepth = mindepth + ((24 - s.mainThread.b.phase) * (maxdepth - mindepth)) / 24;
-            U32 bestMove = s.go(searchDepth, INT_MAX, true, false);
+            U32 bestMove = s.go(searchDepth, INT_MAX, nodes, true, false);
             int score = s.mainThread.bestScore;
             if (s.mainThread.b.side) {score *= -1;}
+
+            //exit if above eval bound.
+            if (std::abs(score) > evalbound) {result = score > evalbound ? 2 : 0; break;}
 
             //record move if quiet, below maxply, and within eval bound.
             U32 pieceType = (bestMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
@@ -193,9 +210,8 @@ void gensfenCommand(int argc, const char** argv)
             U32 finishPieceType = (bestMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
             bool isQuiet = !inCheck && capturedPieceType == 15 && pieceType == finishPieceType;
             bool isBelowMaxPly = (int)s.mainThread.b.moveHistory.size() < maxply;
-            bool isWithinEvalBound = std::abs(score) < evalbound;
 
-            if (isQuiet && isBelowMaxPly && isWithinEvalBound)
+            if (isQuiet && isBelowMaxPly)
             {
                 std::string fen = positionToFen(s.mainThread.b.pieces, s.mainThread.b.current, s.mainThread.b.side);
                 outputBuffer.push_back(gensfenData(fen, score, 1));
@@ -216,7 +232,7 @@ void gensfenCommand(int argc, const char** argv)
     //write output to file.
     std::string fileName = "gensfen_"+ ENGINE_NAME_NO_SPACE +
                            "_n" + std::to_string(output.size()) +
-                           "_d" + std::to_string(mindepth) + "-" + std::to_string(maxdepth) +
+                           (argc == 16 ? "_x" + std::to_string(nodes) : "_d" + std::to_string(mindepth) + "-" + std::to_string(maxdepth)) +
                            "_r" + std::to_string(randomply) +
                            "_m" + std::to_string(maxply) +
                            "_b" + std::to_string(evalbound) +

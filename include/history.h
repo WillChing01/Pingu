@@ -6,87 +6,125 @@
 
 #include "constants.h"
 
-const int HISTORY_MAX = 1048576;
-
 class History
 {
-    public:
-        //history table, scores[pieceType][to_square]
-        int scores[12][64] = {};
+public:
+    // history table, scores[pieceType][to_square]
+    int scores[12][64] = {};
+    static const size_t historySize = 12 * 64;
 
-        History() {}
+    short extendedScores[12][64][6][64] = {};
+    static const size_t extendedHistorySize = 12 * 64 * 6 * 64;
 
-        void clear()
+    History() {}
+
+    void clear()
+    {
+        for (size_t i = 0; i < historySize; ++i)
         {
-            for (int i=0;i<12;i++)
-            {
-                for (int j=0;j<64;j++) {scores[i][j] = 0;}
-            }
+            (&scores[0][0])[i] = 0;
+        }
+        for (size_t i = 0; i < extendedHistorySize; ++i)
+        {
+            (&extendedScores[0][0][0][0])[i] = 0;
+        }
+    }
+
+    void age(const int factor = 16)
+    {
+        for (size_t i = 0; i < historySize; ++i)
+        {
+            (&scores[0][0])[i] /= factor;
+        }
+    }
+
+    void increment(U32 move, int bonus)
+    {
+        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+
+        int delta = 32 * bonus - ((int)scores[pieceType][finishSquare] * std::abs(bonus)) / 512;
+        scores[pieceType][finishSquare] += delta;
+    }
+
+    void increment(U32 prevMove, U32 move, int bonus)
+    {
+        U32 prevPieceType = (prevMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        U32 prevFinishSquare = (prevMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+
+        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
+
+        int delta;
+
+        delta = 32 * bonus - ((int)scores[pieceType][finishSquare] * std::abs(bonus)) / 512;
+        scores[pieceType][finishSquare] += delta;
+
+        delta = 32 * bonus - ((int)extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare] * std::abs(bonus)) / 512;
+        extendedScores[prevPieceType][prevFinishSquare][pieceType >> 1][finishSquare] += delta;
+    }
+
+    void update(const std::unordered_set<U32> &singles, U32 cutMove, int depth)
+    {
+        int bonus = std::min(depth * depth, 400);
+
+        for (const auto &move : singles)
+        {
+            increment(move, move == cutMove ? bonus : -bonus);
+        }
+    }
+
+    void update(U32 prevMove, const std::unordered_set<U32> &singles, U32 cutMove, int depth)
+    {
+        int bonus = std::min(depth * depth, 400);
+
+        for (const auto &move : singles)
+        {
+            increment(prevMove, move, move == cutMove ? bonus : -bonus);
+        }
+    }
+
+    void update(const std::unordered_set<U32> &singles, const std::vector<std::pair<U32, int>> &quiets, U32 index, U32 cutMove, int depth)
+    {
+        int bonus = std::min(depth * depth, 400);
+
+        for (const auto &move : singles)
+        {
+            increment(move, -bonus);
         }
 
-        void age(const int factor = 16)
+        for (size_t i = 0; i < index; ++i)
         {
-            for (int i=0;i<12;i++)
+            if (singles.contains(quiets[i].first))
             {
-                for (int j=0;j<64;j++)
-                {
-                    scores[i][j] /= factor;
-                }
+                continue;
             }
+            increment(quiets[i].first, -bonus);
         }
 
-        void update(const std::unordered_set<U32> &singles, U32 cutMove, int depth)
+        increment(cutMove, bonus);
+    }
+
+    void update(U32 prevMove, const std::unordered_set<U32> &singles, const std::vector<std::pair<U32, int>> &quiets, U32 index, U32 cutMove, int depth)
+    {
+        int bonus = std::min(depth * depth, 400);
+
+        for (const auto &move : singles)
         {
-            bool shouldAge = false;
-            int delta = depth * depth;
-
-            //decrement history for single moves.
-            for (const auto &move: singles)
-            {
-                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                if (move == cutMove) {scores[pieceType][finishSquare] += delta;}
-                else {scores[pieceType][finishSquare] -= delta;}
-                if (scores[pieceType][finishSquare] < -HISTORY_MAX || scores[pieceType][finishSquare] > HISTORY_MAX) {shouldAge = true;}
-            }
-
-            //age history if necessary.
-            if (shouldAge) {age();}
+            increment(prevMove, move, -bonus);
         }
 
-        void update(const std::unordered_set<U32> &singles, const std::vector<std::pair<U32, int> > &quiets, int index, U32 cutMove, int depth)
+        for (size_t i = 0; i < index; ++i)
         {
-            bool shouldAge = false;
-            int delta = depth * depth;
-
-            //decrement history for single moves.
-            for (const auto &move: singles)
+            if (singles.contains(quiets[i].first))
             {
-                U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                U32 finishSquare = (move & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                scores[pieceType][finishSquare] -= delta;
-                if (scores[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
+                continue;
             }
-
-            //decrement history for quiets.
-            for (int i=0;i<index;i++)
-            {
-                if (singles.contains(quiets[i].first)) {continue;}
-                U32 pieceType = (quiets[i].first & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-                U32 finishSquare = (quiets[i].first & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-                scores[pieceType][finishSquare] -= delta;
-                if (scores[pieceType][finishSquare] < -HISTORY_MAX) {shouldAge = true;}
-            }
-
-            //increment history for cut move.
-            U32 pieceType = (cutMove & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-            U32 finishSquare = (cutMove & MOVEINFO_FINISHSQUARE_MASK) >> MOVEINFO_FINISHSQUARE_OFFSET;
-            scores[pieceType][finishSquare] += delta;
-            if (scores[pieceType][finishSquare] > HISTORY_MAX) {shouldAge = true;}
-
-            //age history if necessary.
-            if (shouldAge) {age();}
+            increment(prevMove, quiets[i].first, -bonus);
         }
+
+        increment(prevMove, cutMove, bonus);
+    }
 };
 
 #endif // HISTORY_H_INCLUDED

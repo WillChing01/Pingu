@@ -17,8 +17,9 @@ struct halfKaSparseBatch
     U64* indices;
     U64* firstFeatures;
     U64* secondFeatures;
-    double* result;
     short* eval;
+    double* result;
+    short* pieceCount;
     int totalFeatures = 0;
     int size = 0;
 
@@ -29,16 +30,18 @@ struct halfKaSparseBatch
         indices = new U64[batchSize * 31];
         firstFeatures = new U64[batchSize * 31];
         secondFeatures = new U64[batchSize * 31];
-        result = new double[batchSize];
         eval = new short[batchSize];
+        result = new double[batchSize];
+        pieceCount = new short[batchSize];
 
         for (size_t i=0;i<batchSize;++i) {datumToSparse(i, data[i]);}
     }
 
     void datumToSparse(size_t idx, const datum& datum)
     {
-        result[idx] = datum.isDraw ? 0.5 : datum.result;
         eval[idx] = datum.eval;
+        result[idx] = datum.isDraw ? 0.5 : datum.result;
+        pieceCount[idx] = 2;
 
         U64* whiteFeatures = datum.side ? secondFeatures : firstFeatures;
         U64* blackFeatures = datum.side ? firstFeatures : secondFeatures;
@@ -64,6 +67,7 @@ struct halfKaSparseBatch
                 {
                     whiteFeatures[totalFeatures] = (704 * datum.kingPos[0]) + 64ull * (pieceType - 1ull) + square;
                     blackFeatures[totalFeatures] = (704 * (datum.kingPos[1] ^ 56)) + 64ull * (pieceType - 2ull * (pieceType & 1ull)) + (square ^ 56ull);
+                    ++pieceCount[idx];
                     ++totalFeatures;
                 }
             }
@@ -81,8 +85,9 @@ struct halfKaSparseBatch
         delete[] indices;
         delete[] firstFeatures;
         delete[] secondFeatures;
-        delete[] result;
         delete[] eval;
+        delete[] result;
+        delete[] pieceCount;
     }
 };
 
