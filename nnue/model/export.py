@@ -37,10 +37,14 @@ def main():
     with open(f"{os.getcwd()}\\..\\..\\include\\weights.h", "w") as f:
         f.write("#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n")
         f.write("#include <array>\n\n")
-        for ind, (w, b) in enumerate(quant):
-            q = CONFIG["quant"][w.shape]
-            f.write(f"{convert(f'w_{ind}', w, **q['w'])};\n\n")
-            f.write(f"{convert(f'b_{ind}', b, **q['b'])};\n\n")
+        for name, layers in quant.items():
+            for ind, (w, b) in enumerate(layers):
+                shape = list(w.shape)
+                if name == "stacks":
+                    shape[0] //= CONFIG["stacks"]
+                q = CONFIG["quant"][tuple(shape)]
+                f.write(f"{convert(f'{name}_w{ind}', w, **q['w'])};\n\n")
+                f.write(f"{convert(f'{name}_b{ind}', b, **q['b'])};\n\n")
         f.write("#endif // WEIGHTS_H_INCLUDED\n")
 
 

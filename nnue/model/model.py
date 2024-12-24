@@ -78,9 +78,7 @@ class HalfKaNetwork(nn.Module):
         self.apply(_clamp)
 
     def quantize(self):
-        ret = []
-
-        def _quantize(x):
+        def _quantize(x, ret=[]):
             if isinstance(x, nn.Linear):
                 if quant := CONFIG["quant"].get(x.weight.shape):
                     w = quant["w"]["factor"], quant["w"]["clamp"]
@@ -93,9 +91,27 @@ class HalfKaNetwork(nn.Module):
 
                     ret.append((q_w, q_b))
 
-        self.apply(_quantize)
+        quant = {
+            "perspective": [],
+            "stacks": [[] for _ in range(self.num_stacks)],
+        }
 
-        return ret
+        self.perspective.apply(lambda x: _quantize(x, quant["perspective"]))
+        for i, stack in enumerate(self.stacks):
+            stack.apply(lambda x: _quantize(x, quant["stacks"][i]))
+
+        quant["stacks"] = [
+            tuple(
+                torch.concat(
+                    tuple(quant["stacks"][i][j][k] for i in range(self.num_stacks)),
+                    dim=0,
+                )
+                for k in range(len(quant["stacks"][i][j]))
+            )
+            for j in range(len(CONFIG["modules"][1]) - 1)
+        ]
+
+        return quant
 
     def forward(self, x, piece_counts):
         p_out = self.perspective.forward(x)
