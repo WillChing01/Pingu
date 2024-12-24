@@ -10,6 +10,7 @@ CONFIG = {
     },
     "path": f"{os.getcwd()}\\checkpoints",
     "modules": ((45056, 32), (2 * 32, 1)),
+    "stacks": 4,
     "quant": {
         (32, 45056): {
             "w": {
