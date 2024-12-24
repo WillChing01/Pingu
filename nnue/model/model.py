@@ -100,7 +100,7 @@ class HalfKaNetwork(nn.Module):
     def forward(self, x, piece_counts):
         p_out = self.perspective.forward(x)
         out = torch.concat(*(stack.forward(p_out) for stack in self.stacks), dim=-1)
-        indices = torch.floor((piece_counts) - 1 * self.num_stacks / 32).int()
+        indices = torch.floor((piece_counts - 1) * self.num_stacks / 32).int()
         return out[..., indices]
 
 
