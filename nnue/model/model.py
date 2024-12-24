@@ -52,7 +52,7 @@ class HalfKaNetwork(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.num_stacks = 4
+        self.num_stacks = CONFIG["stacks"]
         self.stacks = [Stack() for _ in range(self.num_stacks)]
 
         self.add_module("perspective", PerspectiveNetwork())

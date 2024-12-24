@@ -34,7 +34,6 @@ def main():
     model = load_best()
     quant = model.quantize()
 
-    ind = 0
     with open(f"{os.getcwd()}\\..\\..\\include\\weights.h", "w") as f:
         f.write("#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n")
         f.write("#include <array>\n\n")
