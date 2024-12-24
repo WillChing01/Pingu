@@ -79,7 +79,7 @@ public:
     void refresh()
     {
         kingPos = __builtin_ctzll(pieces[side]);
-        std::copy(b_0.begin(), b_0.end(), l1);
+        std::copy(perspective_b0.begin(), perspective_b0.end(), l1);
 
         setOne(!side, __builtin_ctzll(pieces[!side]));
         for (size_t i = 2; i < 12; ++i)
@@ -101,7 +101,7 @@ public:
         __m256i l;
         for (size_t i = 0; i < 32; i += 16)
         {
-            w = _mm256_loadu_si256((__m256i *)&w_0[ind][i]);
+            w = _mm256_loadu_si256((__m256i *)&perspective_w0[ind][i]);
             l = _mm256_loadu_si256((__m256i *)&l1[i]);
             _mm256_storeu_si256((__m256i *)&l1[i], _mm256_add_epi16(l, w));
         }
@@ -114,7 +114,7 @@ public:
         __m256i l;
         for (size_t i = 0; i < 32; i += 16)
         {
-            w = _mm256_loadu_si256((__m256i *)&w_0[ind][i]);
+            w = _mm256_loadu_si256((__m256i *)&perspective_w0[ind][i]);
             l = _mm256_loadu_si256((__m256i *)&l1[i]);
             _mm256_storeu_si256((__m256i *)&l1[i], _mm256_sub_epi16(l, w));
         }
@@ -203,19 +203,21 @@ public:
         __m256i sum = _ZERO;
         __m256i l, w;
 
+        int index = (pieceCount - 1) / 8;
+
         for (size_t i = 0; i < 32; i += 32)
         {
             l = _mm256_loadu_si256((__m256i *)&white.cl1[i]);
-            w = _mm256_loadu_si256((__m256i *)&w_1[0][32 * (*side) + i]);
+            w = _mm256_loadu_si256((__m256i *)&stacks_w0[index][32 * (*side) + i]);
             sum = _mm256_add_epi32(sum, madd_epi8(l, w));
         }
         for (size_t i = 0; i < 32; i += 32)
         {
             l = _mm256_loadu_si256((__m256i *)&black.cl1[i]);
-            w = _mm256_loadu_si256((__m256i *)&w_1[0][32 * (!(*side)) + i]);
+            w = _mm256_loadu_si256((__m256i *)&stacks_w0[index][32 * (!(*side)) + i]);
             sum = _mm256_add_epi32(sum, madd_epi8(l, w));
         }
-        return hsum_8x32(sum) + b_1[0];
+        return hsum_8x32(sum) + stacks_b0[index];
     }
 };
 
