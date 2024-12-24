@@ -39,9 +39,9 @@ def run_epoch(model, kind, **kwargs):
     counter = 0
 
     with context:
-        for batch_size, (x, evals, results, pieceCounts) in dataLoader.iterator():
-            output = model(x)
-            l = custom_loss(output, evals, results, pieceCounts)
+        for batch_size, (x, evals, results, piece_counts) in dataLoader.iterator():
+            output = model(x, piece_counts)
+            l = custom_loss(output, evals, results, piece_counts)
             _loss = l.item()
 
             if kind == "training":
