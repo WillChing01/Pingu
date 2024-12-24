@@ -12,7 +12,7 @@
 #include "simd.h"
 #include "weights.h"
 
-template<int (*index)(U32 kingPos, U32 pieceType, U32 square), bool side>
+template <int (*index)(U32 kingPos, U32 pieceType, U32 square), bool side>
 class alignas(32) Accumulator
 {
 public:
@@ -25,7 +25,7 @@ public:
 
     Accumulator(const U64 *_pieces) : pieces(_pieces) {}
 
-    template<void (Accumulator::*_zero)(U32, U32), void (Accumulator::*_one)(U32, U32)>
+    template <void (Accumulator::*_zero)(U32, U32), void (Accumulator::*_one)(U32, U32)>
     void _move(U32 move)
     {
         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
@@ -151,6 +151,7 @@ private:
     White white;
     Black black;
     const bool *side;
+    int pieceCount = 32;
 
 public:
     NNUE() {}
@@ -163,18 +164,36 @@ public:
 
     void makeMove(U32 move)
     {
+        U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+        if (capturedPieceType != 15)
+        {
+            --pieceCount;
+        }
+
         white.makeMove(move);
         black.makeMove(move);
     }
 
     void unmakeMove(U32 move)
     {
+        U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
+        if (capturedPieceType != 15)
+        {
+            ++pieceCount;
+        }
+
         white.unmakeMove(move);
         black.unmakeMove(move);
     }
 
     void fullRefresh()
     {
+        pieceCount = 2;
+        for (size_t i = 2; i < 12; ++i)
+        {
+            pieceCount += __builtin_popcountll(white.pieces[i]);
+        }
+
         white.refresh();
         black.refresh();
     }
