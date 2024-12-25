@@ -69,8 +69,8 @@ def save_model(model, optimizer, t_loss, v_loss):
 
 
 def early_stop():
-    RECENT_LOOKBACK = 8
-    DISTANT_LOOKBACK = 32
+    RECENT_LOOKBACK = 4
+    DISTANT_LOOKBACK = 16
 
     model_files = get_files()
 
@@ -99,6 +99,9 @@ def load_best():
 
         model = network().to("cpu")
         model.load_state_dict(checkpoint["model_state_dict"])
+
+        print("Loaded", best_file)
+
         return model
 
     return None
