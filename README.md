@@ -80,6 +80,7 @@ More information on [CCRL](https://www.computerchess.org.uk/ccrl/).
   - Stand-pat
   - Forward prune SEE < 0
 - Basic time management
+- Parallel search with Lazy SMP algorithm
 
 ### Evaluation
 
@@ -102,13 +103,11 @@ The process is described in [nnue.md](/docs/nnue.md) and more recently in [nnue_
 Early HCE versions of Pingu were Texel-tuned using self-play data from [Ethereal](https://github.com/AndyGrant/Ethereal), obtained from this [forum post](https://talkchess.com/forum3/viewtopic.php?f=7&t=77502).
 The process is described in [evaluation_tuning.md](/docs/evaluation_tuning.md).
 
-
 # Thanks
 
 [Chess Programming Wiki](https://www.chessprogramming.org) for its useful resources.
 
 [CCRL](https://www.computerchess.org.uk/ccrl/) for testing Pingu.
-
 
 [commits-badge]:https://img.shields.io/github/commits-since/WillChing01/Pingu/latest?style=for-the-badge
 [commits-link]:https://github.com/WillChing01/Pingu/commits/master
