@@ -22,10 +22,11 @@ Pingu accepts many of the usual UCI commands (go/stop/position etc.) and it has 
 
 | Version | CCRL Blitz | CCRL 40/15 |
 | ------: | ---------: | ---------: |
-| 4.0.0   | 2988       | N/A        |
-| 3.0.0   | N/A        | 2820       |
+| 5.0.0   | -          | -          |
+| 4.0.0   | 2989       | 3020       |
+| 3.0.0   | -          | 2820       |
 | 2.0.0   | 2527       | 2614       |
-| 1.0.0   | 2162       | N/A        |
+| 1.0.0   | 2162       | -          |
 
 More information on [CCRL](https://www.computerchess.org.uk/ccrl/).
 
@@ -53,7 +54,7 @@ More information on [CCRL](https://www.computerchess.org.uk/ccrl/).
   2. Check evasions
 - Winning captures ordered by MVV/LVA
 - Losing captures ordered by static exchange evaluation
-- Quiet moves ordered by history heuristic
+- Quiet moves ordered by history, counter moves history and piece square tables
 
 ### Search
 
@@ -79,33 +80,34 @@ More information on [CCRL](https://www.computerchess.org.uk/ccrl/).
   - Stand-pat
   - Forward prune SEE < 0
 - Basic time management
+- Parallel search with Lazy SMP algorithm
 
 ### Evaluation
 
-- NNUE
-  - Network structure
-    1. 768 -> 64 -> 8 -> 1
-    2. Fully connected layers
-    3. Clipped ReLU activation
-  - Quantized weights
-  - AVX2 instructions
+NNUE with HalfKA feature set and subnetworks indexed by piece count.
 
-NNUE versions of Pingu were trained with the engine's own self-play data.
+Architecture: 2 x (45056 -> 32) -> 1
+
+Trained with PyTorch and a custom dataloader written in C++ (source code in `/nnue`).
+
+Final model uses quantized weights and AVX2 intrinsics for optimal performance.
+
+All NNUE versions of Pingu were trained with the engine's own self-play data.
 The process is described in [nnue.md](/docs/nnue.md) and more recently in [nnue_2.md](/docs/nnue_2.md).
 
+- [Pingu 4.0.0 dataset (new)](https://huggingface.co/datasets/WillChing01/pingu_4)
+- [Pingu 4.0.0 dataset (old)](https://huggingface.co/datasets/WillChing01/pingu)
 - [Pingu 3.0.0 dataset](https://www.kaggle.com/datasets/williamching/pingu-3-0-0-self-play-data)
 - [Pingu 2.0.0 dataset](https://www.kaggle.com/datasets/williamching/pingu-2-0-0-dataset)
 
 Early HCE versions of Pingu were Texel-tuned using self-play data from [Ethereal](https://github.com/AndyGrant/Ethereal), obtained from this [forum post](https://talkchess.com/forum3/viewtopic.php?f=7&t=77502).
 The process is described in [evaluation_tuning.md](/docs/evaluation_tuning.md).
 
-
 # Thanks
 
 [Chess Programming Wiki](https://www.chessprogramming.org) for its useful resources.
 
 [CCRL](https://www.computerchess.org.uk/ccrl/) for testing Pingu.
-
 
 [commits-badge]:https://img.shields.io/github/commits-since/WillChing01/Pingu/latest?style=for-the-badge
 [commits-link]:https://github.com/WillChing01/Pingu/commits/master
