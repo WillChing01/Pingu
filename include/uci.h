@@ -18,9 +18,9 @@
 #include "search.h"
 #include "board.h"
 
-const std::string ENGINE_NAME = "Pingu 4.0.0";
+const std::string ENGINE_NAME = "Pingu 5.0.0";
 const std::string ENGINE_AUTHOR = "William Ching";
-const std::string ENGINE_NAME_NO_SPACE = "Pingu_4.0.0";
+const std::string ENGINE_NAME_NO_SPACE = "Pingu_5.0.0";
 
 std::atomic<bool> isSearching(false);
 
