@@ -15,20 +15,20 @@ jobs:
       - name: Build executable
         run: make
 
-      - name: Navigate to tests folder
-        run: cd testing
+      - name: Bench engine
+        run: ./Pingu bench
 
       - name: Perft test
-        run: python3 perft_check.py
+        run: cd testing && python3 perft_check.py
 
       - name: Incremental update test
-        run: python3 incremental_check.py
+        run: cd testing && python3 incremental_check.py
 
       - name: Move validation test
-        run: python3 move_validation_check.py
+        run: cd testing && python3 move_validation_check.py
 
       - name: Fen test
-        run: python3 fen_check.py
+        run: cd testing && python3 fen_check.py
 
       - name: SEE test
-        run: python3 see_check.py
+        run: cd testing && python3 see_check.py
