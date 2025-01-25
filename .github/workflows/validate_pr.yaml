@@ -32,4 +32,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: true
+          VALIDATE_CLANG_FORMAT: true
           VALIDATE_PYTHON_BLACK: true
