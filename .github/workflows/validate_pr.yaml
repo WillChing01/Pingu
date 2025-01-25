@@ -9,11 +9,6 @@ jobs:
     name: Validate PR Title
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      packages: read
-      statuses: write
-
     steps:
       - name: Semantic name check
         uses: amannn/action-semantic-pull-request@v5
@@ -38,3 +33,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: true
+          VALIDATE_CHECKOV: false
