@@ -1,6 +1,7 @@
 import sys
 import engine
 
+
 def main():
     e = engine.Engine()
 
@@ -25,8 +26,16 @@ def main():
                     if res[1].isdigit():
                         if res[1] != nodes:
                             errors += 1
-                            print("Position", i, "FAIL, expected " + nodes + " nodes, received " + res[1])
-                        else: print("Position", i, "PASS")
+                            print(
+                                "Position",
+                                i,
+                                "FAIL, expected "
+                                + nodes
+                                + " nodes, received "
+                                + res[1],
+                            )
+                        else:
+                            print("Position", i, "PASS")
                     else:
                         errors += 1
                         print("Incorrect output format, expected integer")
@@ -35,6 +44,7 @@ def main():
     e.quitCommand()
 
     sys.exit(errors != 0)
+
 
 if __name__ == "__main__":
     main()

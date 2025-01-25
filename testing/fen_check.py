@@ -1,6 +1,7 @@
 import sys
 import engine
 
+
 def main():
     e = engine.Engine()
 
@@ -21,7 +22,11 @@ def main():
                 if res.rstrip()[-3:] == "0 1":
                     if res.rstrip() != fen:
                         errors += 1
-                        print("Position", i, "FAIL, expected " + fen + " fen, received " + res.rstrip())
+                        print(
+                            "Position",
+                            i,
+                            "FAIL, expected " + fen + " fen, received " + res.rstrip(),
+                        )
                     else:
                         print("Position", i, "PASS")
                     break
@@ -29,6 +34,7 @@ def main():
     e.quitCommand()
 
     sys.exit(errors != 0)
+
 
 if __name__ == "__main__":
     main()

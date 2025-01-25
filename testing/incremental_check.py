@@ -1,6 +1,7 @@
 import sys
 import engine
 
+
 def main():
     e = engine.Engine()
 
@@ -25,7 +26,8 @@ def main():
                         if int(res[1]) != 1:
                             errors += 1
                             print("Position", i, "FAIL")
-                        else: print("Position", i, "PASS")
+                        else:
+                            print("Position", i, "PASS")
                     else:
                         errors += 1
                         print("Incorrect output format, expected integer")
@@ -34,6 +36,7 @@ def main():
     e.quitCommand()
 
     sys.exit(errors != 0)
+
 
 if __name__ == "__main__":
     main()

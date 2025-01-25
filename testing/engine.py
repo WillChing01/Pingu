@@ -5,6 +5,7 @@ import sys
 
 ARGS = ["..\\Pingu.exe" if sys.platform == "win32" else "../Pingu"]
 
+
 class Engine:
 
     def __init__(self, args=ARGS):
@@ -22,14 +23,16 @@ class Engine:
         self.stdin("uci")
         while True:
             res = self.readline()
-            if res == "uciok": break
+            if res == "uciok":
+                break
         return 0
 
     def isReadyCommand(self):
         self.stdin("isready")
         while True:
             res = self.readline()
-            if res == "readyok": break
+            if res == "readyok":
+                break
         return 0
 
     def quitCommand(self):
