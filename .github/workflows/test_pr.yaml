@@ -1,12 +1,11 @@
-name: "Test PR"
+name: "Engine Tests"
 
 on:
   pull_request:
     types: [opened, synchronize]
 
 jobs:
-  engine_tests:
-    name: Engine Tests
+  test_pr:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
