@@ -4,6 +4,7 @@ import engine
 
 TIME_LIMIT = 10
 
+
 def main():
     e = engine.Engine()
     e.stdin("setoption name Hash value 256")
@@ -29,11 +30,11 @@ def main():
                 if "info" in res:
                     res = res.split(" ")
                     for j in range(1, len(res)):
-                        if res[j-1] == "nps" and res[j].isdigit():
+                        if res[j - 1] == "nps" and res[j].isdigit():
                             nps = int(res[j])
                             break
             e.stdin("stop")
-            
+
             if nps > 0:
                 print("Position", i, "nps", nps)
             else:
@@ -43,6 +44,7 @@ def main():
     e.quitCommand()
 
     sys.exit(errors != 0)
+
 
 if __name__ == "__main__":
     main()

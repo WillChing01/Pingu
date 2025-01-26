@@ -27,7 +27,7 @@ CONFIG = {
     "export": {
         "cwd": f"{os.getcwd()}\\model",
         "args": ["python", "export.py"],
-    }
+    },
 }
 
 
