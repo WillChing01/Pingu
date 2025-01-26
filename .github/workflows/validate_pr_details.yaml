@@ -6,6 +6,7 @@ on:
 
 jobs:
   validate_pr_details:
+    name: Title
     runs-on: ubuntu-latest
     steps:
       - name: Semantic name check

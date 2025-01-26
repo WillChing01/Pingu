@@ -6,6 +6,7 @@ on:
 
 jobs:
   lint_pr:
+    name: "Source Code"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
