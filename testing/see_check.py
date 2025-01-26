@@ -1,6 +1,7 @@
 import sys
 import engine
 
+
 def main():
     e = engine.Engine()
 
@@ -23,12 +24,14 @@ def main():
                     if res[1] != score:
                         errors += 1
                         print("Position", i, "FAIL")
-                    else: print("Position", i, "PASS")
+                    else:
+                        print("Position", i, "PASS")
                     break
 
     e.quitCommand()
 
     sys.exit(errors != 0)
+
 
 if __name__ == "__main__":
     main()

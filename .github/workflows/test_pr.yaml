@@ -1,0 +1,34 @@
+name: "Engine Tests"
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  test_pr:
+    name: Regression
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build executable
+        run: make
+
+      - name: Bench engine
+        run: ./Pingu bench
+
+      - name: Perft test
+        run: cd testing && python3 perft_check.py
+
+      - name: Incremental update test
+        run: cd testing && python3 incremental_check.py
+
+      - name: Move validation test
+        run: cd testing && python3 move_validation_check.py
+
+      - name: Fen test
+        run: cd testing && python3 fen_check.py
+
+      - name: SEE test
+        run: cd testing && python3 see_check.py
