@@ -268,6 +268,13 @@ class Thread
                 //futility pruning.
                 if (canFutilityPrune && movesPlayed > 0 && movePicker.stage == QUIET_MOVES && !b.isCheckingMove(move)) {continue;}
 
+                //SEE pruning.
+                if (movePicker.stage == BAD_CAPTURES && movesPlayed > 0 && b.badCaptures[ply][movePicker.moveIndex - 1].second + 100 * depth < 0)
+                {
+                    movePicker.moveIndex = b.badCaptures[ply].size();
+                    continue;
+                }
+
                 //search with PVS. Research if reductions do not fail low.
                 b.makeMove(move);
 
