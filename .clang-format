@@ -1,3 +1,17 @@
 Language: Cpp
 BasedOnStyle: LLVM
+ColumnLimit: 120
+UseTab: Never
+TabWidth: 4
 IndentWidth: 4
+ContinuationIndentWidth: 4
+NamespaceIndentation: All
+IndentAccessModifiers: false
+PointerAlignment: Left
+AllowShortIfStatementsOnASingleLine: WithoutElse
+SeparateDefinitionBlocks: Always
+SortIncludes: Never
+InsertTrailingCommas: Wrapped
+BinPackArguments: false
+AlwaysBreakTemplateDeclarations: Yes
+InsertNewlineAtEOF: true

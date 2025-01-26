@@ -1,0 +1,10 @@
+{
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "[python]": {
+    "editor.rulers": [88]
+  },
+  "[cpp]": {
+    "editor.rulers": [120]
+  }
+}

@@ -8,8 +8,7 @@
 typedef unsigned long long U64;
 
 // eval and result given relative to side.
-struct datum
-{
+struct datum {
     U64 pos[4] = {~0ull, ~0ull, ~0ull, ~0ull};
     unsigned char kingPos[2];
     short eval;
@@ -52,15 +51,12 @@ const U64 masks[16] = {
     0xF000000000000000ull,
 };
 
-std::vector<std::filesystem::path> getFiles(const std::filesystem::path& path, const std::filesystem::path& ext)
-{
+std::vector<std::filesystem::path> getFiles(const std::filesystem::path& path, const std::filesystem::path& ext) {
     std::vector<std::filesystem::path> res = {};
 
-    for (const auto& entry: std::filesystem::recursive_directory_iterator(path))
-    {
-        const std::filesystem::path entryPath= entry.path();
-        if (entryPath.extension() == ext)
-        {
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+        const std::filesystem::path entryPath = entry.path();
+        if (entryPath.extension() == ext) {
             res.push_back(entryPath);
         }
     }

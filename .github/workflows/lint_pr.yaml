@@ -19,4 +19,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MULTI_STATUS: false
+          VALIDATE_CLANG_FORMAT: true
           VALIDATE_PYTHON_BLACK: true
+          LINTER_RULES_PATH: .
+          CLANG_FORMAT_FILE_NAME: .clang-format
+          FILTER_REGEX_EXCLUDE: include/weights.h
