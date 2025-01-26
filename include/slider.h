@@ -3,8 +3,7 @@
 
 #include "constants.h"
 
-inline U64 nortFillOccluded(U64 g, U64 p)
-{
+inline U64 nortFillOccluded(U64 g, U64 p) {
     U64 old = g;
     g |= p & (g << 8);
     p &= p << 8;
@@ -15,8 +14,7 @@ inline U64 nortFillOccluded(U64 g, U64 p)
     return g & ~old;
 }
 
-inline U64 soutFillOccluded(U64 g, U64 p)
-{
+inline U64 soutFillOccluded(U64 g, U64 p) {
     U64 old = g;
     g |= p & (g >> 8);
     p &= p >> 8;
@@ -27,8 +25,7 @@ inline U64 soutFillOccluded(U64 g, U64 p)
     return g & ~old;
 }
 
-inline U64 eastFillOccluded(U64 g, U64 p)
-{
+inline U64 eastFillOccluded(U64 g, U64 p) {
     U64 old = g;
     p &= NOT_A_FILE;
     g |= p & (g << 1);
@@ -40,8 +37,7 @@ inline U64 eastFillOccluded(U64 g, U64 p)
     return g & ~old;
 }
 
-inline U64 noEaFillOccluded(U64 g, U64 p)
-{
+inline U64 noEaFillOccluded(U64 g, U64 p) {
     U64 old = g;
     p &= NOT_A_FILE;
     g |= p & (g << 9);
@@ -53,8 +49,7 @@ inline U64 noEaFillOccluded(U64 g, U64 p)
     return g & ~old;
 }
 
-inline U64 soEaFillOccluded(U64 g, U64 p)
-{
+inline U64 soEaFillOccluded(U64 g, U64 p) {
     U64 old = g;
     p &= NOT_A_FILE;
     g |= p & (g >> 7);
@@ -66,8 +61,7 @@ inline U64 soEaFillOccluded(U64 g, U64 p)
     return g & ~old;
 }
 
-inline U64 westFillOccluded(U64 g, U64 p)
-{
+inline U64 westFillOccluded(U64 g, U64 p) {
     U64 old = g;
     p &= NOT_H_FILE;
     g |= p & (g >> 1);
@@ -79,8 +73,7 @@ inline U64 westFillOccluded(U64 g, U64 p)
     return g & ~old;
 }
 
-inline U64 soWeFillOccluded(U64 g, U64 p)
-{
+inline U64 soWeFillOccluded(U64 g, U64 p) {
     U64 old = g;
     p &= NOT_H_FILE;
     g |= p & (g >> 9);
@@ -92,8 +85,7 @@ inline U64 soWeFillOccluded(U64 g, U64 p)
     return g & ~old;
 }
 
-inline U64 noWeFillOccluded(U64 g, U64 p)
-{
+inline U64 noWeFillOccluded(U64 g, U64 p) {
     U64 old = g;
     p &= NOT_H_FILE;
     g |= p & (g << 7);
@@ -105,32 +97,29 @@ inline U64 noWeFillOccluded(U64 g, U64 p)
     return g & ~old;
 }
 
-inline U64 rookAttacks(U64 b, U64 p)
-{
-    //p is permitted squares.
-    U64 nortAttacks=nortFillOccluded(b,p);
-    U64 soutAttacks=soutFillOccluded(b,p);
-    U64 westAttacks=westFillOccluded(b,p);
-    U64 eastAttacks=eastFillOccluded(b,p);
+inline U64 rookAttacks(U64 b, U64 p) {
+    // p is permitted squares.
+    U64 nortAttacks = nortFillOccluded(b, p);
+    U64 soutAttacks = soutFillOccluded(b, p);
+    U64 westAttacks = westFillOccluded(b, p);
+    U64 eastAttacks = eastFillOccluded(b, p);
 
     return nortAttacks | soutAttacks | westAttacks | eastAttacks;
 }
 
-inline U64 bishopAttacks(U64 b, U64 p)
-{
-    //p is permitted squares.
-    U64 noEaAttacks=noEaFillOccluded(b,p);
-    U64 soEaAttacks=soEaFillOccluded(b,p);
-    U64 soWeAttacks=soWeFillOccluded(b,p);
-    U64 noWeAttacks=noWeFillOccluded(b,p);
+inline U64 bishopAttacks(U64 b, U64 p) {
+    // p is permitted squares.
+    U64 noEaAttacks = noEaFillOccluded(b, p);
+    U64 soEaAttacks = soEaFillOccluded(b, p);
+    U64 soWeAttacks = soWeFillOccluded(b, p);
+    U64 noWeAttacks = noWeFillOccluded(b, p);
 
     return noEaAttacks | soEaAttacks | soWeAttacks | noWeAttacks;
 }
 
-inline U64 queenAttacks(U64 b, U64 p)
-{
-    //p is permitted squares.
-    return rookAttacks(b,p) | bishopAttacks(b,p);
+inline U64 queenAttacks(U64 b, U64 p) {
+    // p is permitted squares.
+    return rookAttacks(b, p) | bishopAttacks(b, p);
 }
 
 #endif // SLIDER_H_INCLUDED

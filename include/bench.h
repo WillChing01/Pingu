@@ -1,11 +1,11 @@
 #ifndef BENCH_H_INCLUDED
 #define BENCH_H_INCLUDED
 
+#include "uci.h"
+
 #include <chrono>
 #include <iostream>
 #include <string>
-
-#include "uci.h"
 
 const std::array<std::string, 10> benchPositions = {
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -17,15 +17,13 @@ const std::array<std::string, 10> benchPositions = {
     "r4r2/4Npk1/4p2p/2Np1bpQ/p2Pn3/4P3/q4PPP/2R2RK1 b - - 3 22",
     "4k1r1/p1prqpPp/2Q1b3/PP2R1B1/2pb4/2p5/2K2PPP/RN6 b - - 3 20",
     "4r1k1/p2b1ppp/2pb4/3p2q1/7r/1P2PN1P/PB3PP1/2RQ1R1K b - - 5 21",
-    "3rrbk1/5pp1/p2p2np/1pq2N2/4b3/PB4BP/1QP2PP1/3RR1K1 w - - 0 24"
+    "3rrbk1/5pp1/p2p2np/1pq2N2/4b3/PB4BP/1QP2PP1/3RR1K1 w - - 0 24",
 };
 
 const int benchDepth = 13;
 
-void benchCommand(int argc, const char** argv)
-{
-    if (argc > 2)
-    {
+void benchCommand(int argc, const char** argv) {
+    if (argc > 2) {
         std::cout << "Error - too many arguments provided" << std::endl;
         return;
     }
@@ -34,8 +32,7 @@ void benchCommand(int argc, const char** argv)
     U32 nodes = 0;
     double time = 0;
 
-    for (const std::string &fen: benchPositions)
-    {
+    for (const std::string& fen : benchPositions) {
         prepareForNewGame(search);
         search.setPositionFen(fen);
 
@@ -45,11 +42,12 @@ void benchCommand(int argc, const char** argv)
 
         U64 iterNodes = globalNodeCount;
         double iterTime = std::chrono::duration<double, std::milli>(finishTime - startTime).count();
-        
+
         nodes += iterNodes;
         time += iterTime;
 
-        std::cout << "info bench position " << fen << " nodes " << iterNodes << " nps " << (U64)((double)(iterNodes) * 1000. / iterTime) << std::endl;
+        std::cout << "info bench position " << fen << " nodes " << iterNodes << " nps "
+                  << (U64)((double)(iterNodes) * 1000. / iterTime) << std::endl;
     }
 
     double nps = 1000. * (double)(nodes) / (time);

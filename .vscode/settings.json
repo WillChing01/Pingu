@@ -1,4 +1,6 @@
 {
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
   "[python]": {
     "editor.rulers": [88]
   },

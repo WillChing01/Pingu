@@ -3,8 +3,7 @@
 
 #include "constants.h"
 
-inline U64 kingAttacks(U64 b)
-{
+inline U64 kingAttacks(U64 b) {
     U64 res = b | ((b & NOT_H_FILE) << 1) | ((b & NOT_A_FILE) >> 1);
 
     res = res | (res << 8) | (res >> 8);
