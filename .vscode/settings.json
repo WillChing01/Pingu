@@ -1,0 +1,8 @@
+{
+  "[python]": {
+    "editor.rulers": [88]
+  },
+  "[cpp]": {
+    "editor.rulers": [120]
+  }
+}
