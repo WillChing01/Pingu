@@ -32,4 +32,5 @@ jobs:
         uses: super-linter/super-linter@v7.2.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MULTI_STATUS: false
           VALIDATE_PYTHON_BLACK: true
