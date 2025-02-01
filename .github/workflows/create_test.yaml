@@ -68,6 +68,6 @@ jobs:
             "username": "'"${{ secrets.username }}"'",
             "password": "'"${{ secrets.password }}"'",
             "action": "CREATE_TEST",
-          }')
+          }' | jq -r 'to_entries | map("\(.key)=\(.value|@uri)") | join("&")')
           echo "$DATA"
-          curl -X POST "${{ secrets.url }}" -H "Content-Type: application/json" -d "$DATA"
+          curl -X POST "${{ secrets.url }}" -H "Content-Type: application/x-www-form-urlencoded" -d "$DATA"
