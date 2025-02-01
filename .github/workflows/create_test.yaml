@@ -41,10 +41,12 @@ jobs:
             "devbench": "'"$DEV_BENCH"'",
             "devbranch": "'"$DEV_BRANCH"'",
             "devoptions": "Threads=1 Hash=8",
+            "devnetwork": "",
 
             "basebench": "'"$BASE_BENCH"'",
             "basebranch": "'"$BASE_BRANCH"'",
             "baseoptions": "Threads=1 Hash=8",
+            "basenetwork": "",
 
             "bookname": "Pohl.epd",
             "timecontrol": "10.0+0.1",
