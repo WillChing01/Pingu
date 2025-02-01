@@ -70,7 +70,7 @@ jobs:
             "action": "CREATE_TEST"
           }' | jq -r 'to_entries | map("\(.key)=\(.value|@uri)") | join("&")')
           RES=$(curl -X POST "${{ secrets.url }}" -H "Content-Type: application/x-www-form-urlencoded" -d "$DATA" --write-out "%{http_code}" --silent --output /dev/null)
-          if [ "$RES" -ne 200 ]; then
+          if [[ "$RES" =~ ^[45]..$ ]]; then
             echo "API request failed with status $RES"
             exit 1
           fi
