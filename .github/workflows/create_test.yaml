@@ -3,6 +3,9 @@ name: "Create SPRT Test"
 on:
   pull_request:
     types: [opened, synchronize]
+    branches:
+      - feat/*
+      - refactor/*
 
 jobs:
   create_test:
