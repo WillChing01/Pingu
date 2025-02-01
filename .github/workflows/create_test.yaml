@@ -34,7 +34,7 @@ jobs:
 
       - name: Send request
         run: |
-          DATA='{
+          DATA=$('{
             "enginename": "Pingu",
             "source": "https://github.com/WillChing01/Pingu",
 
@@ -61,5 +61,5 @@ jobs:
             "username": "'"${{ secrets.username }}"'",
             "password": "'"${{ secrets.password }}"'",
             "action": "CREATE_TEST"
-          }'
+          }')
           curl -X POST "${{ secrets.url }}" -H "Content-Type: application/json" -d "$DATA"
