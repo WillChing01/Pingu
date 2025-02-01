@@ -35,29 +35,40 @@ jobs:
       - name: Send request
         run: |
           DATA=$(echo '{
-            "enginename": "Pingu",
-            "source": "https://github.com/WillChing01/Pingu",
+            "dev_engine": "Pingu",
+            "dev_repo": "https://github.com/WillChing01/Pingu",
+            "dev_network": "",
+            "dev_options": "Threads=1 Hash=8",
+            "dev_time_control": "10.0+0.1",
+            
+            "base_engine": "Pingu",
+            "base_repo": "https://github.com/WillChing01/Pingu",
+            "base_network": "",
+            "base_options": "Threads=1 Hash=8",
+            "base_time_control": "10.0+0.1",
 
             "devbench": "'"$DEV_BENCH"'",
             "devbranch": "'"$DEV_BRANCH"'",
-            "devoptions": "Threads=1 Hash=8",
-            "devnetwork": "",
+            "devoptions": ,
+            "devnetwork": "None",
 
             "basebench": "'"$BASE_BENCH"'",
             "basebranch": "'"$BASE_BRANCH"'",
             "baseoptions": "Threads=1 Hash=8",
-            "basenetwork": "",
+            "basenetwork": "None",
 
-            "bookname": "Pohl.epd",
-            "timecontrol": "10.0+0.1",
-
+            "book_name": "Pohl.epd",
+            "upload_pgns": "FALSE",
             "test_mode": "SPRT",
-            "bounds": "'"$( [[ "$DEV_BRANCH" =~ ^feat/ ]] && echo '[0.00, 3.00]' || echo '[-5.00, 0.00]' )"'",
-            "confidence": "[0.05, 0.05]",
+            "test_bounds": "'"$( [[ "$DEV_BRANCH" =~ ^feat/ ]] && echo '[0.00, 3.00]' || echo '[-5.00, 0.00]' )"'",
+            "test_confidence": "[0.05, 0.05]",
 
             "priority": "0",
             "throughput": "1000",
             "syzygy_adj": "DISABLED",
+
+            
+
             "szygy_wdl": "DISABLED",
 
             "username": "'"${{ secrets.username }}"'",
