@@ -1,0 +1,70 @@
+name: "Create SPRT Test"
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  create_test:
+    name: "STC"
+    runs-on: ubuntu-latest
+    env:
+      DEV_BRANCH: ${{ github.head_ref }}
+      BASE_BRANCH: master
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+
+      - name: Dev bench
+        run: |
+          make
+          echo "DEV_BENCH=$(./Pingu bench | grep -oP '(\d+) nodes \d+ nps' | awk '{print $1}')" >> $GITHUB_ENV
+          make clean
+
+      - name: Checkout base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE_BRANCH }}
+
+      - name: Base bench
+        run: |
+          make
+          echo "BASE_BENCH=$(./Pingu bench | grep -oP '(\d+) nodes \d+ nps' | awk '{print $1}')" >> $GITHUB_ENV
+          make clean
+
+      - name: Set payload
+        run: |
+          DATA='{
+            "enginename": "Pingu",
+            "source": "https://github.com/WillChing01/Pingu",
+
+            "devbench": "'"$DEV_BENCH"'",
+            "devbranch": "'"$DEV_BRANCH"'",
+            "devoptions": "Threads=1 Hash=8",
+
+            "basebench": "'"$BASE_BENCH"'",
+            "basebranch": "'"$BASE_BRANCH"'",
+            "baseoptions": "Threads=1 Hash=8",
+
+            "bookname": "Pohl.epd",
+            "timecontrol": "10.0+0.1",
+
+            "test_mode": "SPRT",
+            "bounds": "'"$( [[ "$DEV_BRANCH" =~ ^feat/ ]] && echo '[0.00, 3.00]' || echo '[-5.00, 0.00]' )"'",
+            "confidence": "[0.05, 0.05]",
+
+            "priority": "0",
+            "throughput": "1000",
+            "syzygy_adj": "DISABLED",
+            "szygy_wdl": "DISABLED",
+
+            "username": "'"${{ secrets.username }}"'",
+            "password": "'"${{ secrets.password }}"'",
+            "action": "CREATE_TEST"
+          }'
+
+          echo "DATA=$(echo '$DATA' | jq -c .)" >> $GITHUB_ENV
+
+      - name: Send request
+        run: |
+          curl -X POST "${{ secrets.url }}" -H "Content-Type: application/json" -d "$DATA"
