@@ -18,8 +18,7 @@ jobs:
       - name: Dev bench
         run: |
           make
-          echo "$(./Pingu bench | grep -oP '(\d+) nodes \d+ nps')"
-          echo "DEV_BENCH=$(./Pingu bench | grep -oP '(\d+) nodes \d+ nps' | awk '{print $1}')" >> $GITHUB_ENV
+          echo "DEV_BENCH=$(./Pingu bench | grep -oP '^(\d+) nodes \d+ nps' | awk '{print $1}')" >> $GITHUB_ENV
           make clean
 
       - name: Checkout base
@@ -30,7 +29,7 @@ jobs:
       - name: Base bench
         run: |
           make
-          echo "BASE_BENCH=$(./Pingu bench | grep -oP '(\d+) nodes \d+ nps' | awk '{print $1}')" >> $GITHUB_ENV
+          echo "BASE_BENCH=$(./Pingu bench | grep -oP '^(\d+) nodes \d+ nps' | awk '{print $1}')" >> $GITHUB_ENV
           make clean
 
       - name: Set payload
