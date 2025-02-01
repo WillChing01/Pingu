@@ -34,40 +34,68 @@ jobs:
 
       - name: Send request
         run: |
-          DATA=$(echo '{
-            "dev_engine": "Pingu",
-            "dev_repo": "https://github.com/WillChing01/Pingu",
-            "dev_branch": "'"$DEV_BRANCH"'",
-            "dev_bench": "'"$DEV_BENCH"'",
-            "dev_network": "",
-            "dev_options": "Threads=1 Hash=8",
-            "dev_time_control": "10.0+0.1",
+          DATA=$(jq -n \
+            --arg dev_engine "Pingu" \
+            --arg dev_repo "https://github.com/WillChing01/Pingu" \
+            --arg dev_branch "$DEV_BRANCH" \
+            --arg dev_bench "$DEV_BENCH" \
+            --arg dev_options "Threads=1 Hash=8" \
+            --arg dev_time_control "10.0+0.1" \
+            --arg base_engine "Pingu" \
+            --arg base_repo "https://github.com/WillChing01/Pingu" \
+            --arg base_branch "$BASE_BRANCH" \
+            --arg base_bench "$BASE_BENCH" \
+            --arg base_options "Threads=1 Hash=8" \
+            --arg base_time_control "10.0+0.1" \
+            --arg book_name "Pohl.epd" \
+            --arg upload_pgns "FALSE" \
+            --arg test_mode "SPRT" \
+            --arg test_bounds "$( [[ "$DEV_BRANCH" =~ ^feat/ ]] && echo '[0.00, 3.00]' || echo '[-5.00, 0.00]' )" \
+            --arg test_confidence "[0.05, 0.05]" \
+            --arg priority "0" \
+            --arg throughput "1000" \
+            --arg workload_size "32" \
+            --arg syzygy_wdl "DISABLED" \
+            --arg syzygy_adj "DISABLED" \
+            --arg win_adj "movecount=3 score=400" \
+            --arg draw_adj "movenumber=40 movecount=8 score=10" \
+            --arg username "${{ secrets.username }}" \
+            --arg password "${{ secrets.password }}" \
+            --arg action "CREATE_TEST" \
+            '{
+              dev_engine: $dev_engine,
+              dev_repo: $dev_repo,
+              dev_branch: $dev_branch,
+              dev_bench: $dev_bench,
+              dev_network: "",
+              dev_options: $dev_options,
+              dev_time_control: $dev_time_control,
 
-            "base_engine": "Pingu",
-            "base_repo": "https://github.com/WillChing01/Pingu",
-            "base_branch": "'"$BASE_BRANCH"'",
-            "base_bench": "'"$BASE_BENCH"'",
-            "base_network": "",
-            "base_options": "Threads=1 Hash=8",
-            "base_time_control": "10.0+0.1",
+              base_engine: $base_engine,
+              base_repo: $base_repo,
+              base_branch: $base_branch,
+              base_bench: $base_bench,
+              base_network: "",
+              base_options: $base_options,
+              base_time_control: $base_time_control,
 
-            "book_name": "Pohl.epd",
-            "upload_pgns": "FALSE",
-            "test_mode": "SPRT",
-            "test_bounds": "'"$( [[ "$DEV_BRANCH" =~ ^feat/ ]] && echo '[0.00, 3.00]' || echo '[-5.00, 0.00]' )"'",
-            "test_confidence": "[0.05, 0.05]",
+              book_name: $book_name,
+              upload_pgns: $upload_pgns,
+              test_mode: $test_mode,
+              test_bounds: $test_bounds,
+              test_confidence: $test_confidence,
 
-            "priority": "0",
-            "throughput": "1000",
-            "workload_size": "32",
-            "syzygy_wdl": "DISABLED",
-            "syzygy_adj": "DISABLED",
-            "win_adj": "movecount=3 score=400",
-            "draw_adj": "movenumber=40 movecount=8 score=10",
+              priority: $priority,
+              throughput: $throughput,
+              workload_size: $workload_size,
+              syzygy_wdl: $syzygy_wdl,
+              syzygy_adj: $syzygy_adj,
+              win_adj: $win_adj,
+              draw_adj: $draw_adj,
 
-            "username": "'"${{ secrets.username }}"'",
-            "password": "'"${{ secrets.password }}"'",
-            "action": "CREATE_TEST",
+              username: $username,
+              password: $password,
+              action: $action
           }')
           echo "$DATA"
           curl -X POST "${{ secrets.url }}" -H "Content-Type: application/json" -d "$DATA"
