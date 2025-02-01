@@ -32,7 +32,7 @@ jobs:
           echo "BASE_BENCH=$(./Pingu bench | grep -oP '^(\d+) nodes \d+ nps' | awk '{print $1}')" >> $GITHUB_ENV
           make clean
 
-      - name: Set payload
+      - name: Send request
         run: |
           DATA='{
             "enginename": "Pingu",
@@ -62,10 +62,4 @@ jobs:
             "password": "'"${{ secrets.password }}"'",
             "action": "CREATE_TEST"
           }'
-
-          echo "$DATA"
-          echo "DATA=$(echo '$DATA' | jq -c .)" >> $GITHUB_ENV
-
-      - name: Send request
-        run: |
           curl -X POST "${{ secrets.url }}" -H "Content-Type: application/json" -d "$DATA"
