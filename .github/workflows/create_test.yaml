@@ -37,25 +37,19 @@ jobs:
           DATA=$(echo '{
             "dev_engine": "Pingu",
             "dev_repo": "https://github.com/WillChing01/Pingu",
+            "dev_branch": "'"$DEV_BRANCH"'",
+            "dev_bench": "'"$DEV_BENCH"'",
             "dev_network": "",
             "dev_options": "Threads=1 Hash=8",
             "dev_time_control": "10.0+0.1",
-            
+
             "base_engine": "Pingu",
             "base_repo": "https://github.com/WillChing01/Pingu",
+            "dev_branch": "'"$BASE_BRANCH"'",
+            "dev_bench": "'"$BASE_BENCH"'",
             "base_network": "",
             "base_options": "Threads=1 Hash=8",
             "base_time_control": "10.0+0.1",
-
-            "devbench": "'"$DEV_BENCH"'",
-            "devbranch": "'"$DEV_BRANCH"'",
-            "devoptions": ,
-            "devnetwork": "None",
-
-            "basebench": "'"$BASE_BENCH"'",
-            "basebranch": "'"$BASE_BRANCH"'",
-            "baseoptions": "Threads=1 Hash=8",
-            "basenetwork": "None",
 
             "book_name": "Pohl.epd",
             "upload_pgns": "FALSE",
@@ -65,11 +59,11 @@ jobs:
 
             "priority": "0",
             "throughput": "1000",
+            "workload_size": "32",
+            "syzygy_wdl": "DISABLED",
             "syzygy_adj": "DISABLED",
-
-            
-
-            "szygy_wdl": "DISABLED",
+            "win_adj": "movecount=3 score=400",
+            "draw_adj": "movenumber=40 movecount=8 score=10",
 
             "username": "'"${{ secrets.username }}"'",
             "password": "'"${{ secrets.password }}"'",
