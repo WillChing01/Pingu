@@ -45,8 +45,8 @@ jobs:
 
             "base_engine": "Pingu",
             "base_repo": "https://github.com/WillChing01/Pingu",
-            "dev_branch": "'"$BASE_BRANCH"'",
-            "dev_bench": "'"$BASE_BENCH"'",
+            "base_branch": "'"$BASE_BRANCH"'",
+            "base_bench": "'"$BASE_BENCH"'",
             "base_network": "",
             "base_options": "Threads=1 Hash=8",
             "base_time_control": "10.0+0.1",
