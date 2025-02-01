@@ -34,7 +34,7 @@ jobs:
 
       - name: Send request
         run: |
-          DATA=$('{
+          DATA=$(echo '{
             "enginename": "Pingu",
             "source": "https://github.com/WillChing01/Pingu",
 
