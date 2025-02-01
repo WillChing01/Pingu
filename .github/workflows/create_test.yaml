@@ -62,4 +62,5 @@ jobs:
             "password": "'"${{ secrets.password }}"'",
             "action": "CREATE_TEST"
           }')
+          echo "$DATA"
           curl -X POST "${{ secrets.url }}" -H "Content-Type: application/json" -d "$DATA"
