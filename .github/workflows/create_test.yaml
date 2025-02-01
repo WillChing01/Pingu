@@ -63,6 +63,7 @@ jobs:
             "action": "CREATE_TEST"
           }'
 
+          echo "$DATA"
           echo "DATA=$(echo '$DATA' | jq -c .)" >> $GITHUB_ENV
 
       - name: Send request
