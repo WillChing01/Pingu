@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DEV_BRANCH: ${{ github.head_ref }}
-      BASE_BRANCH: master
+      BASE_BRANCH: ${{ github.base_ref }}
     steps:
       - name: Checkout dev
         uses: actions/checkout@v4
