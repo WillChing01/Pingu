@@ -1,0 +1,79 @@
+name: "Create SPRT Test"
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - feat/*
+      - refactor/*
+
+jobs:
+  create_test:
+    name: "STC"
+    runs-on: ubuntu-latest
+    env:
+      DEV_BRANCH: ${{ github.head_ref }}
+      BASE_BRANCH: ${{ github.base_ref }}
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+
+      - name: Dev bench
+        run: |
+          make
+          echo "DEV_BENCH=$(./Pingu bench | grep -oP '^(\d+) nodes \d+ nps' | awk '{print $1}')" >> $GITHUB_ENV
+          make clean
+
+      - name: Checkout base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE_BRANCH }}
+
+      - name: Base bench
+        run: |
+          make
+          echo "BASE_BENCH=$(./Pingu bench | grep -oP '^(\d+) nodes \d+ nps' | awk '{print $1}')" >> $GITHUB_ENV
+          make clean
+
+      - name: Send request
+        run: |
+          DATA=$(echo '{
+            "dev_engine": "Pingu",
+            "dev_repo": "https://github.com/WillChing01/Pingu",
+            "dev_branch": "'"$DEV_BRANCH"'",
+            "dev_bench": "'"$DEV_BENCH"'",
+            "dev_network": "",
+            "dev_options": "Threads=1 Hash=8",
+            "dev_time_control": "10.0+0.1",
+
+            "base_engine": "Pingu",
+            "base_repo": "https://github.com/WillChing01/Pingu",
+            "base_branch": "'"$BASE_BRANCH"'",
+            "base_bench": "'"$BASE_BENCH"'",
+            "base_network": "",
+            "base_options": "Threads=1 Hash=8",
+            "base_time_control": "10.0+0.1",
+
+            "book_name": "Pohl.epd",
+            "upload_pgns": "FALSE",
+            "test_mode": "SPRT",
+            "test_bounds": "'"$( [[ "$DEV_BRANCH" =~ ^feat/ ]] && echo '[0.00, 3.00]' || echo '[-5.00, 0.00]' )"'",
+            "test_confidence": "[0.05, 0.05]",
+
+            "priority": "0",
+            "throughput": "1000",
+            "workload_size": "32",
+            "syzygy_wdl": "DISABLED",
+            "syzygy_adj": "DISABLED",
+            "win_adj": "movecount=3 score=400",
+            "draw_adj": "movenumber=40 movecount=8 score=10",
+
+            "username": "'"${{ secrets.username }}"'",
+            "password": "'"${{ secrets.password }}"'",
+            "action": "CREATE_TEST"
+          }' | jq -r 'to_entries | map("\(.key)=\(.value|@uri)") | join("&")')
+          RES=$(curl -X POST "${{ secrets.url }}" -H "Content-Type: application/x-www-form-urlencoded" -d "$DATA" --write-out "%{http_code}" --silent --output /dev/null)
+          if [[ "$RES" =~ ^[45]..$ ]]; then
+            echo "API request failed with status $RES"
+            exit 1
+          fi
