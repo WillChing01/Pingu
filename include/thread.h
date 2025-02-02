@@ -21,6 +21,8 @@ const std::array<int, futilityDepthLimit> futilityMargins = {150, 400};
 const int lateMovePruningDepthLimit = 4;
 const std::array<int, lateMovePruningDepthLimit> lateMovePruningMargins = {6, 10, 14, 18};
 
+const int quietSeeDepthLimit = 4;
+
 const std::array<int, 3> aspirationDelta = {50, 200, 2 * MATE_SCORE};
 const std::array<int, 4> betaDelta = {1, 50, 200, 2 * MATE_SCORE};
 
@@ -275,6 +277,8 @@ class Thread {
         bool canFutilityPrune =
             canPrune && depth <= futilityDepthLimit && staticEval + futilityMargins[depth - 1] <= alpha;
 
+        bool canQuietSeePrune = canPrune && depth <= quietSeeDepthLimit;
+
         // loop through moves and search them.
         while (U32 move = movePicker.getNext()) {
             // late move pruning.
@@ -291,6 +295,12 @@ class Thread {
             if (movePicker.stage == BAD_CAPTURES && movesPlayed > 0 &&
                 b.badCaptures[ply][movePicker.moveIndex - 1].second + 100 * depth < 0) {
                 movePicker.moveIndex = b.badCaptures[ply].size();
+                continue;
+            }
+
+            // SEE pruning - quiet moves.
+            if (canQuietSeePrune && movePicker.stage == QUIET_MOVES && movesPlayed > 0 &&
+                b.see.evaluate(move) + 150 * depth < 0) {
                 continue;
             }
 
