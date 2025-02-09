@@ -28,6 +28,7 @@ void benchCommand(int argc, const char** argv) {
         return;
     }
 
+    searchParams params = {.depth=benchDepth};
     Search search;
     U32 nodes = 0;
     double time = 0;
@@ -37,7 +38,7 @@ void benchCommand(int argc, const char** argv) {
         search.setPositionFen(fen);
 
         auto startTime = std::chrono::high_resolution_clock::now();
-        search.go(benchDepth, INT_MAX, ULLONG_MAX, true, false);
+        search.go(params, true, false);
         auto finishTime = std::chrono::high_resolution_clock::now();
 
         U64 iterNodes = globalNodeCount;

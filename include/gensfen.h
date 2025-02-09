@@ -210,7 +210,8 @@ void gensfenCommand(int argc, const char** argv) {
 
             // scale depth based on game phase.
             int searchDepth = mindepth + ((24 - s.mainThread.b.phase) * (maxdepth - mindepth)) / 24;
-            U32 bestMove = s.go(searchDepth, INT_MAX, nodes, true, false);
+            searchParams params = {.depth=searchDepth, .nodes=nodes};
+            U32 bestMove = s.go(params, true, false);
             int score = s.mainThread.bestScore;
             if (s.mainThread.b.side) {
                 score *= -1;

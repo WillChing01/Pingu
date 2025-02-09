@@ -135,14 +135,10 @@ void seeCommand(Board& b, const std::vector<std::string>& words) {
 void goCommand(Search& s, const std::vector<std::string>& words) {
     isSearching = true;
 
-    double whiteTime = 0;
-    double blackTime = 0;
-    double whiteInc = 0;
-    double blackInc = 0;
-    int movesToGo = 0;
-    int depth = MAXDEPTH;
-    U64 nodes = ULLONG_MAX;
-    double moveTime = std::numeric_limits<double>::infinity();
+    searchParams params;
+
+    U32 whiteTime, whiteInc, blackTime, blackInc;
+    whiteTime = whiteInc = blackTime = blackInc = 0;
 
     for (int i = 1; i < (int)words.size(); i++) {
         if (words[i] == "wtime") {
@@ -154,33 +150,31 @@ void goCommand(Search& s, const std::vector<std::string>& words) {
         } else if (words[i] == "binc") {
             blackInc = std::stoi(words[i + 1]);
         } else if (words[i] == "movestogo") {
-            movesToGo = std::stoi(words[i + 1]);
+            params.movesToGo = std::stoi(words[i + 1]);
         } else if (words[i] == "depth") {
-            depth = std::stoi(words[i + 1]);
+            params.depth = std::stoi(words[i + 1]);
         } else if (words[i] == "nodes") {
-            nodes = std::stoi(words[i + 1]);
+            params.nodes = std::stoi(words[i + 1]);
         } else if (words[i] == "mate") {
+            // TODO
         } else if (words[i] == "movetime") {
-            moveTime = std::stoi(words[i + 1]);
+            params.moveTime = std::stoi(words[i + 1]);
         }
     }
 
-    if (whiteTime || blackTime) {
-        // allocate the time to search for.
-
-        // use 5% of remaining time plus 50% of increment.
-        // if this exceeds time left, then use 80% of time left.
-
-        double timeLeft = s.mainThread.b.side ? blackTime : whiteTime;
-        double increment = s.mainThread.b.side ? blackInc : whiteInc;
-
-        moveTime = timeLeft / std::max(movesToGo, 20) + 0.5 * increment;
-        if (moveTime > timeLeft) {
-            moveTime = 0.8 * timeLeft;
-        }
+    if (s.mainThread.b.side) {
+        params.time = blackTime;
+        params.inc = blackInc;
+        params.opponentTime = whiteTime;
+        params.opponentInc = whiteInc;
+    } else {
+        params.time = whiteTime;
+        params.inc = whiteInc;
+        params.opponentTime = blackTime;
+        params.opponentInc = blackInc;
     }
 
-    U32 bestMove = s.go(depth, moveTime, nodes, false, true);
+    U32 bestMove = s.go(params, false, true);
     std::cout << "bestmove " << moveToString(bestMove) << std::endl;
     isSearching = false;
 }

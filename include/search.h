@@ -10,6 +10,17 @@
 #include <iostream>
 #include <thread>
 
+struct searchParams {
+    U32 time;
+    U32 opponentTime;
+    U32 inc;
+    U32 opponentInc;
+    U32 movesToGo;
+    int depth = INT_MAX;
+    U64 nodes = ULLONG_MAX;
+    double moveTime = std::numeric_limits<double>::infinity();
+};
+
 class Search {
   public:
     Thread mainThread;
@@ -88,19 +99,26 @@ class Search {
         }
     }
 
-    U32 go(int depth, double searchTime, U64 nodes, bool analysisMode, bool verbose) {
+    U32 go(searchParams& params, bool analysisMode, bool verbose) {
         ++rootCounter;
         globalNodeCount = 0;
-        globalNodeLimit = nodes;
+        globalNodeLimit = params.nodes;
+
+        // TODO - update time management.
+        if (params.time) {
+            double t = params.time;
+            double dt = params.inc;
+            params.moveTime = std::min(t / std::max(params.movesToGo, 20u) + 0.5 * dt, 0.8 * t);
+        }
 
         // set helper threads to start searching.
         for (Thread* thread : threads) {
-            thread->prepareSearch(depth, searchTime, analysisMode);
+            thread->prepareSearch(params.depth, params.moveTime, analysisMode);
             std::thread(&Thread::rootSearch, thread, false).detach();
         }
 
         // search in main thread.
-        mainThread.prepareSearch(depth, searchTime, analysisMode);
+        mainThread.prepareSearch(params.depth, params.moveTime, analysisMode);
         mainThread.rootSearch(verbose);
 
         // wait for helper threads to finish.
