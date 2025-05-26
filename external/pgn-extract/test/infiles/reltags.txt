@@ -1,7 +1,0 @@
-TimeControl >= "180"
-WhiteElo >= "800"
-WhiteElo <= "899"
-BlackElo >= "800"
-BlackElo <= "899"
-BlackTitle <> "BOT"
-WhiteTitle <> "BOT"
