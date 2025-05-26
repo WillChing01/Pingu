@@ -1,0 +1,750 @@
+[Event "Consultation Game"]
+[Site "Paris FRA"]
+[Date "1780.??.??"]
+[EventDate "?"]
+[Round "?"]
+[Result "1-0"]
+[White "Bernard / Carlier"]
+[Black "François André Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "63"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1.e4 e6 2.d4 d5 3.exd5 exd5 4.Qh5+ g6 5.Qe5+ Qe7 6.Bf4 c6
+7.Be2 Bg7 8.Qxe7+ Nxe7 9.Nf3 O-O 10.Be5 Nd7 11.O-O Nxe5
+12.Nxe5 Bxe5 13.dxe5 Rf4 14.Bd3 Bf5 15.Bxf5 Nxf5 16.g3 Re4
+17.f4 Re2 18.Na3 Ne3 19.Rf2 Rxf2 20.Kxf2 Ng4+ 21.Kg2 Rd8 22.h3
+Nh6 23.g4 a6 24.Rd1 Nf7 25.h4 c5 26.c3 b5 27.Nc2 a5 28.Ne3 d4
+29.cxd4 cxd4 30.Nc2 d3 31.Ne1 d2 32.Nf3 1-0
+
+[Event "Philidor Blindfold Simul 3b, London"]
+[Site "London ENG"]
+[Date "1783.05.26"]
+[EventDate "?"]
+[Round "?"]
+[Result "0-1"]
+[White "Maseres"]
+[Black "Franï¿½ois Andrï¿½ Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "116"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kkq - 0 1"]
+
+1.e4 Nh6 2.d4 Nf7 3.Bd3 e6 4.Nf3 d5 5.e5 c5 6.c3 Nc6 7.Be3 b6
+8.Bb5 Bd7 9.a4 a6 10.Bd3 g6 11.O-O Qc7 12.Qe2 c4 13.Bc2 Rb8
+14.Na3 Be7 15.h3 O-O 16.Nh2 b5 17.axb5 axb5 18.Qg4 Kg7 19.f4
+Nh6 20.Qg3 Nf5 21.Bxf5 Rxf5 22.Qf3 b4 23.cxb4 Nxb4 24.g4 Rff8
+25.Qg2 Nd3 26.Bc1 Qb6 27.Nc2 Nxc1 28.Raxc1 Qxb2 29.Ne3 Qxg2+
+30.Kxg2 Rb3 31.Rf3 Rd3 32.Rd1 Ba4 33.Rxd3 cxd3 34.Nhf1 Bb4
+35.Rf2 Bc3 36.Ra2 Bb3 37.Rf2 Bxd4 38.Rd2 Rxf4 39.Rxd3 Bc4
+40.Nxc4 dxc4 41.Rf3 Rxf3 42.Kxf3 Bxe5 43.Ke4 Bf6 44.Ne3 c3
+45.Kd3 Kf7 46.Nd1 Ke7 47.Nxc3 Bxc3 48.Kxc3 Kd6 49.Kd4 e5+
+50.Ke4 Ke6 51.h4 h6 52.Ke3 Kd5 53.Kd3 e4+ 54.Ke3 Ke5 55.Ke2
+Kf4 56.Kf2 Kxg4 57.Ke3 Kxh4 58.Kxe4 Kg5 0-1
+
+[Event "Casual game, rook odds for pawn and move"]
+[Site "London ENG"]
+[Date "1787.05.07"]
+[EventDate "1788.??.??"]
+[Round "?"]
+[Result "1/2-1/2"]
+[White "François André Philidor"]
+[Black "John M Bruehl"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "98"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/1NBQKBNR w Kkq - 0 1"]
+
+1. e4 e6 2. f4 d5 3. e5 c5 4. c3 Nc6 5. d4 Bd7 6. Nf3 Be7
+7. g4 Nh6 8. h3 cxd4 9. cxd4 Qa5+ 10. Nc3 a6 11. Kf2 b5
+12. Bd3 g6 13. f5 b4 14. Ne2 Nxf5 15. gxf5 gxf5 16. Bb1 Rg8
+17. Nf4 O-O-O 18. Be3 Kb7 19. Qb3 Ka8 20. Bd3 Bc8 21. a3 bxa3
+22. bxa3 Na7 23. Rb1 Qc7 24. Qb6 Qb7 25. Bxa6 Qxb6 26. Rxb6
+Bxa3 27. Nxe6 Bxe6 28. Bb7+ Kb8 29. Bxd5+ Kc7 30. Rb7+ Kc8
+31. Rxa7 Bxd5 32. Rxa3 Kb7 33. Ra5 Kb6 34. Rc5 Rg7 35. Bg5
+Rdd7 36. Bf6 Rg8 37. Ng5 h6 38. e6 Rd6 39. Nf7 Rg2+ 40. Kf1
+Rxe6 41. Bd8+ Kb7 42. Rxd5 Rb2 43. Rxf5 Rc6 44. Bh4 Rc1+
+45. Be1 Rh2 46. Re5 Rxh3 47. Kg2 Rd3 48. Nd6+ Kc6 49. Nf5 Rc2+
+{...} 1/2-1/2
+
+[Event "Casual game, knight odds"]
+[Site "London, ENG"]
+[Date "1788.03.29"]
+[EventDate "1788.??.??"]
+[Round "?"]
+[Result "0-1"]
+[White "Leycester"]
+[Black "François André Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "58"]
+[SetUp "1"]
+[FEN "r1bqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 b6 2. d4 Bb7 3. Bd3 g6 4. f3 Bg7 5. Ne2 e6 6. c3 h6
+7. Be3 a6 8. Qc2 f5 9. exf5 gxf5 10. Nd2 Qh4+ 11. g3 Qf6
+12. Rg1 h5 13. h4 Ne7 14. Bg5 Qf7 15. Bxe7 Qxe7 16. O-O-O Bh6
+17. f4 Rg8 18. Qb3 O-O-O 19. Rde1 d6 20. Nc4 Bd5 21. Qa4 Kb7
+22. Ne3 b5 23. Nxd5 exd5 24. Qb3 Qf7 25. a4 c5 26. a5 cxd4
+27. Nxd4 Rxg3 28. Rxg3 Bxf4+ 29. Kb1 Bxg3 {...} 0-1
+
+[Event "Casual game, knight odds"]
+[Site "London ENG"]
+[Date "1788.03.30"]
+[EventDate "1788.??.??"]
+[Round "?"]
+[Result "1/2-1/2"]
+[White "Leycester"]
+[Black "Francois Andre Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[Source "'Selection of Games at Chess Actually Played by Philidor', G. Walker, London (1835), pp18-21"]
+[PlyCount "157"]
+[SetUp "1"]
+[FEN "r1bqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 e6 2. f4 Bc5 3. d4 Bb6 4. Nf3 c6 5. Qe2 d6 6. e5 d5
+7. g3 h6 8. h4 h5 9. Bh3 Qe7 10. c3 f6 11. exf6 gxf6 12. Be3
+Bd7 13. Nbd2 O-O-O 14. O-O-O Nh6 15. Rde1 Rde8 16. Bf2 Rhg8
+17. Nh2 Qh7 18. Qf3 Qg6 19. Nhf1 Ng4 20. Rg1 e5 21. fxe5 fxe5
+22. Bxg4 Bxg4 23. Qg2 e4 24. Ne3 Rgf8 25. Rgf1 Bf3 26. Qh3+
+Qe6 27. Qxe6+ Rxe6 28. Nd1 Ref6 29. Nxf3 Rxf3 30. Re3 R3f6
+31. Ree1 Bc7 32. Re3 Rf3 33. Rxf3 Rxf3 34. Kd2 Bxg3 35. Ke2
+Bd6 36. Be1 Rh3 37. Rf5 Rh2+ 38. Bf2 Kd7 39. Rxh5 Ke6 40. Rg5
+Bf4 41. Rg7 b5 42. Rg6+ Kd7 43. Rg7+ Ke6 44. Rxa7 Bg3 45. h5
+Bxf2 46. Nxf2 Rxh5 47. Rc7 Kd6 48. Rf7 Rg5 49. Rf4 Rg1 50. Nd1
+Rh1 51. Rf2 Rg1 52. a3 Rh1 53. Rf6+ Kd7 54. Kd2 Rh2+ 55. Rf2
+Rh1 56. Kc2 Ke6 57. Ne3 Re1 58. Ng4 Rg1 59. Ne5 c5 60. Re2 c4
+61. Kd2 Rf1 62. Rh2 Rb1 63. Ke3 Re1+ 64. Re2 Rf1 65. Kd2 Rb1
+66. Kc2 Rf1 67. b3 Kf5 68. bxc4 bxc4 69. Kb2 Kf4 70. a4 e3
+71. Ka3 Rf2 72. Rxe3 Kxe3 73. Ng4+ Kd2 74. Nxf2 Kxc3 75. a5
+Kd2 76. a6 c3 77. a7 c2 78. a8=Q c1=Q+ 79. Ka2 1/2-1/2
+
+[Event "Casual game, knight odds"]
+[Site "London ENG"]
+[Date "1788.03.30"]
+[EventDate "1788.03.30"]
+[Round "?"]
+[Result "1-0"]
+[White "Leycester"]
+[Black "Francois Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[Source "Games at Chess Played by Philidor, London 1835, pp17-18"]
+[PlyCount "98"]
+[SetUp "1"]
+[FEN "r1bqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1.e4 e6 2.Bc4 g6 3.c3 b6 4.a3 Bb7 5.d3 Bg7 6.Qe2 h6 7.f4 d6 8.f5 gxf5 9.exf5 Qh4+ 10.Kf1 Qf6 11.Nf3 Qxf5 12.Kf2 a6 13.Re1 e5 14.Kg1 Ne7 15.Rf1 d5 16.Bb3 Qe6 17.d4 e4 18.Ne1 b5 19.Nc2 f5 20.Bf4 Kd7 21.Ne3 c6 22.a4 Qg6 23.Nd2 h5 24.Qf2 Rhf8 25.Qg3 Qxg3 26.hxg3 Ke6 27.axb5 axb5 28.Rxa8 Rxa8 29.Bg5 Bf6 30.Nxe4 Bxg5 31.Nxg5+ Kf6 32.Nf3 Bc8 33.Nh4 Kg5 34.Bc2 Ra2 35.Nhxf5 Bxf5 36.Nxf5 Rxb2 37.Nxe7 Rxc2 38.Nxc6 Rxc3 39.Ne5 b4 40.Rb1 b3 41.Kh2 Kf5 42.Kh3 Ke4 43.Nf3 Kd3 44.Rb2 Kc4 45.Nd2+ Kb4 46.Kh4 Ka3 47.Rxb3+ Rxb3 48.Nxb3 Kxb3 49.Kxh5 {(...)} 1-0
+
+
+[Event "Casual game, odds of pawn and two moves"]
+[Site "London, ENG"]
+[Date "1788.03.31"]
+[EventDate "1788.03.31"]
+[Round "?"]
+[Result "0-1"]
+[White "de Beaurevoir"]
+[Black "Francois Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[Source "Games at Chess Played by Philidor, London 1835, pp1-3"]
+[PlyCount "112"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"]
+
+{1.e4 --} 2.d4 e6 3.f4 d5 4.e5 c5 5.c3 Nc6 6.Nf3 Qb6 7.a3 a5 8.a4 Nh6 9.Bd3 Bd7 10.Na3 O-O-O 11.Nb5 Nf7 12.Be3 c4 13.Bc2 Nb8 14.Na3 Qxb2 15.Nb5 Bxb5 16.axb5 Qxb5 17.Ba4 Qa6 18.Rb1 Be7 19.O-O Qa7 20.Qc2 g6 21.Rb5 Rd7 22.Rfb1 Nd8 23.Rb6 Ndc6 24.g4 Rf8 25.h4 Rc7 26.Kg2 Nb4 27.R6xb4 axb4 28.cxb4 b5 29.Bxb5 Rb7 30.Bxc4 Rc7 31.Nd2 dxc4 32.Nxc4 Qb7+ 33.Kg3 Na6 34.Qe2 Nxb4 35.Nd6+ Bxd6 36.exd6 Rc3 37.Kh2 Rc2 38.Bd2 Rxf4 39.Qxe6+ Kd8 40.Qg8+ Kd7 41.Qxh7+ Kc8 42.Qxb7+ Kxb7 43.Rxb4+ Kc6 44.Kg3 Rf1 45.d5+ Kxd6 46.Rd4 Ke5 47.Rd3 Ke4 48.Re3+ Kxd5 49.Rd3+ Ke4 50.Re3+ Kd4 51.Re2 Kd3 52.Re6 Kxd2 53.Rxg6 Rc3+ 54.Kg2 Rff3 55.h5 Rce3 56.h6 Ke2 0-1
+
+
+[Event "Casual game, odds of pawn and two moves"]
+[Site "London, ENG"]
+[Date "1788.03.31"]
+[EventDate "1788.03.31"]
+[Round "?"]
+[Result "0-1"]
+[White "de Beaurevoir"]
+[Black "Francois Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[Source "Games at Chess Played by Philidor, London 1835, pp3-4"]
+[PlyCount "74"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 2"]
+
+{1.d4 --} 2.c4 e6 3.e4 g6 4.f4 d5 5.cxd5 exd5 6.e5 c5 7.Bb5+ Nc6 8.Nc3 a6 9.Bxc6+ bxc6 10.Be3 cxd4 11.Qxd4 Nh6 12.Qb6 Qxb6 13.Bxb6 Rb8 14.Na4 Bb4+ 15.Ke2 O-O 16.a3 Be7 17.g3 c5 18.Rb1 Bf5 19.Rd1 Be4 20.Nf3 Bc2 21.Bxc5 Bxd1+ 22.Rxd1 Bxc5 23.Nxc5 Rxb2+ 24.Kf1 Nf5 25.Rd3 Rc8 26.Nb3 Rcc2 27.Nbd2 d4 28.Ke2 Ra2 29.Nxd4 Nxd4+ 30.Rxd4 Rxa3 31.g4 Rh3 32.f5 Rxh2+ 33.Kd1 Rcxd2+ 34.Rxd2 Rxd2+ 35.Kxd2 gxf5 36.gxf5 h5 37.e6 a5 0-1
+
+
+[Event "Odds London"]
+[Site "London ENG"]
+[Date "1788.05.??"]
+[EventDate "1788.??.??"]
+[Round "?"]
+[Result "0-1"]
+[White "Leycester"]
+[Black "François André Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "70"]
+[SetUp "1"]
+[FEN "r1bqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 e5 2. Bc4 f5 3. Bxg8 Rxg8 4. exf5 d5 5. Qh5+ g6 6. fxg6
+Rxg6 7. Qxh7 Qf6 8. g3 Bc5 9. f3 Bd7 10. Qh4 Qxh4 11. gxh4
+Rxg1+ 12. Rxg1 Bxg1 13. d3 Bxh2 14. Bg5 Bg3+ 15. Kd1 Kf7
+16. Nd2 c6 17. Ke2 Rh8 18. Rh1 Bf5 19. h5 Rg8 20. Be3 d4
+21. Bf2 Bf4 22. h6 Rh8 23. Nc4 b5 24. Rh5 Kg6 25. Rxf5 Kxf5
+26. Nd2 Bxd2 27. Kxd2 Rxh6 28. Ke2 Rh2 29. Kf1 Kf4 30. Kg1
+Kxf3 31. Kxh2 Kxf2 32. Kh3 Kf3 33. b3 c5 34. a3 e4 35. dxe4
+Kxe4 0-1
+
+[Event "Casual game, rook odds for pawn and move"]
+[Site "London, ENG"]
+[Date "1788.05.??"]
+[EventDate "1788.??.??"]
+[Round "?"]
+[Result "0-1"]
+[White "François André Philidor"]
+[Black "John M Bruehl"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "40"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/1NBQKBNR w Kkq - 0 1"]
+
+1. e4 e6 2. f4 d5 3. e5 Nh6 4. Nf3 Nf7 5. d3 Be7 6. g4 g5
+7. h4 gxh4 8. g5 c5 9. Rxh4 h6 10. Qd2 hxg5 11. Rxh8+ Nxh8
+12. fxg5 Ng6 13. Qh2 Kd7 14. Qh6 Qg8 15. c4 d4 16. Nbd2 Nc6
+17. Qh2 Qh8 18. Qxh8 Nxh8 19. Ne4 Ng6 20. Nf6+ Kc7 {...} 0-1
+
+[Event "Philidor Blindfold simul, 2b London"]
+[Site "London, ENG (Parsloe's)"]
+[Date "1788.05.10"]
+[EventDate "1788.??.??"]
+[Round "?"]
+[Result "0-1"]
+[White "Henry Jennings Nowell"]
+[Black "Francois Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "120"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 Nh6 2. Bc4 e6 3. d3 Nf7 4. f4 d5 5. Bb3 Bc5 6. Nf3 O-O
+7. e5 c6 8. d4 Bb6 9. a3 Qe7 10. O-O c5 11. c3 Nc6 12. Be3 Bd7
+13. Qe2 g6 14. Bc2 Nh6 15. Nbd2 Nf5 16. Rf2 Nxe3 17. Qxe3 Rac8
+18. Nb3 cxd4 19. Nfxd4 Nxd4 20. Nxd4 Rc4 21. Rd1 Rcc8 22. h3
+Rf7 23. Kh2 Rcf8 24. Qg3 Bd8 25. Rdf1 b5 26. Qe3 a5 27. Rf3
+Rg7 28. Qd2 Bc7 29. Bd3 Rb8 30. Kh1 g5 31. Rg3 gxf4 32. Rxg7+
+Qxg7 33. Rxf4 Qxe5 34. Rg4+ Kh8 35. Nf3 Qf6 36. Rh4 Kg8
+37. Bxh7+ Kg7 38. Bd3 Rh8 39. Rg4+ Kf8 40. Qe3 Ke8 41. Rg6 Qf4
+42. Qc5 Kd8 43. Rg7 Qd6 44. Qe3 Rf8 45. Qg5+ Kc8 46. Qd2 e5
+47. Rg6 Be6 48. Qh6 Re8 49. Bxb5 Re7 50. Qh8+ Kb7 51. Rg5 e4
+52. Ne5 Kb6 53. a4 e3 54. Nf3 $2 Bd7 55. Qd4+ Qc5 56. Qxc5+
+Kxc5 57. Bxd7 e2 58. Ne1 Rxd7 59. Kg1 Rf7 60. Nf3 Rxf3 0-1
+
+[Event "Philidor Blindfold simul, 2b London"]
+[Site "London ENG (Parsloe's)"]
+[Date "1788.05.10"]
+[EventDate "?"]
+[Round "?"]
+[Result "0-1"]
+[White "Leycester"]
+[Black "François André Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "48"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 c5 2. Qh5+ g6 3. Qxc5 Nc6 4. c3 e5 5. Qe3 Nf6 6. h3 d5
+7. exd5 Nxd5 8. Qe2 Nf4 9. Qf3 Bh6 10. Bb5 O-O 11. Qe4 Bf5
+12. Qc4+ Kh8 13. Qf1 Bd3 14. Bxd3 Nxd3+ 15. Ke2 Rxf2+ 16. Qxf2
+Nxf2 17. Kxf2 Qd3 18. Ne2 Rf8+ 19. Ke1 e4 20. Rf1 Rxf1+
+21. Kxf1 Qc2 22. Ke1 Ne5 23. Na3 Nd3+ 24. Kf1 Qd1# 0-1
+
+[Event "Casual game, knight odds for pawn and move"]
+[Site "London, ENG"]
+[Date "1788.05.20"]
+[EventDate "1788.??.??"]
+[Round "?"]
+[Result "1-0"]
+[White "François André Philidor"]
+[Black "John M Bruehl"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "95"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"]
+
+1. e4 e6 2. f4 Nh6 3. Nf3 d5 4. e5 c5 5. c3 Nc6 6. Bd3 Ne7
+7. O-O Nef5 8. Bc2 Be7 9. Qe1 Bd7 10. d4 Rf8 11. g3 c4 12. h3
+g6 13. g4 Nh4 14. Ng5 Bxg5 15. fxg5 Nf3+ 16. Rxf3 Rxf3 17. Kg2
+Rf7 18. gxh6 Qe7 19. h4 Qf8 20. Bg5 Bc6 21. a3 b5 22. Qe2 a5
+23. Kg3 Kd7 24. Qe3 b4 25. axb4 axb4 26. Rxa8 Qxa8 27. Qd2 b3
+28. Bd1 Qa1 29. h5 Qb1 30. Bf6 Bb7 31. hxg6 hxg6 32. g5 Qe4
+33. Bg4 Qc2 34. Qg2 Qe4 35. Qh3 Qd3+ 36. Kh4 Qxh3+ 37. Kxh3
+Bc8 38. Kh4 Ke8 39. Bh5 Rh7 40. Bg7 gxh5 41. g6 Rxh6 42. Bxh6
+Ke7 43. Bg7 Bd7 44. Kxh5 Be8 45. Kg5 Bf7 46. gxf7 Kxf7 47. Bf8
+Kxf8 48. Kf6 1-0
+
+[Event "London"]
+[Site "London ENG"]
+[Date "1789.??.??"]
+[EventDate "1789.??.??"]
+[Round "?"]
+[Result "1-0"]
+[White "François André Philidor"]
+[Black "Joseph Wilson"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "87"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"]
+
+1. e4 Nh6 2. d4 Nf7 3. f4 e6 4. Bd3 c5 5. c3 cxd4 6. cxd4 Nc6
+7. Nf3 Bb4+ 8. Ke2 Qc7 9. a3 Be7 10. Be3 d6 11. b4 Bd7 12. Rc1
+Qd8 13. h3 Rc8 14. g4 Nb8 15. Qd2 Rxc1 16. Rxc1 d5 17. e5 a6
+18. f5 h6 19. fxe6 Bxe6 20. Bf5 Bxf5 21. gxf5 Bg5 22. e6 Bxe3
+23. exf7+ Kxf7 24. Qxe3 Re8 25. Ne5+ Kg8 26. Qf4 Qf6 27. Kf3
+Rf8 28. Ng6 Re8 29. Qe5 Qxe5 30. dxe5 Nc6 31. Kf4 Kf7 32. Rd1
+d4 33. h4 Rd8 34. Ke4 b5 35. h5 a5 36. Rc1 d3 37. Rxc6 d2
+38. Rc7+ Kg8 39. f6 gxf6 40. exf6 Rd4+ 41. Ke5 Rd5+ 42. Kf4
+Rd4+ 43. Kg3 Rg4+ 44. Kh3 1-0
+
+[Event "London"]
+[Site "?"]
+[Date "1789.01.11"]
+[EventDate "1789.??.??"]
+[Round "?"]
+[Result "1-0"]
+[White "François André Philidor"]
+[Black "Cotter"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "43"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/1NBQKBNR w Kkq - 0 1"]
+
+1. e4 e5 2. f4 d5 3. Nf3 exf4 4. exd5 Qxd5 5. Nc3 Qe6+ 6. Kf2
+Be7 7. d4 Nf6 8. Bxf4 Ne4+ 9. Nxe4 Qxe4 10. Bxc7 Nc6 11. Bd3
+Qe6 12. Re1 Qxa2 13. Bb5 Bd7 14. d5 Qxb2 15. dxc6 bxc6
+16. Bxc6 Bxc6 17. Rxe7+ Kxe7 18. Qd6+ Ke8 19. Qxc6+ Ke7
+20. Bd6+ Kd8 21. Qc7+ Ke8 22. Qe7# 1-0
+
+[Event "London"]
+[Site "London ENG"]
+[Date "1789.01.14"]
+[EventDate "1789.??.??"]
+[Round "?"]
+[Result "0-1"]
+[White "François André Philidor"]
+[Black "John M Bruehl"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "78"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"]
+
+1. e4 d5 2. e5 Bf5 3. g4 Bg6 4. e6 Qd6 5. Qe2 Nf6 6. d3 Nc6
+7. g5 Nd4 8. Qd2 Qxe6+ 9. Kd1 Nd7 10. c3 Qg4+ 11. f3 Nxf3
+12. Be2 Nde5 13. Nxf3 Nxf3 14. Qe3 Bh5 15. Rf1 Qg2 16. Rxf3
+Bxf3 17. Bxf3 Qf1+ 18. Kc2 c6 19. Rb1 Qh3 20. Qf4 Qd7 21. Bd2
+Qd6 22. Qf5 g6 23. Qh3 Bg7 24. Re1 e5 25. Qg3 O-O-O 26. d4
+Rde8 27. dxe5 Bxe5 28. Rxe5 Qxe5 29. Bg4+ Kd8 30. Bf4 Qe4+
+31. Kd2 Re7 32. Bd6 Rf7 33. Be5 Re8 34. Bf6+ Rxf6 35. Qb8+ Ke7
+36. Qc7+ Kf8 37. gxf6 Qe1+ 38. Kd3 Qe3+ 39. Kc2 Qf2+ 0-1
+
+[Event "London"]
+[Site "?"]
+[Date "1789.01.26"]
+[EventDate "1789.??.??"]
+[Round "?"]
+[Result "1-0"]
+[White "François André Philidor"]
+[Black "John M Bruehl"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "55"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"]
+
+1. e4 d5 2. e5 Bf5 3. g4 Bg6 4. h4 c5 5. h5 Bf7 6. c3 e6 7. f4
+Nc6 8. d4 cxd4 9. cxd4 Bb4+ 10. Kf2 Nge7 11. Nf3 a6 12. a3 Ba5
+13. b4 Bb6 14. Be3 O-O 15. Bd3 Kh8 16. Kg3 Qd7 17. Ra2 Bg8
+18. Bb1 Nd8 19. Nh4 Nf7 20. Ng6+ Nxg6 21. hxg6 Nh6 22. Rah2
+hxg6 23. Bxg6 Bh7 24. Qb1 Rae8 25. Bxh7 Re7 26. Bg6 Kg8 27. g5
+Nf5+ 28. Qxf5 1-0
+
+[Event "London"]
+[Site "London, England"]
+[Date "1789.01.26"]
+[EventDate "?"]
+[Round "?"]
+[Result "1-0"]
+[White "FranÃ§ois AndrÃ© Philidor"]
+[Black "John M Bruehl"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"]
+
+1.e4 d5 2.e5 Bf5 3.g4 Bg6 4.h4 h5 5.Nh3 Qd7 6.Nf4 Bf7 7.g5 Qf5
+8.d4 Qe4+ 9.Qe2 Qxh1 10.g6 e6 11.Qb5+ Nd7 12.gxf7+ Kd8
+13.fxg8=Q Rxg8 14.Nxe6+ Kc8 15.Be3 Qxh4 16.Qxd5 Be7 17.Ba6 Rb8
+18.Qc6 Bd8 19.Bg5 1-0
+
+[Event "London Blind"]
+[Site "London ENG"]
+[Date "1790.??.??"]
+[EventDate "1790.??.??"]
+[Round "?"]
+[Result "1-0"]
+[White "Henry Jennings Nowell"]
+[Black "Francois Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "89"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 Nh6 2. d4 Nf7 3. Bd3 d6 4. Nf3 e5 5. d5 c5 6. O-O Be7
+7. Be3 O-O 8. Nbd2 a6 9. a4 Bg4 10. Be2 Nd7 11. c4 b6 12. Kh1
+Bxf3 13. Nxf3 g5 14. g4 Kg7 15. Qd2 h6 16. Ng1 Rh8 17. Ra3 Nf8
+18. h3 Ng6 19. Qc3 Bf6 20. Bd2 Nf4 21. Qg3 Rh7 22. Rf3 Nh8
+23. Bc3 Nhg6 24. Re3 Qe7 25. Bd1 Rah8 26. Qh2 h5 27. gxh5 Nxh5
+28. Bg4 Ngf4 29. Ra1 a5 30. Ra3 Kf8 31. Bd2 Qg7 32. Rab3 Bd8
+33. Rf3 Nf6 34. Qg3 Nxg4 35. Qxg4 Rh4 36. Qc8 Qe7 37. Rxb6 g4
+38. Rb7 Qxb7 39. Rxf4+ exf4 40. Qxb7 Ke8 41. Bxf4 gxh3
+42. Qc6+ Kf8 43. Bxd6+ Be7 44. Qc8+ Kf7 45. Qe6+ 1-0
+
+[Event "London Blind"]
+[Site "London ENG"]
+[Date "1790.??.??"]
+[EventDate "1790.??.??"]
+[Round "?"]
+[Result "0-1"]
+[White "Henry Jennings Nowell"]
+[Black "Francois Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "56"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 c5 2. Qh5+ g6 3. Qxc5 Nc6 4. Qe3 e5 5. Bc4 Nf6 6. Nc3
+Nd4 7. Bb3 Bc5 8. Qg5 d6 9. d3 Be6 10. Be3 Bxb3 11. Bxd4 exd4
+12. axb3 dxc3 13. bxc3 Bxf2+ 14. Ke2 Bb6 15. Nh3 O-O 16. Rhf1
+Qe7 17. Nf4 Rae8 18. h4 Qe5 19. Nh3 Qxc3 20. Rac1 d5 21. h5
+dxe4 22. hxg6 exd3+ 23. Kd1 Be3 24. gxh7+ Kh8 25. Qg8+ Nxg8
+26. hxg8=Q+ Kxg8 27. Rxf8+ Kxf8 28. cxd3 Qd2# 0-1
+
+[Event "London Blind"]
+[Site "?"]
+[Date "1790.??.??"]
+[EventDate "1790.??.??"]
+[Round "?"]
+[Result "0-1"]
+[White "John M Bruehl"]
+[Black "François André Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "66"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 Nh6 2. d4 Nf7 3. Bc4 e6 4. Bb3 d5 5. e5 c5 6. c3 Nc6
+7. f4 Qb6 8. Nf3 Be7 9. Bc2 Bd7 10. b3 cxd4 11. cxd4 Bb4+
+12. Kf2 g5 13. Be3 gxf4 14. Bxf4 Rf8 15. Be3 h6 16. h4 O-O-O
+17. a3 Be7 18. Qd3 Rg8 19. Nbd2 Rdf8 20. Qc3 Kb8 21. Rh3 Nfxe5
+22. dxe5 d4 23. Nc4 dxe3+ 24. Nxe3 Bc5 25. b4 Bxe3+ 26. Qxe3
+Rxg2+ 27. Kxg2 Qxe3 28. Re1 Qf4 29. Re4 Qc1 30. Ne1 Ne7
+31. Rc4 Qxe1 32. Bd3 Rf2+ 33. Kg3 Qg1# 0-1
+
+[Event "London Blind"]
+[Site "?"]
+[Date "1790.??.??"]
+[EventDate "1790.??.??"]
+[Round "?"]
+[Result "1/2-1/2"]
+[White "John M Bruehl"]
+[Black "François André Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "106"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 e6 2. d4 d5 3. e5 c5 4. Bb5+ Nc6 5. Ne2 cxd4 6. Bxc6+
+bxc6 7. Qxd4 Qb6 8. O-O Bc5 9. Qg4 g6 10. c3 a5 11. Nd4 Kf7
+12. b3 Bd7 13. Na3 h5 14. Qd1 Ne7 15. Nac2 Nf5 16. Nxf5 gxf5
+17. Be3 Bxe3 18. fxe3 Raf8 19. Nd4 c5 20. Nxf5 exf5 21. Qxd5+
+Be6 22. Rxf5+ Ke7 23. Qd6+ Qxd6 24. exd6+ Kxd6 25. Rd1+ Kc6
+26. Re5 Re8 27. c4 Rh7 28. e4 Rd7 29. Rdd5 Rd6 30. Rxh5 Bd7
+31. Rxd6+ Kxd6 32. Rd5+ Kc6 33. e5 Bf5 34. h3 Bb1 35. Rd6+ Kc7
+36. Ra6 Rxe5 37. Rxa5 Kb6 38. b4 Re1+ 39. Kf2 Rc1 40. Rb5+ Ka6
+41. Rxc5 Rc2+ 42. Kg3 Bxa2 43. Rc6+ Kb7 44. Rc5 Bxc4 45. h4
+Rc3+ 46. Kf4 Rc1 47. g4 Rf1+ 48. Ke5 Be2 49. g5 Bh5 50. Kd6
+Rf4 51. b5 Kb6 52. Ke5 Rb4 53. g6 Bxg6 1/2-1/2
+
+[Event "Casual game, Knight odds"]
+[Site "London ENG"]
+[Date "1794.02.07"]
+[EventDate "1794.??.??"]
+[Round "?"]
+[Result "1-0"]
+[White "François André Philidor"]
+[Black "George Atwood"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "43"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"]
+
+1. e4 e5 2. f4 exf4 3. Nf3 g5 4. Bc4 Bg7 5. c3 Qe7 6. d4 d6
+7. O-O h5 8. h4 g4 9. Ng5 Nh6 10. Bxf4 O-O 11. Qb3 Nc6 12. Bd2
+Nd8 13. Qc2 Kh8 14. Rae1 Ne6 15. e5 Nxg5 16. hxg5 Ng8 17. exd6
+Qxd6 18. Bxf7 Qc6 19. d5 Qd7 20. Qg6 Ne7 21. Qxh5+ Bh6
+22. Qxh6# 1-0
+
+[Event "Odds Game a1 Rook and c7 pawn"]
+[Site "London ENG"]
+[Date "1795.??.??"]
+[EventDate "?"]
+[Round "?"]
+[Result "0-1"]
+[White "François André Philidor"]
+[Black "George Atwood"]
+[ECO "C30"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "96"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pp1ppppp/8/8/8/8/PPPPPPPP/1NBQKBNR w Kkq - 0 1"]
+
+1. e4 e5 2. f4 d6 3. Nf3 Bg4 4. Bc4 Nc6 5. c3 Nf6 6. d3 exf4
+7. Bxf4 Qb6 8. Bxf7+ Ke7 9. Bb3 Na5 10. Nbd2 Re8 11. Qe2 Kd8
+12. h3 Bxf3 13. Qxf3 Be7 14. Kd1 Rhg8 15. Kc1 Rgf8 16. Be3 Qc7
+17. Ba4 Nd7 18. Qe2 a6 19. b4 Nc6 20. Kb2 Bf6 21. d4 Kc8
+22. Bc2 b5 23. a4 Qb7 24. Bd3 Kc7 25. Ra1 Rb8 26. Kc2 bxa4
+27. Bxa6 Nxb4+ 28. cxb4 Qxb4 29. Rb1 Qa3 30. Qc4+ Kd8
+31. Rxb8+ Nxb8 32. Qc8+ Ke7 33. Qc7+ Nd7 34. Bb5 Rd8 35. Bf2
+Bg5 36. Qc3 Qxc3+ 37. Kxc3 Bxd2+ 38. Kxd2 Ra8 39. Bh4+ Ke8
+40. Kc2 h6 41. Be1 Ke7 42. e5 d5 43. Bb4+ Ke6 44. Kb2 Nxe5
+45. dxe5 Rb8 46. Ka3 Rxb5 47. Kxa4 Rxb4+ 48. Kxb4 Kxe5 0-1
+
+[Event "London"]
+[Site "?"]
+[Date "1795.02.12"]
+[EventDate "1795.??.??"]
+[Round "?"]
+[Result "1-0"]
+[White "François André Philidor"]
+[Black "George Atwood"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "53"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"]
+
+1. e4 e5 2. f4 Nc6 3. Nf3 Bc5 4. c3 f6 5. Bc4 Nge7 6. Qe2 d6
+7. f5 Bd7 8. b4 Bb6 9. a4 a6 10. d3 g6 11. g4 h5 12. g5 gxf5
+13. gxf6 Ng6 14. Bg5 Qc8 15. O-O-O f4 16. Bb3 Kf8 17. d4 Bg4
+18. Qc4 Nd8 19. dxe5 Be6 20. Rd5 Be3+ 21. Kb2 c6 22. Qe2 cxd5
+23. exd5 dxe5 24. dxe6 Nxe6 25. Qd3 Qe8 26. Bxe6 Qxe6 27. Qxg6
+1-0
+
+[Event "London"]
+[Site "?"]
+[Date "1795.02.13"]
+[EventDate "1795.??.??"]
+[Round "?"]
+[Result "0-1"]
+[White "François André Philidor"]
+[Black "George Atwood"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "28"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/R1BQKBNR w KQkq - 0 1"]
+
+1. e4 e5 2. f4 Nc6 3. Nf3 Bc5 4. Bc4 d6 5. Ng5 exf4 6. Qh5 Qe7
+7. Nxf7 Nf6 8. Nxd6+ Kd8 9. Nf7+ Ke8 10. Qf3 Nd4 11. Qxf4
+Nxc2+ 12. Kf1 Rf8 13. Rb1 Nxe4 14. Bd3 Rxf7 0-1
+
+[Event "Odds Game a1 Rook and f7 pawn"]
+[Site "London ENG"]
+[Date "1795.06.13"]
+[EventDate "1795.??.??"]
+[Round "?"]
+[Result "1/2-1/2"]
+[White "François André Philidor"]
+[Black "Joseph Wilson"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "123"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/1NBQKBNR w Kkq - 0 1"]
+
+1. e4 Nh6 2. d4 Nf7 3. f4 e6 4. Be3 d5 5. e5 b6 6. c3 c5
+7. Bd3 g6 8. Nf3 cxd4 9. cxd4 Nc6 10. Nc3 Bd7 11. g4 Qc7
+12. h4 O-O-O 13. h5 gxh5 14. Rxh5 h6 15. Bg6 Be8 16. Bd3 Kb7
+17. Qe2 Nb4 18. Bb1 Rc8 19. a3 Na6 20. Bd3 Nb8 21. Bd2 a6
+22. Rh2 b5 23. f5 Bd7 24. f6 Rg8 25. Nh4 b4 26. axb4 Bxb4
+27. Bg6 Be8 28. Bh7 Rh8 29. Bd3 Qb6 30. Nf3 a5 31. Kf2 Nc6
+32. Na4 Qa7 33. Be3 Ncd8 34. Bb5 Ka8 35. Bxe8 Rxe8 36. Qb5 Nb7
+37. Nb6+ Kb8 38. Nxc8 Rxc8 39. Qd7 Rc2+ 40. Kg3 Rxh2 41. Kxh2
+Nbd8 42. Qxa7+ Kxa7 43. Kg3 Kb6 44. Kh4 Kb5 45. b3 Bc3 46. Kh5
+Kb4 47. Bxh6 Kxb3 48. g5 Nxg5 49. Nxg5 a4 50. Bf8 Bb4 51. Be7
+a3 52. Bxd8 a2 53. Nxe6 a1=Q 54. Be7 Qa7 55. Bxb4 Qf7+ 56. Kg5
+Qxe6 57. Bd6 Kc4 58. Kg6 Qg8+ 59. Kf5 Kb5 60. e6 Qh7+ 61. Kg5
+Qg8+ 62. Kf5 1/2-1/2
+
+[Event "England"]
+[Site "?"]
+[Date "1795.06.14"]
+[EventDate "?"]
+[Round "?"]
+[Result "0-1"]
+[White "John M Bruehl"]
+[Black "Verdoni"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "106"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"]
+
+1. f4 c5 2. Nf3 b6 3. c4 Nc6 4. Na3 e6 5. Nc2 Bb7 6. d3 Nge7
+7. Be2 f5 8. e5 Ng6 9. Bd2 Be7 10. a3 O-O 11. O-O h6 12. h3
+Nh8 13. Qc1 Nf7 14. g4 g6 15. Kh2 Kh7 16. b4 a6 17. Rb1 Rb8
+18. Qe1 g5 19. gxf5 exf5 20. d4 cxd4 21. Ncxd4 Nxd4 22. Nxd4
+Be4 23. Rb3 gxf4 24. Bxf4 Bh4 25. Bg3 Bxg3+ 26. Rxg3 Nxe5
+27. Rfg1 Qf6 28. Rg7+ Kh8 29. Qf2 Ng4+ 30. R7xg4 fxg4
+31. Qxf6+ Rxf6 32. Bxg4 Rg8 33. Re1 d5 34. cxd5 Bxd5 35. Re5
+Ba8 36. Rh5 Kh7 37. Kg3 Rg5 38. Rxg5 hxg5 39. Bf5+ Kh6 40. Kg4
+Bd5 41. Nc2 Be6 42. Nd4 Rxf5 43. Nxe6 Rf1 44. Nc7 a5 45. bxa5
+bxa5 46. Ne8 Rf4+ 47. Kg3 Ra4 48. Nd6 Rxa3+ 49. Kg4 Ra4+
+50. Kg3 Rf4 51. h4 Rxh4 52. Nf5+ Kh5 53. Nxh4 gxh4+ 0-1
+
+[Event "London"]
+[Site "London ENG"]
+[Date "1795.06.29"]
+[EventDate "1795.??.??"]
+[Round "?"]
+[Result "0-1"]
+[White "George Atwood"]
+[Black "Franï¿½ois Andrï¿½ Philidor"]
+[ECO "000"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "52"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 -- 2. d4 e6 3. f4 d5 4. e5 c5 5. c3 Nc6 6. Nf3 Qb6 7. Bd3
+Nh6 8. Qb3 c4 9. Qxb6 axb6 10. Bc2 b5 11. Na3 b4 12. Nb5 Ra5
+13. a4 Bd7 14. b3 Nb8 15. Bb2 Be7 16. O-O Bxb5 17. axb5 Rxb5
+18. Ra8 O-O 19. bxc4 dxc4 20. Be4 Nd7 21. Rxf8+ Bxf8 22. Ng5
+bxc3 23. Bxc3 Rb3 24. Rc1 Ba3 25. Rc2 Ng4 26. Nxe6 Rb1+ 0-1
+
+[Event "London"]
+[Site "London"]
+[Date "1795.07.09"]
+[EventDate "1795.??.??"]
+[Round "?"]
+[Result "1-0"]
+[White "Von Bruehl, Hans Moritz"]
+[Black "Verdoni"]
+[ECO "B00"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[Source "ChessBase"]
+[PlyCount "80"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 Nh6 2. d4 Nf7 3. Bc4 e6 4. Qe2 Be7 5. e5 O-O 6. f4 b6 7. Nf3 Bb7 8. Nbd2
+Nc6 9. c3 Nh6 10. Nb3 a6 11. O-O b5 12. Bd3 g6 13. Be3 Nf5 14. Nbd2 d5 15. g4
+Ng7 16. Bc2 Qe8 17. Qd3 Nd8 18. h4 Nf7 19. h5 Nh6 20. Nh2 Nxh5 21. gxh5 Nf5 22.
+Kh1 gxh5 23. Rg1+ Kh8 24. Ndf3 h6 25. Bf2 Qf7 26. Nf1 h4 27. Rg4 c5 28. Nxh4
+Qh5 29. Qf3 Bxh4 30. Rg8+ Kxg8 31. Qxh5 Bxf2 32. Qg6+ Kh8 33. Bxf5 exf5 34.
+Qxh6+ Kg8 35. Kg2 cxd4 36. Ng3 Bxg3 37. Rh1 Kf7 38. Qf6+ Ke8 39. Qe6+ Kd8 40.
+Rh7 {(source: George Walker: A Selection of Games at Chess Actually played by
+Philidor and His Contemporaries, London 1834,  p. 64-65.)} 1-0
+
+
+[Event "London m"]
+[Site "London"]
+[Date "1800.??.??"]
+[EventDate "1800.??.??"]
+[Round "?"]
+[Result "1-0"]
+[White "George Atwood"]
+[Black "Verdoni"]
+[ECO "?"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[Source "ChessBase"]
+[PlyCount "48"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"]
+
+1. e4 -- 2. d4 e6 3. Bd3 c5 4. d5 d6 5. c4 e5 6. f4 exf4 7. Bxf4 Nd7 8. Nf3 Qc7
+9. Nc3 a6 10. O-O Be7 11. Ng5 Bxg5 12. Bxg5 Ngf6 13. e5 dxe5 14. d6 Qxd6 15.
+Bg6+ Ke7 16. Nd5+ Kd8 17. Bxf6+ gxf6 18. Qh5 b5 19. Rad1 Ra7 20. Nxf6 Qe6 21.
+Bf5 Qxf6 22. Bxd7 Qe7 23. Be6+ Bd7 24. Qxe5 {(source: George Walker: A
+Selection of Games at Chess Actually played by Philidor and His Contemporaries,
+London 1834,  p. 73-74.)} 1-0
+
+
+[Event "London m"]
+[Site "London"]
+[Date "1800.??.??"]
+[EventDate "?"]
+[Round "?"]
+[Result "1-0"]
+[White "George Atwood"]
+[Black "Verdoni"]
+[ECO "A40"]
+[WhiteElo "?"]
+[BlackElo "?"]
+[PlyCount "46"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppppp1pp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"]
+
+1. d4 e6 2. Bd3 c5 3. d5 d6 4. c4  e5 5. f4 exf4 6. Bxf4 Nd7 7.
+Nf3 Qc7 8. Nc3 a6 9. O-O Be7 10. Ng5 Bxg5 11. Bxg5 Ngf6  12. e5
+dxe5 13. d6 Qxd6 14. Bg6+ Ke7 15. Nd5+ Kd8 16. Bxf6+ gxf6 17. Qh5 b5 18. Rad1
+Ra7 19. Nxf6 Qe6 20. Bf5 Qxf6 21. Bxd7 Qe7 22. Be6+ Bd7 23. Qxe5 {source: Georg
+e Walker: A Selection of Games at Chess Actually played by Philidor and His
+Contemporaries, London 1834, p. 73-74.} 1-0
+
+

@@ -1,0 +1,14 @@
+% Strip variations.
+:--novars
+% Silent mode
+:-s
+% Duplicates file.
+:-dtest-AA-dupes.pgn
+% Unique file.
+:--output test-AA-unique.pgn
+% Tag criteria
+:-t
+White "Fischer"
+Black "Petrosian"
+% The game files.
+:-finfiles/gamefiles.txt

@@ -1,0 +1,2 @@
+infiles/fischer.pgn
+infiles/petrosian.pgn
