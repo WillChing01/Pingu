@@ -1,0 +1,66 @@
+[Event "Rated Blitz game"]
+[Site "https://lichess.org/cuRjUaU0"]
+[Date "????.??.??"]
+[Round "?"]
+[White "TapsofOsiris"]
+[Black "Fer1213"]
+[Result "0-1"]
+[WhiteElo "891"]
+[BlackElo "862"]
+[ECO "D00"]
+[Opening "Queen's Pawn Game #2"]
+[TimeControl "180+5"]
+[UTCDate "2014.10.08"]
+[UTCTime "18:10:23"]
+[Termination "Normal"]
+[WhiteRatingDiff "-18"]
+[BlackRatingDiff "+25"]
+
+1. d4 d5 2. e3 e6 3. Bd3 Bb4+ 4. c3 Ba5 5. Nf3 Nc6 6. e4 e5 7. dxe5 d4 8.
+Bd2 f6 9. Bb5 a6 10. Bxc6+ bxc6 11. Nxd4 fxe5 12. Ne6 Qe7 13. Qh5+ g6 14.
+Qh3 Bxe6 15. Qd3 Nf6 16. O-O O-O 17. Bh6 Rfd8 18. Qg3 Nxe4 19. Qf3 Bd5 20.
+c4 Nd2 21. Qd3 Bxc4 22. Qxd2 Rxd2 23. Bxd2 Bb6 24. Bh6 Qf6 0-1
+
+[Event "Rated Blitz game"]
+[Site "https://lichess.org/BIy6dywQ"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Chesstroll5000"]
+[Black "Kevbal"]
+[Result "0-1"]
+[WhiteElo "871"]
+[BlackElo "860"]
+[ECO "C20"]
+[Opening "King's Pawn Game"]
+[TimeControl "300+2"]
+[UTCDate "2014.10.23"]
+[UTCTime "14:29:53"]
+[Termination "Time forfeit"]
+[WhiteRatingDiff "-16"]
+[BlackRatingDiff "+26"]
+
+1. e4 e5 0-1
+
+[Event "Rated Classical game"]
+[Site "https://lichess.org/pRAkqSaj"]
+[Date "????.??.??"]
+[Round "?"]
+[White "masterzog"]
+[Black "MartinDolejsky"]
+[Result "1-0"]
+[WhiteElo "885"]
+[BlackElo "849"]
+[ECO "D02"]
+[Opening "Queen's Pawn Game: Zukertort Variation"]
+[TimeControl "180+8"]
+[UTCDate "2014.10.24"]
+[UTCTime "18:44:37"]
+[Termination "Normal"]
+[WhiteRatingDiff "+33"]
+[BlackRatingDiff "-30"]
+
+1. d4 d5 2. Nf3 e6 3. e3 f5 4. Bd3 Nc6 5. b3 Be7 6. O-O Na5 7. a3 b5 8. Bb2
+c6 9. Nbd2 Ba6 10. Ne5 Qd6 11. f4 g5 12. Qh5+ Kd8 13. Qf7 gxf4 14. exf4 c5
+15. dxc5 Qxc5+ 16. Kh1 Nf6 17. b4 Qb6 18. Rf3 Nb7 19. Rg3 Kc7 20. Rg7 Qe3
+21. Qxe7+ Kb6 22. Qc7# 1-0
+

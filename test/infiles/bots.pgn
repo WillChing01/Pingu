@@ -1,0 +1,280 @@
+[Event "Rated Blitz game"]
+[Site "https://lichess.org/mfZogstY"]
+[Date "????.??.??"]
+[Round "?"]
+[White "rezarezareza"]
+[Black "bogerner"]
+[Result "0-1"]
+[WhiteElo "1668"]
+[BlackElo "1993"]
+[ECO "D00"]
+[Opening "Queen's Pawn Game: Levitsky Attack"]
+[TimeControl "180+0"]
+[UTCDate "2014.10.08"]
+[UTCTime "18:10:31"]
+[Termination "Normal"]
+[WhiteRatingDiff "-3"]
+[BlackRatingDiff "+3"]
+
+1. d4 d5 2. Bg5 f6 3. Bh4 Nh6 4. e3 Nf5 5. Bd3 Nxh4 6. Qg4 Bxg4 0-1
+
+[Event "Rated Blitz game"]
+[Site "https://lichess.org/cuRjUaU0"]
+[Date "????.??.??"]
+[Round "?"]
+[White "TapsofOsiris"]
+[Black "Fer1213"]
+[Result "0-1"]
+[WhiteElo "891"]
+[BlackElo "862"]
+[ECO "D00"]
+[Opening "Queen's Pawn Game #2"]
+[TimeControl "180+5"]
+[UTCDate "2014.10.08"]
+[UTCTime "18:10:23"]
+[Termination "Normal"]
+[WhiteRatingDiff "-18"]
+[BlackRatingDiff "+25"]
+
+1. d4 d5 2. e3 e6 3. Bd3 Bb4+ 4. c3 Ba5 5. Nf3 Nc6 6. e4 e5 7. dxe5 d4 8.
+Bd2 f6 9. Bb5 a6 10. Bxc6+ bxc6 11. Nxd4 fxe5 12. Ne6 Qe7 13. Qh5+ g6 14.
+Qh3 Bxe6 15. Qd3 Nf6 16. O-O O-O 17. Bh6 Rfd8 18. Qg3 Nxe4 19. Qf3 Bd5 20.
+c4 Nd2 21. Qd3 Bxc4 22. Qxd2 Rxd2 23. Bxd2 Bb6 24. Bh6 Qf6 0-1
+
+[Event "Rated Classical game"]
+[Site "https://lichess.org/lkkN40NP"]
+[Date "????.??.??"]
+[Round "?"]
+[White "moeman"]
+[Black "Splin"]
+[Result "1-0"]
+[WhiteElo "1550"]
+[BlackElo "1486"]
+[ECO "C00"]
+[Opening "French Defense: Diemer-Duhm Gambit"]
+[TimeControl "300+8"]
+[UTCDate "2014.10.08"]
+[UTCTime "18:10:23"]
+[Termination "Normal"]
+[WhiteRatingDiff "+8"]
+[BlackRatingDiff "-9"]
+
+1. e4 e6 2. d4 d5 3. c4 dxe4 4. Nc3 Bb4 5. Be3 Nf6 6. Ne2 c5 7. a3 cxd4 8.
+Qxd4 Qxd4 9. Bxd4 Bxc3+ 10. Nxc3 Nc6 11. Be3 a6 12. O-O-O Bd7 13. c5 O-O-O
+14. Be2 Na5 15. b4 Nb3+ 16. Kb2 Nd5 17. Kxb3 Nxe3 18. fxe3 Bc6 19. Rd4 e5
+20. Bg4+ Kb8 21. Rdd1 g6 22. h4 f5 23. Be2 f4 24. b5 axb5 25. Bxb5 Bxb5 26.
+Nxb5 Rd3+ 27. Rxd3 exd3 28. Kc3 Rd8 29. Rd1 e4 30. Nd6 fxe3 31. Nxe4 e2 32.
+Re1 Re8 33. Kxd3 1-0
+
+[Event "Rated Bullet game"]
+[Site "https://lichess.org/QN3XXOQz"]
+[Date "????.??.??"]
+[Round "?"]
+[White "john777"]
+[Black "Manitou"]
+[Result "1-0"]
+[WhiteElo "1688"]
+[BlackElo "1743"]
+[ECO "B01"]
+[Opening "Scandinavian Defense: Main Line"]
+[TimeControl "120+0"]
+[UTCDate "2014.10.08"]
+[UTCTime "18:10:21"]
+[Termination "Normal"]
+[WhiteRatingDiff "+13"]
+[BlackRatingDiff "-12"]
+
+1. e4 d5 2. exd5 Qxd5 3. Nc3 Qa5 4. d4 c6 5. Bd2 Nf6 6. Bc4 Bf5 7. Nd5 Qd8
+8. Nxf6+ gxf6 9. Nf3 Nd7 10. c3 e6 11. Bf4 Rg8 12. g3 Bg4 13. Be2 e5 14.
+dxe5 Bxf3 15. Bxf3 fxe5 16. Be3 f5 17. Qd3 Qe7 18. Qxf5 O-O-O 19. O-O Kb8
+20. b4 Bg7 21. b5 Rdf8 22. Qe4 Nc5 23. Bxc5 Qxc5 24. bxc6 Qxc6 25. Qxc6
+bxc6 26. Bxc6 h5 27. Rab1+ Kc7 28. Bd5 Rh8 29. c4 h4 30. Rb7+ 1-0
+
+[Event "Rated Bullet game"]
+[Site "https://lichess.org/0Bl7DuIv"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Alexhander"]
+[Black "Roeczak"]
+[Result "0-1"]
+[WhiteElo "1894"]
+[BlackElo "1813"]
+[ECO "A51"]
+[Opening "Indian Game: Budapest Defense"]
+[TimeControl "60+1"]
+[UTCDate "2014.10.08"]
+[UTCTime "18:10:29"]
+[Termination "Time forfeit"]
+[WhiteRatingDiff "-13"]
+[BlackRatingDiff "+14"]
+
+1. d4 e5 2. c4 Nf6 3. Nc3 exd4 4. Qxd4 Nc6 5. Qd1 Bc5 6. e3 O-O 7. Be2 d6
+8. Nf3 Be6 9. O-O Ne5 10. b3 Qe7 11. Bb2 Rad8 12. Qc2 c6 13. Nd4 Bxd4 14.
+exd4 Ng6 15. Rfe1 Qd7 16. Bd3 Nf4 17. Bf1 Bf5 18. Qd2 Ng6 19. Rad1 Rfe8 20.
+Rxe8+ Rxe8 21. Re1 Rxe1 22. Qxe1 Qe6 23. Qxe6 Bxe6 24. f3 d5 25. Na4 Nd7
+26. h3 Kf8 27. Kf2 Ke7 28. Ke3 dxc4 29. bxc4 Ngf8 30. g4 Ng6 31. f4 f5 32.
+Ba3+ Kf7 33. Nc5 Nxc5 34. Bxc5 b6 35. Bd6 fxg4 36. hxg4 Bxg4 37. Bg2 Bd7
+38. Bb8 a6 39. Ba7 b5 40. cxb5 cxb5 41. d5 Ke7 42. Kd4 Kd6 43. Bc5+ Kc7 44.
+d6+ Kd8 45. Bb7 Nxf4 46. Bxa6 Ne6+ 47. Kd5 Nxc5 48. Kxc5 h5 49. Bb7 h4 50.
+Kd4 h3 51. Ke5 g5 0-1
+
+[Event "Rated Classical game"]
+[Site "https://lichess.org/sCgADJvx"]
+[Date "????.??.??"]
+[Round "?"]
+[White "edwartti"]
+[Black "mahirprof"]
+[Result "0-1"]
+[WhiteElo "1490"]
+[BlackElo "1457"]
+[ECO "B54"]
+[Opening "Sicilian Defense #2"]
+[TimeControl "1020+0"]
+[UTCDate "2014.10.08"]
+[UTCTime "18:10:25"]
+[Termination "Normal"]
+[WhiteRatingDiff "-11"]
+[BlackRatingDiff "+13"]
+
+1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nc6 5. Bb5 Bd7 6. Bxc6 Bxc6 7. f3 g6
+8. Bd2 Bg7 9. Bc3 Nf6 10. O-O O-O 11. Qd3 Nd7 12. Nxc6 bxc6 13. Bxg7 Kxg7
+14. Qc3+ Kg8 15. Qxc6 Rc8 16. Qa6 Rxc2 17. Qxa7 Rxb2 18. Na3 Nc5 19. Rfb1
+Rxb1+ 20. Rxb1 e5 21. Nc4 Qf6 22. Rd1 Qf4 23. Rxd6 Ne6 24. Rd5 Nd4 25. Rxe5
+Qc1+ 26. Kf2 Qxc4 27. Rc5 Qb4 28. Kg3 Qe1+ 29. Kh3 Ne6 30. a4 Nxc5 31. Qxc5
+Ra8 32. Qc6 Qa5 33. g4 Qxa4 34. Qxa4 Rxa4 35. Kg3 g5 36. h4 h6 37. hxg5
+hxg5 38. f4 f6 39. fxg5 fxg5 40. Kf3 Kf7 0-1
+
+[Event "Rated Bullet game"]
+[Site "https://lichess.org/cEQqvpkc"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Grabek30"]
+[Black "qawes"]
+[Result "1-0"]
+[WhiteElo "1434"]
+[BlackElo "1600"]
+[ECO "B00"]
+[Opening "Owen Defense"]
+[TimeControl "60+1"]
+[UTCDate "2014.10.08"]
+[UTCTime "18:10:16"]
+[Termination "Time forfeit"]
+[WhiteRatingDiff "+16"]
+[BlackRatingDiff "-16"]
+
+1. e4 b6 2. Nc3 Bb7 3. Nf3 e6 4. d3 Ne7 5. Be3 d5 6. Be2 dxe4 7. dxe4 g6 8.
+Qxd8+ Kxd8 9. Rd1+ Ke8 10. Bg5 h6 11. Bxe7 Bxe7 12. Bb5+ c6 13. Bd3 Nd7 14.
+a3 Nc5 15. b4 Nxd3+ 16. Rxd3 Bf6 17. e5 Bg5 18. Ne4 Be7 19. Nf6+ Bxf6 20.
+exf6 Rd8 21. O-O Rxd3 22. cxd3 Kd7 23. Rd1 Kc7 24. Ne5 Rf8 25. d4 Ba6 26.
+Rd2 Kd6 27. Rc2 Bb7 28. f4 Kd5 29. Nd7 Rd8 30. Ne5 Rf8 31. Rd2 Ba6 32. Kf2
+Bc4 33. Ke3 b5 34. Nd7 Rd8 35. Nc5 1-0
+
+[Event "Rated Bullet game"]
+[Site "https://lichess.org/GBJx5Byk"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Foldy"]
+[Black "Eric2005"]
+[Result "0-1"]
+[WhiteElo "886"]
+[BlackElo "894"]
+[ECO "C20"]
+[Opening "King's Pawn Game: Wayward Queen Attack, Kiddie Countergambit"]
+[TimeControl "120+1"]
+[UTCDate "2014.10.10"]
+[UTCTime "12:51:19"]
+[Termination "Normal"]
+[WhiteRatingDiff "-11"]
+[BlackRatingDiff "+22"]
+
+1. e4 e5 2. Qh5 Nf6 3. Qxe5+ Be7 4. Nc3 O-O 5. Nf3 d6 6. d3 dxe5 7. Nxe5
+Ng4 8. g3 Bc5 9. Be2 Qf6 10. O-O Qh6 11. Be3 Qxh2# 0-1
+
+[Event "Rated Blitz game"]
+[Site "https://lichess.org/BIy6dywQ"]
+[Date "????.??.??"]
+[Round "?"]
+[White "Chesstroll5000"]
+[Black "Kevbal"]
+[Result "0-1"]
+[WhiteElo "871"]
+[BlackElo "860"]
+[ECO "C20"]
+[Opening "King's Pawn Game"]
+[TimeControl "300+2"]
+[UTCDate "2014.10.23"]
+[UTCTime "14:29:53"]
+[Termination "Time forfeit"]
+[WhiteRatingDiff "-16"]
+[BlackRatingDiff "+26"]
+
+1. e4 e5 0-1
+
+[Event "Rated Classical game"]
+[Site "https://lichess.org/pRAkqSaj"]
+[Date "????.??.??"]
+[Round "?"]
+[White "masterzog"]
+[Black "MartinDolejsky"]
+[Result "1-0"]
+[WhiteElo "885"]
+[BlackElo "849"]
+[ECO "D02"]
+[Opening "Queen's Pawn Game: Zukertort Variation"]
+[TimeControl "180+8"]
+[UTCDate "2014.10.24"]
+[UTCTime "18:44:37"]
+[Termination "Normal"]
+[WhiteRatingDiff "+33"]
+[BlackRatingDiff "-30"]
+
+1. d4 d5 2. Nf3 e6 3. e3 f5 4. Bd3 Nc6 5. b3 Be7 6. O-O Na5 7. a3 b5 8. Bb2
+c6 9. Nbd2 Ba6 10. Ne5 Qd6 11. f4 g5 12. Qh5+ Kd8 13. Qf7 gxf4 14. exf4 c5
+15. dxc5 Qxc5+ 16. Kh1 Nf6 17. b4 Qb6 18. Rf3 Nb7 19. Rg3 Kc7 20. Rg7 Qe3
+21. Qxe7+ Kb6 22. Qc7# 1-0
+
+[Event "Casual Rapid game"]
+[Site "https://lichess.org/Q9DmQdbV"]
+[Date "2024.04.03"]
+[Round "?"]
+[White "colin48"]
+[Black "maia1"]
+[Result "0-1"]
+[BlackTitle "BOT"]
+[WhiteElo "881"]
+[BlackElo "823"]
+[ECO "D00"]
+[Opening "Queen's Pawn Game: Accelerated London System"]
+[TimeControl "900+10"]
+[Annotator "lichess.org"]
+[UTCDate "2024.04.03"]
+[UTCTime "05:29:55"]
+[Variant "Standard"]
+[Termination "Normal"]
+
+1. d4 d5 2. Bf4 Nc6 3. e3 f6 4. c4 e5 5. Bd3 exf4 0-1
+
+[Event "Casual Blitz game"]
+[Site "https://lichess.org/iIEZ8pcY"]
+[Date "2024.04.03"]
+[Round "?"]
+[White "maia1"]
+[Black "justlondon"]
+[Result "0-1"]
+[WhiteTitle "BOT"]
+[WhiteElo "1396"]
+[BlackElo "1444"]
+[ECO "B30"]
+[Opening "Sicilian Defense: Nyezhmetdinov-Rossolimo Attack"]
+[TimeControl "300+3"]
+[Annotator "lichess.org"]
+[UTCDate "2024.04.03"]
+[UTCTime "05:16:45"]
+[Variant "Standard"]
+[Termination "Normal"]
+
+1. e4 c5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 b5 5. Bb3 c4 6. Bxc4 bxc4 7. Nc3 d6 8.
+O-O e6 9. d3 cxd3 10. Qxd3 Nf6 11. Bg5 Be7 12. Rad1 Qc7 13. Rfe1 O-O 14. e5
+dxe5 15. Nxe5 Nxe5 16. Rxe5 Qxe5 17. Bxf6 Bxf6 18. Ne4 Bb7 19. Nxf6+ Qxf6
+20. Qd7 Rfd8 21. Qxb7 Rxd1# 0-1
+
