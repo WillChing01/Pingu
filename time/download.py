@@ -4,7 +4,6 @@ import chess.pgn
 import zstandard
 import io
 from tqdm import tqdm
-from multiprocessing import Pool
 
 OUTPUT_DIR = f"{os.getcwd()}\\_raw"
 
@@ -86,8 +85,8 @@ def stream_file(url, output_file):
 
 def main():
     files = get_lichess_files()
-    with Pool() as pool:
-        pool.starmap(stream_file, files)
+    for url, file in files:
+        stream_file(url, file)
 
 
 if __name__ == "__main__":
