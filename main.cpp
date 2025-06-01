@@ -18,7 +18,7 @@ int main(int argc, const char** argv) {
         const std::unordered_map<const char*, void (*)(int, const char**)> commands = {
             {"bench", benchCommand},
             {"gensfen", gensfenCommand},
-            {"process-time-pgn", processTimePgnCommand},
+            {"process-time-pgn", processTime::processTimePgnCommand},
             {"-h", displayHelpCLI},
             {"--help", displayHelpCLI},
         };
