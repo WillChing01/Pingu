@@ -2,6 +2,7 @@
 #include "bench.h"
 #include "gensfen.h"
 #include "engine-commands.h"
+#include "process-time-pgn.h"
 
 #include <cstring>
 #include <unordered_map>
@@ -17,6 +18,7 @@ int main(int argc, const char** argv) {
         const std::unordered_map<const char*, void (*)(int, const char**)> commands = {
             {"bench", benchCommand},
             {"gensfen", gensfenCommand},
+            {"process-time-pgn", processTimePgnCommand},
             {"-h", displayHelpCLI},
             {"--help", displayHelpCLI},
         };

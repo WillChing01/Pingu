@@ -42,6 +42,16 @@ const std::map<std::string, engineCommand> CLI_COMMANDS = {
                        {"hash <n>", "size of hash in MB"},
                        {"book <x>", "filename of the opening book to use"},
                    })},
+    {"process-time-pgn",
+     engineCommand("process-time-pgn", "process a pgn with clock data",
+                   {
+                       "./Pingu process-time-pgn out <output-dir> in <file>...",
+                       "e.g. ./Pingu process-time-pgn out /processed_files in first.pgn second.pgn third.pgn",
+                   },
+                   {
+                       {"out <output-dir>", "output directory for processed files"},
+                       {"in <file>...", "the list of pgn files to process"},
+                   })},
 };
 
 const std::map<std::string, engineCommand> UCI_COMMANDS = {
