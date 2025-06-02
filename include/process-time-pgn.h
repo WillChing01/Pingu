@@ -20,8 +20,19 @@ namespace processTime {
     };
 
     const std::regex moveRegex(R"([a-h][1-8][a-h][1-8][qrbn]?[+#]?)");
+    const std::regex checkRegex(R"([+#])");
     const std::regex clockRegex(R"(\[%clk (\d+):(\d+):(\d+)\])");
     const std::regex resultRegex(R"(1-0|1\/2-1\/2|0-1)");
+
+    std::vector<std::smatch> extractMatches(const std::string& s, const std::regex& r) {
+        std::vector<std::smatch> res;
+        auto begin = std::sregex_iterator(s.begin(), s.end(), r);
+        auto end = std::sregex_iterator();
+        for (auto i = begin; i != end; ++i) {
+            res.push_back(*i);
+        }
+        return res;
+    }
 
     bool isValidInput(int argc, const char** argv) {
         if (argc < 6) {
@@ -57,6 +68,23 @@ namespace processTime {
 
         while (std::getline(file, line)) {
             if (line == "") continue;
+
+            std::vector<std::smatch> moveMatches = extractMatches(line, moveRegex);
+            std::vector<std::smatch> clockMatches = extractMatches(line, clockRegex);
+            std::vector<std::smatch> resultMatches = extractMatches(line, resultRegex);
+
+            if (moveMatches.size() != clockMatches.size() || !resultMatches.size()) continue;
+
+            std::vector<Datum> res;
+
+            for (size_t i = 0; i < moveMatches.size(); ++i) {
+                std::string move = std::regex_replace(moveMatches[i][0].str(), checkRegex, "");
+                int hours = std::stoi(clockMatches[i][1]);
+                int minutes = std::stoi(clockMatches[i][2]);
+                int seconds = std::stoi(clockMatches[i][3]);
+                int clock = 3600 * hours + 60 * minutes + seconds;
+                std::cout << move << " " << clock << std::endl;
+            }
         }
     }
 
