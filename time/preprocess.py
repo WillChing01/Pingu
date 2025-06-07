@@ -29,7 +29,6 @@ def preprocess(file):
         "-t",
         "tags.txt",
         "-s",
-        "--notags",
         "--nonags"
     ]
     subprocess.run(args, cwd=os.getcwd())

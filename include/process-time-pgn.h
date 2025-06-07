@@ -19,6 +19,7 @@ namespace processTime {
         int opponentTime;
     };
 
+    const std::regex timeControlRegex(R"_(\[TimeControl "\d+\+(\d+)"\])_");
     const std::regex moveRegex(R"([a-h][1-8][a-h][1-8][qrbn]?[+#]?)");
     const std::regex checkRegex(R"([+#])");
     const std::regex clockRegex(R"(\[%clk (\d+):(\d+):(\d+)\])");
@@ -65,9 +66,16 @@ namespace processTime {
 
         std::ifstream file(inputPath);
         std::string line;
+        std::smatch incrementMatch;
+        int increment = 0;
 
         while (std::getline(file, line)) {
             if (line == "") continue;
+            if (std::regex_match(line, incrementMatch, timeControlRegex)) {
+                increment = std::stoi(incrementMatch[1].str());
+                continue;
+            }
+            if (line[0] == '[') continue;
 
             std::vector<std::smatch> moveMatches = extractMatches(line, moveRegex);
             std::vector<std::smatch> clockMatches = extractMatches(line, clockRegex);
@@ -83,7 +91,7 @@ namespace processTime {
                 int minutes = std::stoi(clockMatches[i][2]);
                 int seconds = std::stoi(clockMatches[i][3]);
                 int clock = 3600 * hours + 60 * minutes + seconds;
-                std::cout << move << " " << clock << std::endl;
+                // std::cout << move << " " << clock << std::endl;
             }
         }
     }
