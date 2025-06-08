@@ -23,7 +23,7 @@ namespace processTime {
     const std::string csvHeader = "fen,isDraw,isWin,ply,totalPly,increment,timeLeft,timeSpent,opponentTime";
 
     const std::regex timeControlRegex(R"_(\[TimeControl "(\d+)\+(\d+)"\])_");
-    const std::regex moveRegex(R"([a-h][1-8][a-h][1-8][qrbn]?[+#]?)");
+    const std::regex moveRegex(R"([a-h][1-8][a-h][1-8][QRBNqrbn]?[+#]?)");
     const std::regex checkRegex(R"([+#])");
     const std::regex clockRegex(R"(\[%clk (\d+):(\d+):(\d+)\])");
     const std::regex resultRegex(R"(1-0|1\/2-1\/2|0-1)");
@@ -80,6 +80,12 @@ namespace processTime {
         outputFile.close();
     }
 
+    inline std::string cleanMove(const std::string& move) {
+        std::string s = std::regex_replace(move, checkRegex, "");
+        s.back() = std::tolower(s.back()); // promotion.
+        return s;
+    }
+
     void processFile(const std::filesystem::path& outputDir, const std::filesystem::path& inputPath) {
         const std::filesystem::path outputFilePath = outputDir / inputPath.filename();
 
@@ -129,9 +135,14 @@ namespace processTime {
                                .timeSpent = clock - increment - timeLeft[i % 2],
                                .opponentTime = timeLeft[(i + 1) % 2]});
                 timeLeft[i % 2] = clock;
-                std::string move = std::regex_replace(moveMatches[i][0].str(), checkRegex, "");
+
+                std::string move = cleanMove(moveMatches[i][0].str());
                 U32 encodedMove = stringToMove(b, move);
-                if (!encodedMove) std::cout << "Error! " << move << std::endl;
+                if (!encodedMove) {
+                    b.display();
+                    std::cout << "Error! " << move << std::endl;
+                    std::cout << moveMatches[i][0].str() << std::endl;
+                }
                 b.makeMove(encodedMove);
             }
 
