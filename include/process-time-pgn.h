@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "board.h"
+#include "format.h"
 
 namespace processTime {
     struct Datum {
@@ -19,7 +20,9 @@ namespace processTime {
         int opponentTime;
     };
 
-    const std::regex timeControlRegex(R"_(\[TimeControl "\d+\+(\d+)"\])_");
+    const std::string csvHeader = "fen,isDraw,isWin,ply,totalPly,increment,timeLeft,timeSpent,opponentTime";
+
+    const std::regex timeControlRegex(R"_(\[TimeControl "(\d+)\+(\d+)"\])_");
     const std::regex moveRegex(R"([a-h][1-8][a-h][1-8][qrbn]?[+#]?)");
     const std::regex checkRegex(R"([+#])");
     const std::regex clockRegex(R"(\[%clk (\d+):(\d+):(\d+)\])");
@@ -61,18 +64,38 @@ namespace processTime {
         return true;
     }
 
+    void addCsvHeaderToFile(const std::filesystem::path& outputFilePath) {
+        std::ofstream outputFile(outputFilePath);
+        outputFile << csvHeader << std::endl;
+        outputFile.close();
+    }
+
+    void writeDataToFile(const std::vector<Datum>& data, const std::filesystem::path& outputFilePath) {
+        std::ofstream outputFile(outputFilePath);
+        for (const Datum& datum : data) {
+            outputFile << datum.fen << "," << datum.isDraw << "," << datum.isWin << "," << datum.ply << ","
+                       << datum.totalPly << "," << datum.increment << "," << datum.timeLeft << "," << datum.timeSpent
+                       << "," << datum.opponentTime << std::endl;
+        }
+        outputFile.close();
+    }
+
     void processFile(const std::filesystem::path& outputDir, const std::filesystem::path& inputPath) {
-        const std::filesystem::path outputFile = outputDir / inputPath.filename();
+        const std::filesystem::path outputFilePath = outputDir / inputPath.filename();
+
+        addCsvHeaderToFile(outputFilePath);
 
         std::ifstream file(inputPath);
         std::string line;
-        std::smatch incrementMatch;
+        std::smatch timeControlMatch;
+        int startingTime = 0;
         int increment = 0;
 
         while (std::getline(file, line)) {
             if (line == "") continue;
-            if (std::regex_match(line, incrementMatch, timeControlRegex)) {
-                increment = std::stoi(incrementMatch[1].str());
+            if (std::regex_match(line, timeControlMatch, timeControlRegex)) {
+                startingTime = std::stoi(timeControlMatch[1].str());
+                increment = std::stoi(timeControlMatch[2].str());
                 continue;
             }
             if (line[0] == '[') continue;
@@ -85,14 +108,34 @@ namespace processTime {
 
             std::vector<Datum> res;
 
+            Board b;
+
+            bool isDraw = resultMatches[0].str() == "1/2-1/2";
+            bool isWin[2] = {!isDraw && resultMatches[0].str() == "1-0", !isDraw && resultMatches[0].str() == "0-1"};
+            int timeLeft[2] = {startingTime, startingTime};
+
             for (size_t i = 0; i < moveMatches.size(); ++i) {
-                std::string move = std::regex_replace(moveMatches[i][0].str(), checkRegex, "");
                 int hours = std::stoi(clockMatches[i][1]);
                 int minutes = std::stoi(clockMatches[i][2]);
                 int seconds = std::stoi(clockMatches[i][3]);
                 int clock = 3600 * hours + 60 * minutes + seconds;
-                // std::cout << move << " " << clock << std::endl;
+                res.push_back({.fen = positionToFen(b.pieces, b.current, b.side),
+                               .isDraw = isDraw,
+                               .isWin = isWin[i % 2],
+                               .ply = (int)(i + 1),
+                               .totalPly = (int)moveMatches.size(),
+                               .increment = increment,
+                               .timeLeft = timeLeft[i % 2],
+                               .timeSpent = clock - increment - timeLeft[i % 2],
+                               .opponentTime = timeLeft[(i + 1) % 2]});
+                timeLeft[i % 2] = clock;
+                std::string move = std::regex_replace(moveMatches[i][0].str(), checkRegex, "");
+                U32 encodedMove = stringToMove(b, move);
+                if (!encodedMove) std::cout << "Error! " << move << std::endl;
+                b.makeMove(encodedMove);
             }
+
+            writeDataToFile(res, outputFilePath);
         }
     }
 
