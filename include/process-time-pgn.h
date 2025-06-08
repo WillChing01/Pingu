@@ -71,7 +71,7 @@ namespace processTime {
     }
 
     void writeDataToFile(const std::vector<Datum>& data, const std::filesystem::path& outputFilePath) {
-        std::ofstream outputFile(outputFilePath);
+        std::ofstream outputFile(outputFilePath, std::ios::app);
         for (const Datum& datum : data) {
             outputFile << datum.fen << "," << datum.isDraw << "," << datum.isWin << "," << datum.ply << ","
                        << datum.totalPly << "," << datum.increment << "," << datum.timeLeft << "," << datum.timeSpent
@@ -132,7 +132,7 @@ namespace processTime {
                                .totalPly = (int)moveMatches.size(),
                                .increment = increment,
                                .timeLeft = timeLeft[i % 2],
-                               .timeSpent = clock - increment - timeLeft[i % 2],
+                               .timeSpent = timeLeft[i % 2] - (clock - increment),
                                .opponentTime = timeLeft[(i + 1) % 2]});
                 timeLeft[i % 2] = clock;
 
@@ -154,7 +154,7 @@ namespace processTime {
         if (!isValidInput(argc, argv)) return;
 
         for (int i = 5; i < argc; ++i) {
-            processFile(argv[2], argv[i]);
+            processFile(argv[3], argv[i]);
         }
     }
 
