@@ -96,6 +96,25 @@ namespace processTime {
         std::smatch timeControlMatch;
         int startingTime = 0;
         int increment = 0;
+        int nGame = 0;
+        int totalGames = 0;
+        const int barWidth = 50;
+        int percent = -1;
+        int totalPositions = 0;
+
+        while (std::getline(file, line)) {
+            if (line == "") continue;
+            if (std::regex_match(line, timeControlMatch, timeControlRegex)) {
+                startingTime = std::stoi(timeControlMatch[1].str());
+                increment = std::stoi(timeControlMatch[2].str());
+                continue;
+            }
+            if (line[0] == '[') continue;
+            ++totalGames;
+        };
+
+        file.clear();
+        file.seekg(0, std::ios::beg);
 
         while (std::getline(file, line)) {
             if (line == "") continue;
@@ -147,7 +166,28 @@ namespace processTime {
             }
 
             writeDataToFile(res, outputFilePath);
+            totalPositions += res.size();
+
+            double prog = double(++nGame) / double(totalGames);
+            int p = 100 * prog;
+            if (p > percent) {
+                percent = p;
+                std::cout << inputPath << " [";
+                int bars = barWidth * prog;
+                for (int i = 0; i < barWidth; ++i) {
+                    if (i < bars) {
+                        std::cout << "=";
+                    } else if (i == bars) {
+                        std::cout << ">";
+                    } else {
+                        std::cout << " ";
+                    }
+                }
+                std::cout << "] " << int(100 * prog) << "% - " << totalPositions << " positions" << "\r";
+                std::cout.flush();
+            }
         }
+        std::cout << std::endl;
     }
 
     void processTimePgnCommand(int argc, const char** argv) {
