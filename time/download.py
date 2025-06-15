@@ -17,7 +17,7 @@ class LoggingTextIOWrapper:
         if line := self._stream.readline(*args, **kwargs):
             self.buffer.append(line)
             return line
-        return None
+        return ""
 
     def __getattr__(self, name):
         return getattr(self._stream, name)
