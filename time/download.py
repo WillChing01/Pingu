@@ -27,7 +27,7 @@ def get_lichess_files():
     BASE_URL = "https://database.lichess.org/standard/"
     files = []
 
-    finish = 2025, 4
+    finish = 2025, 5
     start = 2017, 4
     current = list(finish)
 
@@ -45,7 +45,7 @@ def get_lichess_files():
         if current[0] < start[0] or current[0] == start[0] and current[1] < start[1]:
             break
 
-    return files
+    return files[::-1]
 
 
 def is_valid_game(headers):
