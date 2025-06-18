@@ -138,6 +138,7 @@ namespace processTime {
             bool isDraw = resultMatches[0].str() == "1/2-1/2";
             bool isWin[2] = {!isDraw && resultMatches[0].str() == "1-0", !isDraw && resultMatches[0].str() == "0-1"};
             int timeLeft[2] = {startingTime, startingTime};
+            bool isError = false;
 
             for (size_t i = 0; i < moveMatches.size(); ++i) {
                 int hours = std::stoi(clockMatches[i][1]);
@@ -161,12 +162,16 @@ namespace processTime {
                     b.display();
                     std::cout << "Error! " << move << std::endl;
                     std::cout << moveMatches[i][0].str() << std::endl;
+                    isError = true;
+                    break;
                 }
                 b.makeMove(encodedMove);
             }
 
-            writeDataToFile(res, outputFilePath);
-            totalPositions += res.size();
+            if (!isError) {
+                writeDataToFile(res, outputFilePath);
+                totalPositions += res.size();
+            }
 
             double prog = double(++nGame) / double(totalGames);
             int p = 100 * prog;
