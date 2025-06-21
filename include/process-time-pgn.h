@@ -17,10 +17,12 @@ namespace processTime {
         int increment;
         int timeLeft;
         int timeSpent;
+        int totalTimeSpent;
         int opponentTime;
     };
 
-    const std::string csvHeader = "fen,isDraw,isWin,ply,totalPly,increment,timeLeft,timeSpent,opponentTime";
+    const std::string csvHeader =
+        "fen,isDraw,isWin,ply,totalPly,increment,timeLeft,timeSpent,totalTimeSpent,opponentTime";
 
     const std::regex timeControlRegex(R"_(\[TimeControl "(\d+)\+(\d+)"\])_");
     const std::regex moveRegex(R"([a-h][1-8][a-h][1-8][QRBNqrbn]?[+#]?)");
@@ -75,7 +77,7 @@ namespace processTime {
         for (const Datum& datum : data) {
             outputFile << datum.fen << "," << datum.isDraw << "," << datum.isWin << "," << datum.ply << ","
                        << datum.totalPly << "," << datum.increment << "," << datum.timeLeft << "," << datum.timeSpent
-                       << "," << datum.opponentTime << std::endl;
+                       << "," << datum.totalTimeSpent << "," << datum.opponentTime << std::endl;
         }
         outputFile.close();
     }
@@ -138,6 +140,7 @@ namespace processTime {
             bool isDraw = resultMatches[0].str() == "1/2-1/2";
             bool isWin[2] = {!isDraw && resultMatches[0].str() == "1-0", !isDraw && resultMatches[0].str() == "0-1"};
             int timeLeft[2] = {startingTime, startingTime};
+            int totalTimeSpent[2] = {0, 0};
             bool isError = false;
 
             for (size_t i = 0; i < moveMatches.size(); ++i) {
@@ -154,6 +157,7 @@ namespace processTime {
                                .timeLeft = timeLeft[i % 2],
                                .timeSpent = timeLeft[i % 2] - (clock - increment),
                                .opponentTime = timeLeft[(i + 1) % 2]});
+                totalTimeSpent[i % 2] += timeLeft[i % 2] - (clock - increment);
                 timeLeft[i % 2] = clock;
 
                 std::string move = cleanMove(moveMatches[i][0].str());
@@ -169,6 +173,9 @@ namespace processTime {
             }
 
             if (!isError) {
+                for (size_t i = 0; i < res.size(); ++i) {
+                    res[i].totalTimeSpent = totalTimeSpent[i % 2];
+                }
                 writeDataToFile(res, outputFilePath);
                 totalPositions += res.size();
             }
