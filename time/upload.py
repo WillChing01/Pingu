@@ -7,7 +7,7 @@ import zipfile
 import huggingface_hub
 
 REPO_ID = "WillChing01/time-management"
-PATH_IN_REPO = "lichess"
+PATH_IN_REPO = "/lichess"
 REPO_TYPE = "dataset"
 
 
@@ -22,12 +22,11 @@ def upload_file(file_name: str, token: str) -> None:
         try:
             huggingface_hub.upload_file(
                 path_or_fileobj=zip_name,
-                path_in_repo=f"/{PATH_IN_REPO}/{zip_name}",
+                path_in_repo=f"{PATH_IN_REPO}/{zip_name}",
                 repo_id=REPO_ID,
                 repo_type=REPO_TYPE,
                 token=token,
             )
-            os.remove(file_name)
             os.remove(zip_name)
             break
         except:
@@ -52,11 +51,7 @@ def main():
 
     DIR = "_processed"
 
-    files = [
-        x.path
-        for x in os.scandir(DIR)
-        if x.is_file() and x.path.split(".")[-1] == "csv"
-    ]
+    files = [x.path for x in os.scandir(DIR) if x.is_file() and x.path.endswith(".csv")]
 
     for file in files:
         upload_file(file, token)
