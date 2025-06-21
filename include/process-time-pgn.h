@@ -89,7 +89,8 @@ namespace processTime {
     }
 
     void processFile(const std::filesystem::path& outputDir, const std::filesystem::path& inputPath) {
-        const std::filesystem::path outputFilePath = outputDir / inputPath.filename();
+        const std::filesystem::path outputFilePath =
+            std::filesystem::path(outputDir / inputPath.filename()).replace_extension(std::filesystem::path("csv"));
 
         addCsvHeaderToFile(outputFilePath);
 
