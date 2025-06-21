@@ -1,8 +1,13 @@
 import os
 import subprocess
+import multiprocessing
 
 DIR = "_preprocessed"
 OUTPUT_DIR = "_processed"
+
+
+def process(file):
+    subprocess.run(["../Pingu.exe", "process-time-pgn", "out", OUTPUT_DIR, "in", file])
 
 
 def main():
@@ -11,9 +16,8 @@ def main():
 
     files = [x.path for x in os.scandir(DIR) if x.is_file()]
 
-    subprocess.run(
-        ["../Pingu.exe", "process-time-pgn", "out", OUTPUT_DIR, "in", *files]
-    )
+    with multiprocessing.Pool() as pool:
+        pool.map(process, files)
 
 
 if __name__ == "__main__":
