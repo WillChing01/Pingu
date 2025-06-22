@@ -15,7 +15,7 @@ def upload_file(file_name: str, token: str) -> None:
     zip_name = os.path.basename(file_name).replace(".csv", ".zip")
     zipfile.ZipFile(
         zip_name, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
-    ).write(file_name)
+    ).write(file_name, arcname=os.path.basename(file_name))
 
     retries = 0
     while retries < 3:
