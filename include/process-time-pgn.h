@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <vector>
 
-#include "board.h"
+#include "thread.h"
 #include "format.h"
 
 namespace processTime {
@@ -14,15 +14,18 @@ namespace processTime {
         bool isWin; // from pov of player to move.
         int ply;
         int totalPly;
+        int qSearch;
+        int inCheck;
         int increment;
         int timeLeft;
         int timeSpent;
         int totalTimeSpent;
+        int startTime;
         int opponentTime;
     };
 
-    const std::string csvHeader =
-        "fen,isDraw,isWin,ply,totalPly,increment,timeLeft,timeSpent,totalTimeSpent,opponentTime";
+    const std::string csvHeader = "fen,isDraw,isWin,ply,totalPly,qSearch,inCheck,increment,timeLeft,timeSpent,"
+                                  "totalTimeSpent,startTime,opponentTime";
 
     const std::regex timeControlRegex(R"_(\[TimeControl "(\d+)\+(\d+)"\])_");
     const std::regex moveRegex(R"([a-h][1-8][a-h][1-8][QRBNqrbn]?[+#]?)");
@@ -76,8 +79,9 @@ namespace processTime {
         std::ofstream outputFile(outputFilePath, std::ios::app);
         for (const Datum& datum : data) {
             outputFile << datum.fen << "," << datum.isDraw << "," << datum.isWin << "," << datum.ply << ","
-                       << datum.totalPly << "," << datum.increment << "," << datum.timeLeft << "," << datum.timeSpent
-                       << "," << datum.totalTimeSpent << "," << datum.opponentTime << std::endl;
+                       << datum.totalPly << "," << datum.qSearch << "," << datum.inCheck << "," << datum.increment
+                       << "," << datum.timeLeft << "," << datum.timeSpent << "," << datum.totalTimeSpent << ","
+                       << datum.startTime << "," << datum.opponentTime << std::endl;
         }
         outputFile.close();
     }
@@ -119,6 +123,8 @@ namespace processTime {
         file.clear();
         file.seekg(0, std::ios::beg);
 
+        Thread t;
+
         while (std::getline(file, line)) {
             if (line == "") continue;
             if (std::regex_match(line, timeControlMatch, timeControlRegex)) {
@@ -136,7 +142,7 @@ namespace processTime {
 
             std::vector<Datum> res;
 
-            Board b;
+            t.b.setPositionFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
             bool isDraw = resultMatches[0].str() == "1/2-1/2";
             bool isWin[2] = {!isDraw && resultMatches[0].str() == "1-0", !isDraw && resultMatches[0].str() == "0-1"};
@@ -149,28 +155,31 @@ namespace processTime {
                 int minutes = std::stoi(clockMatches[i][2]);
                 int seconds = std::stoi(clockMatches[i][3]);
                 int clock = 3600 * hours + 60 * minutes + seconds;
-                res.push_back({.fen = positionToFen(b.pieces, b.current, b.side),
+                res.push_back({.fen = positionToFen(t.b.pieces, t.b.current, t.b.side),
                                .isDraw = isDraw,
                                .isWin = isWin[i % 2],
                                .ply = (int)(i + 1),
                                .totalPly = (int)moveMatches.size(),
+                               .qSearch = t.qSearch(1, -MATE_SCORE, MATE_SCORE),
+                               .inCheck = util::isInCheck(t.b.side, t.b.pieces, t.b.occupied),
                                .increment = increment,
                                .timeLeft = timeLeft[i % 2],
                                .timeSpent = timeLeft[i % 2] - (clock - increment),
+                               .startTime = startingTime,
                                .opponentTime = timeLeft[(i + 1) % 2]});
                 totalTimeSpent[i % 2] += timeLeft[i % 2] - (clock - increment);
                 timeLeft[i % 2] = clock;
 
                 std::string move = cleanMove(moveMatches[i][0].str());
-                U32 encodedMove = stringToMove(b, move);
+                U32 encodedMove = stringToMove(t.b, move);
                 if (!encodedMove) {
-                    b.display();
+                    t.b.display();
                     std::cout << "Error! " << move << std::endl;
                     std::cout << moveMatches[i][0].str() << std::endl;
                     isError = true;
                     break;
                 }
-                b.makeMove(encodedMove);
+                t.b.makeMove(encodedMove);
             }
 
             if (!isError) {
