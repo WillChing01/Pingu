@@ -124,6 +124,9 @@ namespace processTime {
         file.seekg(0, std::ios::beg);
 
         Thread t;
+        globalNodeCount = 0;
+        t.isSearchAborted = false;
+        t.prepareSearch(MAXDEPTH, std::numeric_limits<double>::infinity(), false);
 
         while (std::getline(file, line)) {
             if (line == "") continue;
