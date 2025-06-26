@@ -19,18 +19,20 @@ The transition from Pingu 4.0.0 to Pingu 5.0.0 involved training two successive 
 
 Pingu 5.0.0 introduced a Half-KA architecture to the engine's NNUE.
 
-The input-layer consists of two perspective networks (our perspective, and our opponent's perspective). Each perspective network has an input layer consisting of 45056 binary input features.
+The input-layer consists of two perspective networks (side-to-move and other side). Each perspective network has an input layer consisting of 45056 binary input features.
 
 ```math
-\text{our\_input\_layer}[64 \cdot 11 \cdot 64 \cdot i + 64 \cdot j + k] =
+\text{stm\_input\_layer}[64 \cdot 11 \cdot 64 \cdot i + 64 \cdot j + k] =
 \begin{cases}
-1, & \text{if our king is on square } i \text{ and piece } j \text{ is on square } k \\
+1, & \text{if side-to-move's king is on square } i \text{ and piece } j \text{ is on square } k \\
 0, & \text{otherwise}
 \end{cases}
-\\\\[1em]
-\text{their\_input\_layer}[64 \cdot 11 \cdot 64 \cdot i + 64 \cdot j + k] =
+```
+
+```math
+\text{os\_input\_layer}[64 \cdot 11 \cdot 64 \cdot i + 64 \cdot j + k] =
 \begin{cases}
-1, & \text{if their king is on square } i \text{ and piece } j \text{ is on square } k \\
+1, & \text{if other side's king is on square } i \text{ and piece } j \text{ is on square } k \\
 0, & \text{otherwise}
 \end{cases}
 ```
