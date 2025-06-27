@@ -17,7 +17,7 @@ The transition from Pingu 4.0.0 to Pingu 5.0.0 involved training two successive 
 
 Pingu 5.0.0 introduced a Half-KA architecture to the engine's NNUE.
 
-The input-layer consists of two perspective networks (side-to-move and other side). Each perspective network has an input layer consisting of 45056 binary input features.
+The input-layer consists of two perspective networks (side-to-move and other side). Each perspective network has an input layer consisting of 45,056 binary input features.
 
 ```math
 \text{stm\_input\_layer}[64 \cdot 11 \cdot 64 \cdot i + 64 \cdot j + k] =
