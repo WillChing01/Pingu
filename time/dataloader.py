@@ -14,6 +14,7 @@ Inputs:
 
 """
 
+import math
 import os
 import random
 import numpy as np
@@ -25,6 +26,7 @@ from parse import count_rows
 PIECE_TYPES = {x: i for i, x in enumerate("KkQqRrBbNnPp")}
 
 clamp = lambda x: min(max(x, 0), 1)
+sigmoid = lambda x: 1 / (1 + math.exp(-x))
 
 
 def get_label(datum):
@@ -58,7 +60,7 @@ def datum_to_input(datum):
         board,
         (
             clamp(datum.ply / 100),
-            torch.sigmoid(datum.qSearch / 400),
+            sigmoid(datum.qSearch / 400),
             clamp(datum.increment / datum.timeLeft),
             clamp(0.5 * datum.opponentTime / datum.timeLeft),
         ),
@@ -66,12 +68,18 @@ def datum_to_input(datum):
 
 
 LENGTH_BY_PATH = {
-    kind: {x: count_rows(x) for x in os.scandir(kind) if x.path.endswith(".csv")}
+    kind: {
+        x.path: count_rows(x.path) for x in os.scandir(kind) if x.path.endswith(".csv")
+    }
     for kind in ["training", "validation"]
 }
 
 TRAINING_LENGTH = sum(LENGTH_BY_PATH["training"].values())
 VALIDATION_LENGTH = sum(LENGTH_BY_PATH["validation"].values())
+
+HEADERS = "fen,isDraw,isWin,ply,totalPly,qSearch,inCheck,increment,timeLeft,timeSpent,totalTimeSpent,startTime,opponentTime".split(
+    ","
+)
 
 
 def dataloader(kind, batch_size=1024):
@@ -81,10 +89,10 @@ def dataloader(kind, batch_size=1024):
     random.shuffle(paths)
 
     for path in paths:
-        df = pd.read_csv(path)
+        df = pd.read_csv(path, names=HEADERS, header=0)
         indices = np.random.permutation(LENGTH_BY_PATH[kind][path])
 
         for i in range(0, len(indices), batch_size):
             data = df.iloc[indices[i : i + batch_size]]
-            batch = [datum_to_input(datum) for datum in data]
+            batch = [datum_to_input(datum) for datum in data.itertuples(index=False)]
             yield batch
