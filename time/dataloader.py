@@ -14,9 +14,15 @@ Inputs:
 
 """
 
+import os
+import random
+import numpy as np
+import pandas as pd
 import torch
 
-PIECE_TYPES = {x: i for x, i in enumerate("KkQqRrBbNnPp")}
+from parse import count_rows
+
+PIECE_TYPES = {x: i for i, x in enumerate("KkQqRrBbNnPp")}
 
 clamp = lambda x: min(max(x, 0), 1)
 
@@ -34,7 +40,7 @@ def get_label(datum):
 def datum_to_input(datum):
     pos, side = datum.fen.split(" ")[:2]
 
-    board = torch.tensor([[[0] * 8] * 8] * 14, dtype=torch.bool)
+    board = torch.zeros((14, 8, 8), dtype=torch.bool)
     board[-2] = side == "b"
     board[-1] = datum.inCheck
 
@@ -57,3 +63,28 @@ def datum_to_input(datum):
             clamp(0.5 * datum.opponentTime / datum.timeLeft),
         ),
     ), get_label(datum)
+
+
+LENGTH_BY_PATH = {
+    kind: {x: count_rows(x) for x in os.scandir(kind) if x.path.endswith(".csv")}
+    for kind in ["training", "validation"]
+}
+
+TRAINING_LENGTH = sum(LENGTH_BY_PATH["training"].values())
+VALIDATION_LENGTH = sum(LENGTH_BY_PATH["validation"].values())
+
+
+def dataloader(kind, batch_size=1024):
+    assert kind in ["training", "validation"]
+
+    paths = [x.path for x in os.scandir(kind) if x.path.endswith(".csv")]
+    random.shuffle(paths)
+
+    for path in paths:
+        df = pd.read_csv(path)
+        indices = np.random.permutation(LENGTH_BY_PATH[kind][path])
+
+        for i in range(0, len(indices), batch_size):
+            data = df.iloc[indices[i : i + batch_size]]
+            batch = [datum_to_input(datum) for datum in data]
+            yield batch
