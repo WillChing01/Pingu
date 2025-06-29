@@ -54,12 +54,8 @@ def main():
         for chunk in tqdm(
             reader, total=total_chunks, desc=os.path.basename(file), leave=True
         ):
-            filtered = (
-                chunk[(chunk["ply"] >= 12) & (chunk["ply"] <= chunk["totalPly"] - 12)]
-                .to_csv(index=False, header=False)
-                .splitlines()
-            )
-            for row in filtered:
+            rows = chunk.to_csv(index=False, header=False).splitlines()
+            for row in rows:
                 if random.random() < TRAINING_RATIO:
                     idx = random.randint(0, TRAINING_CHUNKS - 1)
                     training_writers[idx].write(row + "\n")
