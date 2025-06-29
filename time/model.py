@@ -43,3 +43,7 @@ class TimeNetwork(nn.Module):
     def forward(self, board, scalar_inputs):
         cnn_output = self.downsample(self.block_2(self.block_1(self.initial(board))))
         return self.head(torch.concat((scalar_inputs, cnn_output), dim=1))
+
+
+def network():
+    return TimeNetwork()

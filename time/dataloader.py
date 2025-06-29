@@ -29,42 +29,52 @@ clamp = lambda x: min(max(x, 0), 1)
 sigmoid = lambda x: 1 / (1 + math.exp(-x))
 
 
-def get_label(datum):
-    alpha = 0.2
-    beta = 0.75
+def data_to_label(data):
+    def datum_to_label(datum):
+        alpha = 0.2
+        beta = 0.75
 
-    return alpha / (datum.totalPly - datum.ply) + (1 - alpha) * (
-        beta * datum.timeSpent / datum.timeLeft
-        + (1 - beta) * datum.timeSpent / datum.totalTimeSpent
-    )
+        return alpha / (datum.totalPly - datum.ply) + (1 - alpha) * (
+            beta * datum.timeSpent / datum.timeLeft
+            + (1 - beta) * datum.timeSpent / datum.totalTimeSpent
+        )
+
+    return torch.tensor([[datum_to_label(x)] for x in data])
 
 
-def datum_to_input(datum):
-    pos, side = datum.fen.split(" ")[:2]
+def data_to_board(data):
+    def datum_to_board(datum):
+        pos, side = datum.fen.split(" ")[:2]
 
-    board = torch.zeros((14, 8, 8), dtype=torch.bool)
-    board[-2] = side == "b"
-    board[-1] = datum.inCheck
+        board = torch.zeros((14, 8, 8))
+        board[-2] = side == "b"
+        board[-1] = datum.inCheck
 
-    square = 56
-    for x in pos:
-        if x == "/":
-            square -= 16
-        elif x.isdigit():
-            square += int(x)
-        else:
-            board[PIECE_TYPES[x]][square // 8][square % 8] = 1
-            square += 1
+        square = 56
+        for x in pos:
+            if x == "/":
+                square -= 16
+            elif x.isdigit():
+                square += int(x)
+            else:
+                board[PIECE_TYPES[x]][square // 8][square % 8] = 1
+                square += 1
 
-    return (
-        board,
-        (
+        return board
+
+    return torch.stack(tuple(datum_to_board(x) for x in data))
+
+
+def data_to_scalar(data):
+    def datum_to_scalar(datum):
+        return (
             clamp(datum.ply / 100),
             sigmoid(datum.qSearch / 400),
             clamp(datum.increment / datum.timeLeft),
             clamp(0.5 * datum.opponentTime / datum.timeLeft),
-        ),
-    ), get_label(datum)
+        )
+
+    return torch.tensor([datum_to_scalar(x) for x in data])
 
 
 LENGTH_BY_PATH = {
@@ -93,6 +103,9 @@ def dataloader(kind, batch_size=1024):
         indices = np.random.permutation(LENGTH_BY_PATH[kind][path])
 
         for i in range(0, len(indices), batch_size):
-            data = df.iloc[indices[i : i + batch_size]]
-            batch = [datum_to_input(datum) for datum in data.itertuples(index=False)]
-            yield batch
+            data = [
+                x for x in df.iloc[indices[i : i + batch_size]].itertuples(index=False)
+            ]
+            yield len(data), data_to_board(data), data_to_scalar(data), data_to_label(
+                data
+            )
