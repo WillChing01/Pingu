@@ -11,7 +11,7 @@ TRAINING_CHUNKS = 14
 VALIDATION_CHUNKS = 1
 
 
-HEADERS = "fen,isDraw,isWin,ply,totalPly,increment,timeLeft,timeSpent,totalTimeSpent,opponentTime"
+HEADERS = "fen,isDraw,isWin,ply,totalPly,qSearch,inCheck,increment,timeLeft,timeSpent,totalTimeSpent,startTime,opponentTime"
 
 
 def write_headers():
