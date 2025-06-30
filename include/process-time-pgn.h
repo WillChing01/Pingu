@@ -78,7 +78,10 @@ namespace processTime {
     void writeDataToFile(const std::vector<Datum>& data, const std::filesystem::path& outputFilePath) {
         std::ofstream outputFile(outputFilePath, std::ios::app);
         for (const Datum& datum : data) {
-            if (datum.ply <= 12 || datum.timeLeft <= 10) continue;
+            if (datum.ply <= 12 || datum.totalPly - datum.ply < 6 || datum.timeLeft <= 10 ||
+                datum.totalTimeSpent <= 10) {
+                continue;
+            }
 
             outputFile << datum.fen << "," << datum.isDraw << "," << datum.isWin << "," << datum.ply << ","
                        << datum.totalPly << "," << datum.qSearch << "," << datum.inCheck << "," << datum.increment
