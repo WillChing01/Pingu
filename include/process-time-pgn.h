@@ -175,7 +175,9 @@ namespace processTime {
                                .timeSpent = timeLeft[i % 2] - (clock - increment),
                                .startTime = startingTime,
                                .opponentTime = timeLeft[(i + 1) % 2]});
-                totalTimeSpent[i % 2] += timeLeft[i % 2] - (clock - increment);
+                if (i >= moveMatches.size() - 2) {
+                    totalTimeSpent[i % 2] = startingTime - clock + increment;
+                }
                 timeLeft[i % 2] = clock;
 
                 std::string move = cleanMove(moveMatches[i][0].str());
