@@ -5,6 +5,7 @@
 
 struct Datum {
     U64 pos[4] = {~0ull, ~0ull, ~0ull, ~0ull};
+    bool side;
     bool isDraw;
     bool isWin; // from pov of player to move.
     int ply;
