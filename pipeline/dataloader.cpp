@@ -89,18 +89,18 @@ struct chunkLoader {
     }
 };
 
-template <class Batch>
+template <typename Datum, typename Batch>
 struct dataLoader {
     size_t batchSize;
     size_t numWorkers;
 
-    chunkLoader* chunkloader = nullptr;
-    datum* chunk = nullptr;
+    chunkLoader<Datum>* chunkloader = nullptr;
+    Datum* chunk = nullptr;
     size_t chunkSize;
 
     size_t qLength = 8;
     size_t batchCounter = 0;
-    std::queue<BatchClass*>* batchQueue;
+    std::queue<Batch*>* batchQueue;
     std::mutex* _m;
 
     std::atomic<bool>* stopFlags;
@@ -116,14 +116,14 @@ struct dataLoader {
         std::fill(stopFlags, stopFlags + numWorkers, true);
         std::fill(finishFlags, finishFlags + numWorkers, true);
 
-        chunkloader = new chunkLoader(path);
+        chunkloader = new chunkLoader<Datum>(path);
         getNextChunk();
     }
 
     void getNextChunk() {
         stopThreads();
 
-        std::pair<datum*, size_t> res = chunkloader->next();
+        std::pair<Datum*, size_t> res = chunkloader->next();
         chunk = res.first;
         chunkSize = res.second;
 
