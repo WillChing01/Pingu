@@ -1,3 +1,6 @@
+#ifndef DATAPARSER_H_INCLUDED
+#define DATAPARSER_H_INCLUDED
+
 #include "utils.h"
 
 #include <chrono>
@@ -127,3 +130,5 @@ class DataParser {
         }
     }
 };
+
+#endif // DATAPARSER_H_INCLUDED

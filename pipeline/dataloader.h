@@ -1,3 +1,6 @@
+#ifndef DATALOADER_H_INCLUDED
+#define DATALOADER_H_INCLUDED
+
 #include "utils.h"
 
 #include <algorithm>
@@ -206,3 +209,5 @@ class DataLoader {
         delete chunkloader;
     }
 };
+
+#endif // DATALOADER_H_INCLUDED
