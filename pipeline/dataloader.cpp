@@ -13,7 +13,8 @@
 #include <vector>
 
 template <typename Datum>
-struct chunkLoader {
+class ChunkLoader {
+  public:
     std::filesystem::path path;
 
     size_t chunkIndex = 0;
@@ -31,7 +32,7 @@ struct chunkLoader {
 
     std::mt19937_64 _mt;
 
-    chunkLoader(const std::filesystem::path& x) : path(x) {
+    ChunkLoader(const std::filesystem::path& x) : path(x) {
         _mt = std::mt19937_64{std::random_device{}()};
 
         chunkFiles = getFiles(path, ".dat");
@@ -76,12 +77,12 @@ struct chunkLoader {
         ++chunkIndex;
         chunkToggle = !chunkToggle;
         finishFlag = false;
-        std::thread(&chunkLoader::loadNext, this).detach();
+        std::thread(&ChunkLoader::loadNext, this).detach();
 
         return {chunk, chunkSize};
     }
 
-    ~chunkLoader() {
+    ~ChunkLoader() {
         while (!finishFlag) {
         }
         delete[] chunkBuffer[0];
@@ -90,11 +91,12 @@ struct chunkLoader {
 };
 
 template <typename Datum, typename Batch>
-struct dataLoader {
+class DataLoader {
+public:
     size_t batchSize;
     size_t numWorkers;
 
-    chunkLoader<Datum>* chunkloader = nullptr;
+    ChunkLoader<Datum>* chunkloader = nullptr;
     Datum* chunk = nullptr;
     size_t chunkSize;
 
@@ -106,7 +108,7 @@ struct dataLoader {
     std::atomic<bool>* stopFlags;
     std::atomic<bool>* finishFlags;
 
-    dataLoader(const std::filesystem::path& path, size_t x, size_t y) : batchSize(x), numWorkers(y) {
+    DataLoader(const std::filesystem::path& path, size_t x, size_t y) : batchSize(x), numWorkers(y) {
         batchQueue = new std::queue<Batch*>[numWorkers];
         _m = new std::mutex[numWorkers];
 
@@ -116,7 +118,7 @@ struct dataLoader {
         std::fill(stopFlags, stopFlags + numWorkers, true);
         std::fill(finishFlags, finishFlags + numWorkers, true);
 
-        chunkloader = new chunkLoader<Datum>(path);
+        chunkloader = new ChunkLoader<Datum>(path);
         getNextChunk();
     }
 
@@ -135,7 +137,7 @@ struct dataLoader {
         std::fill(stopFlags, stopFlags + numWorkers, false);
         std::fill(finishFlags, finishFlags + numWorkers, false);
         for (size_t i = 0; i < numWorkers; ++i) {
-            std::thread(&dataLoader::processBatches, this, i).detach();
+            std::thread(&DataLoader::processBatches, this, i).detach();
         }
     }
 
@@ -195,7 +197,7 @@ struct dataLoader {
         }
     }
 
-    ~dataLoader() {
+    ~DataLoader() {
         stopThreads();
         delete[] batchQueue;
         delete[] _m;
