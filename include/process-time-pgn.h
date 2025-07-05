@@ -24,9 +24,6 @@ namespace processTime {
         int opponentTime;
     };
 
-    const std::string csvHeader = "fen,isDraw,isWin,ply,totalPly,qSearch,inCheck,increment,timeLeft,timeSpent,"
-                                  "totalTimeSpent,startTime,opponentTime";
-
     const std::regex timeControlRegex(R"_(\[TimeControl "(\d+)\+(\d+)"\])_");
     const std::regex moveRegex(R"([a-h][1-8][a-h][1-8][QRBNqrbn]?[+#]?)");
     const std::regex checkRegex(R"([+#])");
@@ -69,12 +66,6 @@ namespace processTime {
         return true;
     }
 
-    void addCsvHeaderToFile(const std::filesystem::path& outputFilePath) {
-        std::ofstream outputFile(outputFilePath);
-        outputFile << csvHeader << std::endl;
-        outputFile.close();
-    }
-
     void writeDataToFile(const std::vector<Datum>& data, const std::filesystem::path& outputFilePath) {
         std::ofstream outputFile(outputFilePath, std::ios::app);
         for (const Datum& datum : data) {
@@ -100,8 +91,6 @@ namespace processTime {
     void processFile(const std::filesystem::path& outputDir, const std::filesystem::path& inputPath) {
         const std::filesystem::path outputFilePath =
             std::filesystem::path(outputDir / inputPath.filename()).replace_extension(std::filesystem::path("csv"));
-
-        addCsvHeaderToFile(outputFilePath);
 
         std::ifstream file(inputPath);
         std::string line;
