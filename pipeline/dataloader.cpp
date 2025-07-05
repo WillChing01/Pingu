@@ -92,7 +92,7 @@ class ChunkLoader {
 
 template <typename Datum, typename Batch>
 class DataLoader {
-public:
+  public:
     size_t batchSize;
     size_t numWorkers;
 
