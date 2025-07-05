@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from parse import count_rows
+from time.model.parse import count_rows
 
 PIECE_TYPES = {x: i for i, x in enumerate("KkQqRrBbNnPp")}
 

@@ -27,6 +27,9 @@ class Checkpoint:
         self.optimizer_class = optimizer_class
         self.optimizer_kwargs = optimizer_kwargs
 
+        if not os.path.isdir(self.path):
+            os.mkdir(self.path)
+
     def get_files(self):
         return glob.glob(f"{self.path}\\*.tar")
 
@@ -49,9 +52,6 @@ class Checkpoint:
         latest_epoch = 0
         if model_files := self.get_files():
             latest_epoch = max(get_epoch(x) for x in model_files)
-
-        if not os.path.isdir(self.path):
-            os.mkdir(self.path)
 
         save_file = f"{self.path}\\{latest_epoch+1}_tloss_{format_loss(t_loss)}_vloss_{format_loss(v_loss)}.tar"
         torch.save(

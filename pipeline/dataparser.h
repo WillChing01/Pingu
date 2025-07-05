@@ -167,8 +167,7 @@ const U64 masks[16] = {
     0xF000000000000000ull,
 };
 
-inline std::array<U64, 4> parseFen(const std::string& fen) {
-    std::array<U64, 4> res;
+inline void parseFen(const std::string& fen, U64* const res) {
     unsigned char square = 56;
     for (const unsigned char x : fen) {
         switch (x) {
@@ -205,7 +204,6 @@ inline std::array<U64, 4> parseFen(const std::string& fen) {
             break;
         }
     }
-    return res;
 }
 
 #endif // DATAPARSER_H_INCLUDED
