@@ -66,7 +66,8 @@ namespace processTime {
         return true;
     }
 
-    void writeDataToFile(const std::vector<Datum>& data, const std::filesystem::path& outputFilePath) {
+    inline size_t writeDataToFile(const std::vector<Datum>& data, const std::filesystem::path& outputFilePath) {
+        size_t res = 0;
         std::ofstream outputFile(outputFilePath, std::ios::app);
         for (const Datum& datum : data) {
             if (datum.ply <= 12 || datum.totalPly - datum.ply < 6 || datum.timeLeft <= 10 ||
@@ -78,8 +79,11 @@ namespace processTime {
                        << datum.totalPly << "," << datum.qSearch << "," << datum.inCheck << "," << datum.increment
                        << "," << datum.timeLeft << "," << datum.timeSpent << "," << datum.totalTimeSpent << ","
                        << datum.startTime << "," << datum.opponentTime << std::endl;
+
+            ++res;
         }
         outputFile.close();
+        return res;
     }
 
     inline std::string cleanMove(const std::string& move) {
@@ -101,7 +105,7 @@ namespace processTime {
         int totalGames = 0;
         const int barWidth = 50;
         int percent = -1;
-        int totalPositions = 0;
+        size_t totalPositions = 0;
 
         while (std::getline(file, line)) {
             if (line == "") continue;
@@ -185,8 +189,7 @@ namespace processTime {
                 for (size_t i = 0; i < res.size(); ++i) {
                     res[i].totalTimeSpent = totalTimeSpent[i % 2];
                 }
-                writeDataToFile(res, outputFilePath);
-                totalPositions += res.size();
+                totalPositions += writeDataToFile(res, outputFilePath);
             }
 
             double prog = double(++nGame) / double(totalGames);
