@@ -213,7 +213,7 @@ namespace processTime {
         }
 
         const std::filesystem::path finalPath = std::filesystem::path(
-            outputDir / (inputPath.stem().string() + "_n" + std::to_string(totalPositions) + ".csv"));
+            outputDir / (inputPath.stem().string() + "_n" + std::to_string(totalPositions) + "_.csv"));
 
         std::filesystem::rename(outputFilePath, finalPath);
 
