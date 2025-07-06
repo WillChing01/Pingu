@@ -69,6 +69,11 @@ namespace processTime {
     void writeDataToFile(const std::vector<Datum>& data, const std::filesystem::path& outputFilePath) {
         std::ofstream outputFile(outputFilePath, std::ios::app);
         for (const Datum& datum : data) {
+            if (datum.ply <= 12 || datum.totalPly - datum.ply < 6 || datum.timeLeft <= 10 ||
+                datum.totalTimeSpent <= 10) {
+                continue;
+            }
+
             outputFile << datum.fen << "," << datum.isDraw << "," << datum.isWin << "," << datum.ply << ","
                        << datum.totalPly << "," << datum.qSearch << "," << datum.inCheck << "," << datum.increment
                        << "," << datum.timeLeft << "," << datum.timeSpent << "," << datum.totalTimeSpent << ","
@@ -147,8 +152,7 @@ namespace processTime {
                 int minutes = std::stoi(clockMatches[i][2]);
                 int seconds = std::stoi(clockMatches[i][3]);
                 int clock = 3600 * hours + 60 * minutes + seconds;
-
-                Datum datum = {.fen = positionToFen(t.b.pieces, t.b.current, t.b.side),
+                res.push_back({.fen = positionToFen(t.b.pieces, t.b.current, t.b.side),
                                .isDraw = isDraw,
                                .isWin = isWin[i % 2],
                                .ply = (int)(i + 1),
@@ -159,12 +163,7 @@ namespace processTime {
                                .timeLeft = timeLeft[i % 2],
                                .timeSpent = timeLeft[i % 2] - (clock - increment),
                                .startTime = startingTime,
-                               .opponentTime = timeLeft[(i + 1) % 2]};
-
-                if (!(datum.ply <= 12 || datum.totalPly - datum.ply < 6 || datum.timeLeft <= 10 ||
-                      datum.totalTimeSpent <= 10)) {
-                    res.push_back(datum);
-                }
+                               .opponentTime = timeLeft[(i + 1) % 2]});
                 if (i >= moveMatches.size() - 2) {
                     totalTimeSpent[i % 2] = startingTime - clock + increment;
                 }
