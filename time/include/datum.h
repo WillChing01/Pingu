@@ -1,7 +1,7 @@
 #ifndef DATUM_H_INCLUDED
 #define DATUM_H_INCLUDED
 
-#include "../pipeline/utils.h"
+#include "../../pipeline/utils.h"
 
 struct Datum {
     U64 pos[4] = {~0ull, ~0ull, ~0ull, ~0ull};

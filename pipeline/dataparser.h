@@ -111,8 +111,8 @@ class DataParser {
         const double expectedTraining = TRAINING_RATIO * total;
         const double expectedValidation = total - expectedTraining;
 
-        _trainingChunks = std::max(1ull, expectedTraining / CHUNK_SIZE);
-        _validationChunks = std::max(1ull, expectedValidation / CHUNK_SIZE);
+        _trainingChunks = std::max(1ull, (U64)std::round(expectedTraining / CHUNK_SIZE));
+        _validationChunks = std::max(1ull, (U64)std::llround(expectedValidation / CHUNK_SIZE));
 
         _trainingMutex = std::vector<std::mutex>(_trainingChunks);
         _validationMutex = std::vector<std::mutex>(_validationChunks);

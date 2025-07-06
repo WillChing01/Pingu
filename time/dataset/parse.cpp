@@ -1,6 +1,6 @@
 #include <filesystem>
 #include <sstream>
-#include "../pipeline/dataparser.h"
+#include "../../pipeline/dataparser.h"
 #include "../include/datum.h"
 
 inline Datum parseLine(const std::string& line) {
