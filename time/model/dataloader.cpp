@@ -2,6 +2,17 @@
 #include "../../pipeline/utils.h"
 #include "../include/datum.h"
 
+inline double datumToLabel(const Datum& datum) {
+    const double alpha = 0.2;
+    const double beta = 0.75;
+
+    const double naiveRatio = 1. / (datum.totalPly - datum.ply);
+    const double localRatio = (double)datum.timeSpent / (double)datum.timeLeft;
+    const double globalRatio = (double)datum.timeSpent / (double)datum.totalTimeSpent;
+
+    return alpha * naiveRatio + (1. - alpha) * (beta * localRatio + (1. - beta) * globalRatio);
+};
+
 struct Batch {
     U64* tensor;
     double* scaledEval;
@@ -25,9 +36,11 @@ struct Batch {
     }
 
     void reformat(size_t idx, const Datum& datum) {
-        scaledPly[idx] = std::min((double)datum.ply / 100., 1.);
-        scaledIncrement[idx] = std::min((double)datum.increment / (double)datum.timeLeft, 1.);
-        scaledOpponentTime[idx] = std::min(0.5 * (double)datum.opponentTime / (double)datum.timeLeft, 1.);
+        auto callback = [this, idx](int pieceType, int square) {
+            this->tensor[idx * 64 * 14 + pieceType * 64 + square] = 1;
+        };
+
+        parsePos(datum.pos, callback);
 
         if (datum.side) {
             U64* start = tensor + 64 * 14 * idx + 64 * 12;
@@ -39,14 +52,22 @@ struct Batch {
             std::fill(start, start + 64, 1.);
         }
 
-        auto callback = [this, idx](int pieceType, int square) {
-            this->tensor[idx * 64 * 14 + pieceType * 64 + square] = 1;
-        };
+        scaledEval[idx] = 1. / (1. + std::exp(-datum.qSearch / 400.));
+        scaledPly[idx] = std::min((double)datum.ply / 100., 1.);
+        scaledIncrement[idx] = std::min((double)datum.increment / (double)datum.timeLeft, 1.);
+        scaledOpponentTime[idx] = std::min(0.5 * (double)datum.opponentTime / (double)datum.timeLeft, 1.);
 
-        parsePos(datum.pos, callback);
+        label[idx] = datumToLabel(datum);
     }
 
-    ~Batch() {}
+    ~Batch() {
+        delete[] tensor;
+        delete[] scaledEval;
+        delete[] scaledPly;
+        delete[] scaledIncrement;
+        delete[] scaledOpponentTime;
+        delete[] label;
+    }
 };
 
 using dataLoader = DataLoader<Datum, Batch>;
