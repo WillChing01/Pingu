@@ -80,6 +80,20 @@ inline void parseFen(const std::string& fen, U64* const res) {
     }
 }
 
+template <typename F>
+inline void parsePos(U64* pos, const F& callback) {
+    for (size_t i = 0; i < 4; ++i) {
+        U64 x = ~pos[i];
+        while (x) {
+            U64 j = __builtin_ctzll(x) >> 2ull;
+            int square = 16 * i + j;
+            int pieceType = 15 - (U64)((x & masks[j]) >> (j << 2ull));
+            callback(square, pieceType);
+            x &= ~masks[j];
+        }
+    }
+}
+
 std::vector<std::filesystem::path> getFiles(const std::filesystem::path& path, const std::filesystem::path& ext) {
     std::vector<std::filesystem::path> res = {};
 
