@@ -20,6 +20,4 @@ struct Datum {
     int opponentTime;
 };
 
-
-
 #endif // DATUM_H_INCLUDED
