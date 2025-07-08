@@ -81,7 +81,7 @@ inline void parseFen(const std::string& fen, U64* const res) {
 }
 
 template <typename F>
-inline void parsePos(U64* pos, const F& callback) {
+inline void parsePos(const U64* const pos, const F& callback) {
     for (size_t i = 0; i < 4; ++i) {
         U64 x = ~pos[i];
         while (x) {
