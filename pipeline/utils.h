@@ -86,9 +86,9 @@ inline void parsePos(U64* pos, const F& callback) {
         U64 x = ~pos[i];
         while (x) {
             U64 j = __builtin_ctzll(x) >> 2ull;
-            int square = 16 * i + j;
             int pieceType = 15 - (U64)((x & masks[j]) >> (j << 2ull));
-            callback(square, pieceType);
+            int square = 16 * i + j;
+            callback(pieceType, square);
             x &= ~masks[j];
         }
     }
