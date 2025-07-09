@@ -2,33 +2,33 @@
 #include "../../pipeline/utils.h"
 #include "../include/datum.h"
 
-inline double datumToLabel(const Datum& datum) {
-    const double alpha = 0.2;
-    const double beta = 0.75;
+inline float datumToLabel(const Datum& datum) {
+    const float alpha = 0.2f;
+    const float beta = 0.75f;
 
-    const double naiveRatio = 1. / (datum.totalPly - datum.ply);
-    const double localRatio = (double)datum.timeSpent / (double)datum.timeLeft;
-    const double globalRatio = (double)datum.timeSpent / (double)datum.totalTimeSpent;
+    const float naiveRatio = 1.f / (datum.totalPly - datum.ply);
+    const float localRatio = (float)datum.timeSpent / (float)datum.timeLeft;
+    const float globalRatio = (float)datum.timeSpent / (float)datum.totalTimeSpent;
 
-    return alpha * naiveRatio + (1. - alpha) * (beta * localRatio + (1. - beta) * globalRatio);
+    return alpha * naiveRatio + (1.f - alpha) * (beta * localRatio + (1.f - beta) * globalRatio);
 };
 
 struct Batch {
-    U64* tensor;
-    double* scaledEval;
-    double* scaledPly;
-    double* scaledIncrement;
-    double* scaledOpponentTime;
-    double* label;
+    float* tensor;
+    float* scaledEval;
+    float* scaledPly;
+    float* scaledIncrement;
+    float* scaledOpponentTime;
+    float* label;
     int size;
 
     Batch(size_t batchSize, Datum* data) : size(batchSize) {
-        tensor = new U64[batchSize * 64 * 14];
-        scaledEval = new double[batchSize];
-        scaledPly = new double[batchSize];
-        scaledIncrement = new double[batchSize];
-        scaledOpponentTime = new double[batchSize];
-        label = new double[batchSize];
+        tensor = new float[batchSize * 64 * 14];
+        scaledEval = new float[batchSize];
+        scaledPly = new float[batchSize];
+        scaledIncrement = new float[batchSize];
+        scaledOpponentTime = new float[batchSize];
+        label = new float[batchSize];
 
         for (size_t i = 0; i < batchSize; ++i) {
             reformat(i, data[i]);
@@ -43,19 +43,19 @@ struct Batch {
         parsePos(datum.pos, callback);
 
         if (datum.side) {
-            U64* start = tensor + 64 * 14 * idx + 64 * 12;
-            std::fill(start, start + 64, 1.);
+            float* start = tensor + 64 * 14 * idx + 64 * 12;
+            std::fill(start, start + 64, 1.f);
         }
 
         if (datum.inCheck) {
-            U64* start = tensor + 64 * 14 * idx + 64 * 13;
-            std::fill(start, start + 64, 1.);
+            float* start = tensor + 64 * 14 * idx + 64 * 13;
+            std::fill(start, start + 64, 1.f);
         }
 
-        scaledEval[idx] = 1. / (1. + std::exp(-datum.qSearch / 400.));
-        scaledPly[idx] = std::min((double)datum.ply / 100., 1.);
-        scaledIncrement[idx] = std::min((double)datum.increment / (double)datum.timeLeft, 1.);
-        scaledOpponentTime[idx] = std::min(0.5 * (double)datum.opponentTime / (double)datum.timeLeft, 1.);
+        scaledEval[idx] = 1.f / (1.f + std::exp(-datum.qSearch / 400.f));
+        scaledPly[idx] = std::min((float)datum.ply / 100.f, 1.f);
+        scaledIncrement[idx] = std::min((float)datum.increment / (float)datum.timeLeft, 1.f);
+        scaledOpponentTime[idx] = std::min(0.5f * (float)datum.opponentTime / (float)datum.timeLeft, 1.f);
 
         label[idx] = datumToLabel(datum);
     }
