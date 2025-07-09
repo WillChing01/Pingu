@@ -22,6 +22,7 @@ class Trainer(Checkpoint):
             checkpoint_path, device, model_class, optimizer_class, optimizer_kwargs
         )
 
+        self.device = device
         self.dataloader_class = dataloader_class
         self.model, self.optimizer, self.start_epoch = self.load_model()
 
@@ -43,7 +44,7 @@ class Trainer(Checkpoint):
 
         loss = 0
 
-        dataloader = self.dataloader_class(kind)
+        dataloader = self.dataloader_class(kind, self.device)
         length = len(dataloader)
 
         progress = tqdm(total=length)
