@@ -1,111 +1,103 @@
-"""
-Notes on input features and target outputs
-
-Inputs:
-
-- Board position from side-to-move perspective
-- Evaluation (via qSearch) => sigmoid using scaling factor for nnue training
-- Are we in check [0,1]
-- Current ply => ply / (ply+40)
-- Binary flag for whether we have increment
-- Increment / ourTime if binary flag is 1 => sigmoid(log(increment / ourTime))
-- Ratio of opponent time => sigmoid(log(opponentTime / ourTime))
-- Ratio of ourTime / startTime
-
-"""
-
-import math
+import ctypes
 import os
-import random
 import numpy as np
-import pandas as pd
 import torch
 
-from time.model.parse import count_rows
-
-PIECE_TYPES = {x: i for i, x in enumerate("KkQqRrBbNnPp")}
-
-clamp = lambda x: min(max(x, 0), 1)
-sigmoid = lambda x: 1 / (1 + math.exp(-x))
+BATCH_SIZE = 1024
+NUM_WORKERS = 4
 
 
-def data_to_label(data):
-    def datum_to_label(datum):
-        alpha = 0.2
-        beta = 0.75
-
-        return alpha / (datum.totalPly - datum.ply) + (1 - alpha) * (
-            beta * datum.timeSpent / datum.timeLeft
-            + (1 - beta) * datum.timeSpent / datum.totalTimeSpent
-        )
-
-    return torch.tensor([[datum_to_label(x)] for x in data])
-
-
-def data_to_board(data):
-    def datum_to_board(datum):
-        pos, side = datum.fen.split(" ")[:2]
-
-        board = torch.zeros((14, 8, 8))
-        board[-2] = side == "b"
-        board[-1] = datum.inCheck
-
-        square = 56
-        for x in pos:
-            if x == "/":
-                square -= 16
-            elif x.isdigit():
-                square += int(x)
-            else:
-                board[PIECE_TYPES[x]][square // 8][square % 8] = 1
-                square += 1
-
-        return board
-
-    return torch.stack(tuple(datum_to_board(x) for x in data))
-
-
-def data_to_scalar(data):
-    def datum_to_scalar(datum):
-        return (
-            clamp(datum.ply / 100),
-            sigmoid(datum.qSearch / 400),
-            clamp(datum.increment / datum.timeLeft),
-            clamp(0.5 * datum.opponentTime / datum.timeLeft),
-        )
-
-    return torch.tensor([datum_to_scalar(x) for x in data])
-
-
-LENGTH_BY_PATH = {
-    kind: {
-        x.path: count_rows(x.path) for x in os.scandir(kind) if x.path.endswith(".csv")
-    }
-    for kind in ["training", "validation"]
+DATALOADER_CONFIG = {
+    "training": {
+        "path": bytes(f"{os.getcwd()}\\..\\dataset\\training", "utf-8"),
+    },
+    "validation": {
+        "path": bytes(f"{os.getcwd()}\\..\\dataset\\validation", "utf-8"),
+    },
 }
 
-TRAINING_LENGTH = sum(LENGTH_BY_PATH["training"].values())
-VALIDATION_LENGTH = sum(LENGTH_BY_PATH["validation"].values())
 
-HEADERS = "fen,isDraw,isWin,ply,totalPly,qSearch,inCheck,increment,timeLeft,timeSpent,totalTimeSpent,startTime,opponentTime".split(
-    ","
-)
+class Batch(ctypes.Structure):
+    _fields_ = [
+        ("tensor", ctypes.POINTER(ctypes.c_float)),
+        ("scaledEval", ctypes.POINTER(ctypes.c_float)),
+        ("scaledPly", ctypes.POINTER(ctypes.c_float)),
+        ("scaledIncrement", ctypes.POINTER(ctypes.c_float)),
+        ("scaledOpponentTime", ctypes.POINTER(ctypes.c_float)),
+        ("label", ctypes.POINTER(ctypes.c_float)),
+        ("size", ctypes.c_int),
+    ]
+
+    def reformat(self, device):
+        tensor = torch.from_numpy(
+            np.ctypeslib.as_array(self.tensor, shape=(self.size, 14, 64))
+        ).to(device)
+
+        scalars = torch.stack(
+            (
+                torch.from_numpy(
+                    np.ctypeslib.as_array(self.scaledEval, shape=(self.size,))
+                ).to(device),
+                torch.from_numpy(
+                    np.ctypeslib.as_array(self.scaledPly, shape=(self.size,))
+                ).to(device),
+                torch.from_numpy(
+                    np.ctypeslib.as_array(self.scaledIncrement, shape=(self.size,))
+                ).to(device),
+                torch.from_numpy(
+                    np.ctypeslib.as_array(self.scaledOpponentTime, shape=(self.size,))
+                ).to(device),
+            ),
+            dim=1,
+        )
+
+        label = (
+            torch.from_numpy(np.ctypeslib.as_array(self.label, shape=(self.size,)))
+            .reshape((self.size, 1))
+            .to(device)
+        )
+
+        datum = {
+            "tensor": tensor,
+            "scalars": scalars,
+            "label": label,
+        }
+
+        return self.size, datum
 
 
-def dataloader(kind, batch_size=1024):
-    assert kind in ["training", "validation"]
+dll = ctypes.CDLL(os.getcwd() + "\\dataloader.dll")
 
-    paths = [x.path for x in os.scandir(kind) if x.path.endswith(".csv")]
-    random.shuffle(paths)
+dll.constructDataLoader.restype = ctypes.c_void_p
+dll.constructDataLoader.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
 
-    for path in paths:
-        df = pd.read_csv(path, names=HEADERS, header=0)
-        indices = np.random.permutation(LENGTH_BY_PATH[kind][path])
+dll.destructDataLoader.restype = None
+dll.destructDataLoader.argtypes = [ctypes.c_void_p]
 
-        for i in range(0, len(indices), batch_size):
-            data = [
-                x for x in df.iloc[indices[i : i + batch_size]].itertuples(index=False)
-            ]
-            yield len(data), data_to_board(data), data_to_scalar(data), data_to_label(
-                data
-            )
+dll.length.restype = ctypes.c_ulonglong
+dll.length.argtypes = [ctypes.c_char_p]
+
+dll.getBatch.restype = ctypes.POINTER(Batch)
+dll.getBatch.argtypes = [ctypes.c_void_p]
+
+dll.destructBatch.restype = None
+dll.destructBatch.argtypes = [ctypes.POINTER(Batch)]
+
+
+class DataLoader:
+    def __init__(self, kind, device):
+        self.path = DATALOADER_CONFIG[kind]["path"]
+        self.length = dll.length(self.path)
+        self.device = device
+
+    def __len__(self):
+        return self.length
+
+    def iterator(self):
+        dataLoader = dll.constructDataLoader(self.path, BATCH_SIZE, NUM_WORKERS)
+
+        while batch := dll.getBatch(dataLoader):
+            yield batch.contents.reformat(self.device)
+            dll.destructBatch(batch)
+
+        dll.destructDataLoader(dataLoader)
