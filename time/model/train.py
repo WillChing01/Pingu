@@ -15,10 +15,10 @@ class TimeTrainer(Trainer):
         )
 
     def forward(self, datum):
-        return None
+        return self.model.forward(datum["tensor"], datum["scalar"])
 
     def custom_loss(self, output, datum):
-        return None
+        return torch.mean((output - datum["label"]) ** 2)
 
 
 def main():
