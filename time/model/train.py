@@ -1,5 +1,13 @@
 import torch
-from ...pipeline.train import Trainer
+
+import os
+import subprocess
+import sys
+
+sys.path.insert(0, os.getcwd() + "\\..\\..\\")
+
+from pipeline.train import Trainer
+from dataloader import DataLoader
 from model import TimeNetwork
 
 
@@ -11,7 +19,7 @@ class TimeTrainer(Trainer):
             TimeNetwork,
             torch.optim.Adam,
             {},
-            None,
+            DataLoader,
         )
 
     def forward(self, datum):
@@ -22,6 +30,9 @@ class TimeTrainer(Trainer):
 
 
 def main():
+    # subprocess.run(["make", "clean"], cwd=os.getcwd())
+    # subprocess.run(["make"], cwd=os.getcwd())
+
     TimeTrainer().train()
 
 
