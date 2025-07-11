@@ -3,7 +3,7 @@ import contextlib
 import torch
 from tqdm import tqdm
 
-from checkpoint import Checkpoint
+from pipeline.checkpoint import Checkpoint
 
 
 class Trainer(Checkpoint):

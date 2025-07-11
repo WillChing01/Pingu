@@ -30,10 +30,10 @@ class Batch(ctypes.Structure):
 
     def reformat(self, device):
         tensor = torch.from_numpy(
-            np.ctypeslib.as_array(self.tensor, shape=(self.size, 14, 64))
+            np.ctypeslib.as_array(self.tensor, shape=(self.size, 14, 8, 8))
         ).to(device)
 
-        scalars = torch.stack(
+        scalar = torch.stack(
             (
                 torch.from_numpy(
                     np.ctypeslib.as_array(self.scaledEval, shape=(self.size,))
@@ -59,7 +59,7 @@ class Batch(ctypes.Structure):
 
         datum = {
             "tensor": tensor,
-            "scalars": scalars,
+            "scalar": scalar,
             "label": label,
         }
 
