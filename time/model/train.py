@@ -14,7 +14,7 @@ from model import TimeNetwork
 class TimeTrainer(Trainer):
     def __init__(self):
         super().__init__(
-            "/checkpoints",
+            os.getcwd() + "\\checkpoints",
             "cuda",
             TimeNetwork,
             torch.optim.Adam,
