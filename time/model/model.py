@@ -45,5 +45,33 @@ class TimeNetwork(nn.Module):
         return self.head(torch.concat((scalar_inputs, cnn_output), dim=1))
 
 
+class SimpleTimeNetwork(nn.Module):
+    def __init__(self, cnn_channels=14, scalar_channels=4):
+        super().__init__()
+
+        self.initial = nn.Sequential(
+            nn.Conv2d(cnn_channels, 24, kernel_size=3, padding=1),
+            nn.ReLU(),
+        )
+
+        self.block = ResidualBlock(24)
+
+        self.downsample = nn.Sequential(
+            nn.AdaptiveAvgPool2d((2, 2)),
+            nn.Flatten(),
+        )
+
+        self.head = nn.Sequential(
+            nn.Linear(96 + scalar_channels, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, board, scalar_inputs):
+        cnn_output = self.downsample(self.block(self.initial(board)))
+        return self.head(torch.concat((scalar_inputs, cnn_output), dim=1))
+
+
 def network():
-    return TimeNetwork()
+    return SimpleTimeNetwork()

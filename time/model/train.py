@@ -8,7 +8,7 @@ sys.path.insert(0, os.getcwd() + "\\..\\..\\")
 
 from pipeline.train import Trainer
 from dataloader import DataLoader
-from model import TimeNetwork
+from model import SimpleTimeNetwork
 
 
 class TimeTrainer(Trainer):
@@ -16,7 +16,7 @@ class TimeTrainer(Trainer):
         super().__init__(
             os.getcwd() + "\\checkpoints",
             "cuda",
-            TimeNetwork,
+            SimpleTimeNetwork,
             torch.optim.Adam,
             {},
             DataLoader,
