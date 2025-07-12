@@ -18,7 +18,7 @@ class TimeTrainer(Trainer):
             "cuda",
             SimpleTimeNetwork,
             torch.optim.Adam,
-            {},
+            {"lr": 0.0001},
             DataLoader,
         )
 
