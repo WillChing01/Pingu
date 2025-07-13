@@ -23,12 +23,12 @@ struct Batch {
     int size;
 
     Batch(size_t batchSize, Datum* data) : size(batchSize) {
-        tensor = new float[batchSize * 64 * 14];
-        scaledEval = new float[batchSize];
-        scaledPly = new float[batchSize];
-        scaledIncrement = new float[batchSize];
-        scaledOpponentTime = new float[batchSize];
-        label = new float[batchSize];
+        tensor = new float[batchSize * 64 * 14]();
+        scaledEval = new float[batchSize]();
+        scaledPly = new float[batchSize]();
+        scaledIncrement = new float[batchSize]();
+        scaledOpponentTime = new float[batchSize]();
+        label = new float[batchSize]();
 
         for (size_t i = 0; i < batchSize; ++i) {
             reformat(i, data[i]);

@@ -2,9 +2,7 @@ import ctypes
 import os
 import numpy as np
 import torch
-
-BATCH_SIZE = 1024
-NUM_WORKERS = 4
+from tqdm import tqdm
 
 
 DATALOADER_CONFIG = {
@@ -85,19 +83,29 @@ dll.destructBatch.argtypes = [ctypes.POINTER(Batch)]
 
 
 class DataLoader:
-    def __init__(self, kind, device):
+    def __init__(self, kind, device, batch_size=1024, num_workers=4):
         self.path = DATALOADER_CONFIG[kind]["path"]
         self.length = dll.length(self.path)
         self.device = device
+        self.batch_size = batch_size
+        self.num_workers = num_workers
 
     def __len__(self):
         return self.length
 
     def iterator(self):
-        dataLoader = dll.constructDataLoader(self.path, BATCH_SIZE, NUM_WORKERS)
+        dl = dll.constructDataLoader(self.path, self.batch_size, self.num_workers)
 
-        while batch := dll.getBatch(dataLoader):
+        while batch := dll.getBatch(dl):
             yield batch.contents.reformat(self.device)
             dll.destructBatch(batch)
 
-        dll.destructDataLoader(dataLoader)
+        dll.destructDataLoader(dl)
+
+    def test(self):
+        progress = tqdm(total=len(self))
+        for batch_size, datum in self.iterator():
+            assert torch.isfinite(datum["tensor"]).all(), "tensor is NaN"
+            assert torch.isfinite(datum["scalar"]).all(), "scalar is NaN"
+            assert torch.isfinite(datum["label"]).all(), "label is NaN"
+            progress.update(batch_size)
