@@ -23,14 +23,10 @@ class TimeTrainer(Trainer):
         )
 
     def forward(self, datum):
-        assert torch.isfinite(datum["tensor"]).all(), "Non-finite values in tensor"
-        assert torch.isfinite(datum["scalar"]).all(), "Non-finite values in scalar"
         return self.model.forward(datum["tensor"], datum["scalar"])
 
     def custom_loss(self, output, datum):
-        assert torch.isfinite(datum["label"]).all(), "Non-finite values in label"
-        label = torch.clamp(datum["label"], 0, 1)
-        return torch.mean((output - label) ** 2)
+        return torch.mean((output - datum["label"]) ** 2)
 
 
 def main():
