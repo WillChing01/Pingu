@@ -168,6 +168,12 @@ namespace processTime {
                                .timeSpent = timeLeft[i % 2] - (clock - increment),
                                .startTime = startingTime,
                                .opponentTime = timeLeft[(i + 1) % 2]});
+
+                if (res.back().timeSpent < 0) {
+                    isError = true;
+                    break;
+                }
+
                 if (i >= moveMatches.size() - 2) {
                     totalTimeSpent[i % 2] = startingTime - clock + increment;
                 }
