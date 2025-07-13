@@ -83,7 +83,7 @@ dll.destructBatch.argtypes = [ctypes.POINTER(Batch)]
 
 
 class DataLoader:
-    def __init__(self, kind, device, batch_size=1024, num_workers=4):
+    def __init__(self, kind, device, batch_size=8192, num_workers=4):
         self.path = DATALOADER_CONFIG[kind]["path"]
         self.length = dll.length(self.path)
         self.device = device
