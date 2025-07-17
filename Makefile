@@ -1,18 +1,18 @@
-CXX = g++
+CXX := g++
 
-SRC = main.cpp
-OBJ = main.o
+SRC := main.cpp
+OBJ := main.o
 
-CPPFLAGS = -Iinclude
-CXXFLAGS = -Wall -std=gnu++20 -fno-exceptions -m64 -O3 -funroll-loops -mavx -mavx2
-LDFLAGS = -s -static -static-libstdc++ -static-libgcc
+CPPFLAGS := -Iinclude
+CXXFLAGS := -Wall -std=gnu++20 -fno-exceptions -m64 -O3 -funroll-loops -mavx -mavx2
+LDFLAGS := -s -static -static-libstdc++ -static-libgcc
 
 ifeq ($(OS),Windows_NT)
-	EXE = Pingu.exe
-	RM = del /q
+	EXE := Pingu.exe
+	RM := del /q
 else
-	EXE = Pingu
-	RM = rm -f
+	EXE := Pingu
+	RM := rm -f
 endif
 
 .PHONY: all clean
