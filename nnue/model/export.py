@@ -22,7 +22,9 @@ def write_to_binary(name, t, **kwargs):
     if kwargs["transpose"]:
         t = torch.transpose(t, dim0=0, dim1=1)
 
-    file_name = f'{name}_{TYPES[kwargs["dtype"]]}_{tuple(t.size())}.bin'
+    file_name = (
+        f'{name}_{TYPES[kwargs["dtype"]]}_{"_".join(str(x) for x in t.size())}.bin'
+    )
     file = f"{os.getcwd()}\\..\\..\\weights\\nnue\\{file_name}"
     with open(file, "wb") as f:
         f.write(t.to(DTYPES[kwargs["dtype"]]).contiguous().numpy().tobytes())
