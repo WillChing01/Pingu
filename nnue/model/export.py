@@ -11,6 +11,12 @@ TYPES = {
     32: "int",
 }
 
+DTYPES = {
+    8: torch.int8,
+    16: torch.int16,
+    32: torch.int32,
+}
+
 
 def write_to_binary(name, t, **kwargs):
     if kwargs["transpose"]:
@@ -19,7 +25,7 @@ def write_to_binary(name, t, **kwargs):
     file_name = f'{name}_{TYPES[kwargs["dtype"]]}_{tuple(t.size())}.bin'
     file = f"{os.getcwd()}\\..\\..\\weights\\nnue\\{file_name}"
     with open(file, "wb") as f:
-        f.write(t.contiguous().numpy().tobytes())
+        f.write(t.to(DTYPES[kwargs["dtype"]]).contiguous().numpy().tobytes())
 
 
 def main():
