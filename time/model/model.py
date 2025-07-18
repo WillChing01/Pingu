@@ -1,5 +1,7 @@
-import torch as torch
+import torch
 from torch import nn
+
+from pipeline.export import export_layer
 
 
 class ResidualBlock(nn.Module):
@@ -14,6 +16,11 @@ class ResidualBlock(nn.Module):
 
     def forward(self, x):
         return torch.relu(x + self.block(x))
+
+    def export(self, prefix=""):
+        return export_layer(f"{prefix}block_in", self.block[0]) | export_layer(
+            f"{prefix}block_out", self.block[1]
+        )
 
 
 class TimeNetwork(nn.Module):
@@ -71,6 +78,14 @@ class SimpleTimeNetwork(nn.Module):
     def forward(self, board, scalar_inputs):
         cnn_output = self.downsample(self.block(self.initial(board)))
         return self.head(torch.concat((scalar_inputs, cnn_output), dim=1))
+
+    def export(self, prefix=""):
+        return (
+            export_layer(f"{prefix}initial", self.initial[0])
+            | self.block.export(prefix=self.prefix)
+            | export_layer(f"{prefix}head", self.head[0])
+            | export_layer(f"{prefix}head", self.head[2])
+        )
 
 
 def network():
