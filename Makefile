@@ -8,8 +8,8 @@ CPPFLAGS := -Iinclude
 CXXFLAGS := -Wall -std=gnu++20 -fno-exceptions -m64 -O3 -funroll-loops -mavx -mavx2
 LDFLAGS := -s -static -static-libstdc++ -static-libgcc
 
-NNUE_WEIGHTS := $(wildcard weights/nnue/*.bin)
-NNUE_OBJ := $(NNUE_WEIGHTS:.bin=.o)
+WEIGHTS_FILES := $(wildcard weights/nnue/*.bin weights/time/*.bin)
+WEIGHTS_OBJ := $(WEIGHTS_FILES:.bin=.o)
 
 ifeq ($(OS),Windows_NT)
 	OBJCOPY_FLAGS := -I binary -O pei-x86-64 -B i386
@@ -25,14 +25,14 @@ endif
 
 all: $(EXE)
 
-$(EXE): $(OBJ) $(NNUE_OBJ)
-	$(CXX) $(OBJ) $(NNUE_OBJ) -o $(EXE) $(LDFLAGS)
+$(EXE): $(OBJ) $(WEIGHTS_OBJ)
+	$(CXX) $(OBJ) $(WEIGHTS_OBJ) -o $(EXE) $(LDFLAGS)
 
 $(OBJ): $(SRC)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $(SRC) -o $(OBJ)
 
-$(NNUE_OBJ): %.o: %.bin
+$(WEIGHTS_OBJ): %.o: %.bin
 	$(OBJCOPY) $(OBJCOPY_FLAGS) $< $@
 
 clean:
-	$(call RM,$(OBJ) $(NNUE_OBJ) $(EXE))
+	$(call RM,$(OBJ) $(WEIGHTS_OBJ) $(EXE))
