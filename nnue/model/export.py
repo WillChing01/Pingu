@@ -11,41 +11,37 @@ TYPES = {
     32: "int",
 }
 
+DTYPES = {
+    8: torch.int8,
+    16: torch.int16,
+    32: torch.int32,
+}
 
-def convert(name, t, **kwargs):
-    dtype = kwargs["dtype"]
+
+def write_to_binary(name, t, **kwargs):
     if kwargs["transpose"]:
         t = torch.transpose(t, dim0=0, dim1=1)
 
-    def convert_dtype(t):
-        if t.dim() == 1:
-            return f"std::array<{TYPES[dtype]}, {len(t)}>"
-        return f"std::array<{convert_dtype(t[0])}, {len(t)}>"
-
-    def convert_tensor(t):
-        if t.dim() == 1:
-            return f"\u007b\u007b{', '.join(str(x) for x in t.tolist())}\u007d\u007d"
-        return f"\u007b\u007b{', '.join(convert_tensor(x) for x in t)}\u007d\u007d"
-
-    return f"alignas(32) const {convert_dtype(t)} {name} = {convert_tensor(t)}"
+    file_name = (
+        f'{name}_{TYPES[kwargs["dtype"]]}_{"_".join(str(x) for x in t.size())}.bin'
+    )
+    file = f"{os.getcwd()}\\..\\..\\weights\\nnue\\{file_name}"
+    with open(file, "wb") as f:
+        f.write(t.to(DTYPES[kwargs["dtype"]]).contiguous().numpy().tobytes())
 
 
 def main():
     model = load_best()
     quant = model.quantize()
 
-    with open(f"{os.getcwd()}\\..\\..\\include\\weights.h", "w") as f:
-        f.write("#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n")
-        f.write("#include <array>\n\n")
-        for name, layers in quant.items():
-            for ind, (w, b) in enumerate(layers):
-                shape = list(w.shape)
-                if name == "stacks":
-                    shape[0] //= CONFIG["stacks"]
-                q = CONFIG["quant"][tuple(shape)]
-                f.write(f"{convert(f'{name}_w{ind}', w, **q['w'])};\n\n")
-                f.write(f"{convert(f'{name}_b{ind}', b, **q['b'])};\n\n")
-        f.write("#endif // WEIGHTS_H_INCLUDED\n")
+    for name, layers in quant.items():
+        for ind, (w, b) in enumerate(layers):
+            shape = list(w.shape)
+            if name == "stacks":
+                shape[0] //= CONFIG["stacks"]
+            q = CONFIG["quant"][tuple(shape)]
+            write_to_binary(f"{name}_w{ind}", w, **q["w"])
+            write_to_binary(f"{name}_b{ind}", b, **q["b"])
 
 
 if __name__ == "__main__":
