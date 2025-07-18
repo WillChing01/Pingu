@@ -3,16 +3,13 @@
 
 namespace activations {
     template <typename T>
-    using Activation = T (*)(T x);
-
-    template <typename T>
     inline T Linear(T x) {
         return x;
     }
 
     template <typename T>
     inline T ReLU(T x) {
-        return std::min(std::max(x, T(0)), T(1));
+        return std::max(T(0), x);
     }
 
     template <typename T>
