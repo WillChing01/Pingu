@@ -8,7 +8,7 @@ DTYPE_MAPPING = {
 
 
 def format_name(name, tensor):
-    return f"{name}_{DTYPE_MAPPING[tensor.dtype]}_{'_'.join(str(x) for x in tensor.size())}"
+    return f"{name}_{DTYPE_MAPPING[tensor.dtype]}_{'_'.join(str(x) for x in tensor.size())}.bin"
 
 
 def export_layer(name, layer, weight_dtype=None, bias_dtype=None):
