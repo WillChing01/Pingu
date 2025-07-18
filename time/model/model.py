@@ -19,7 +19,7 @@ class ResidualBlock(nn.Module):
 
     def export(self, prefix=""):
         return export_layer(f"{prefix}block_in", self.block[0]) | export_layer(
-            f"{prefix}block_out", self.block[1]
+            f"{prefix}block_out", self.block[2]
         )
 
 
@@ -82,7 +82,7 @@ class SimpleTimeNetwork(nn.Module):
     def export(self, prefix=""):
         return (
             export_layer(f"{prefix}initial", self.initial[0])
-            | self.block.export(prefix=self.prefix)
+            | self.block.export(prefix=prefix)
             | export_layer(f"{prefix}head", self.head[0])
             | export_layer(f"{prefix}head", self.head[2])
         )

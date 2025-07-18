@@ -42,6 +42,8 @@ class Checkpoint:
             model = self.model_class().to(self.device)
             model.load_state_dict(checkpoint["model_state_dict"])
 
+            print("Loaded", best_file)
+
             return model
 
         return None
