@@ -7,7 +7,7 @@ OUTPUT_DIR = "_processed"
 
 
 def process(file):
-    subprocess.run(["../../Pingu.exe", "process-time-pgn", "out", OUTPUT_DIR, "in", file])
+    subprocess.run(["../../process-time-pgn.exe", "out", OUTPUT_DIR, "in", file])
 
 
 def main():

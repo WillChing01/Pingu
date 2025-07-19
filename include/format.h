@@ -6,6 +6,7 @@
 #include "board.h"
 
 #include <cctype>
+#include <cstring>
 
 const std::string promotionLetters = "_qrbn";
 const std::string fileSymbols = "abcdefgh";
