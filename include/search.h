@@ -3,6 +3,7 @@
 
 #include "format.h"
 #include "thread.h"
+#include "time-network.h"
 
 #include <algorithm>
 #include <atomic>
@@ -22,6 +23,9 @@ struct searchParams {
 };
 
 class Search {
+  private:
+    TimeNetwork timeNetwork = TimeNetwork(&mainThread);
+
   public:
     Thread mainThread;
     std::vector<Thread*> threads = {};
@@ -108,7 +112,10 @@ class Search {
         if (params.time) {
             double t = params.time;
             double dt = params.inc;
-            params.moveTime = std::min(t / std::max(params.movesToGo, 20u) + 0.5 * dt, 0.8 * t);
+            params.moveTime =
+                std::min(params.movesToGo ? t / params.movesToGo + 0.5 * dt
+                                          : t * timeNetwork.forward(params.time, params.inc, params.opponentTime),
+                         0.8 * t);
         }
 
         // set helper threads to start searching.

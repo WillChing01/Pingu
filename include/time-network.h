@@ -11,6 +11,7 @@
 #include "linear.h"
 #include "thread.h"
 #include "weights.h"
+#include "util.h"
 
 struct Scalar {
     float scaledEval;
@@ -112,7 +113,8 @@ class TimeNetwork {
         scalar.scaledOpponentTime = std::min(0.5f * (float)opponentTime / (float)timeLeft, 1.f);
     }
 
-    void refreshBoard(bool inCheck) {
+    void refreshBoard() {
+        bool inCheck = util::isInCheck(thread->b.side, thread->b.pieces, thread->b.occupied);
         std::fill(board.begin(), board.begin() + 64 * 12, 0);
         for (size_t i = 0; i < 12; ++i) {
             U64 x = thread->b.pieces[i];
@@ -125,11 +127,11 @@ class TimeNetwork {
     }
 
   public:
-    TimeNetwork() {}
+    TimeNetwork(Thread* t) : thread(t) {}
 
-    float forward(bool inCheck, U32 timeLeft, U32 increment, U32 opponentTime) {
+    float forward(U32 timeLeft, U32 increment, U32 opponentTime) {
         refreshScalar(timeLeft, increment, opponentTime);
-        refreshBoard(inCheck);
+        refreshBoard();
 
         initial.forward(board);
         block.forward(initial.output);
