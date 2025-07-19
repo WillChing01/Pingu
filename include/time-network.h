@@ -3,9 +3,13 @@
 
 #include <algorithm>
 #include <array>
+
 #include "activations.h"
+#include "bitboard.h"
 #include "cnn.h"
+#include "constants.h"
 #include "linear.h"
+#include "thread.h"
 #include "weights.h"
 
 struct Scalar {
@@ -78,6 +82,11 @@ class Head {
 
 class TimeNetwork {
   private:
+    Thread* thread;
+
+    Scalar scalar;
+    std::array<float, 14 * 8 * 8> board;
+
     cnn::Conv2D<float, 24, 14, 3, 8, 8, _binary_weights_time_initial_b_float_24_bin_start,
                 _binary_weights_time_initial_w_float_24_14_3_3_bin_start, activations::ReLU>
         initial;
@@ -92,14 +101,42 @@ class TimeNetwork {
 
     Head head;
 
+    void refreshScalar(U32 timeLeft, U32 increment, U32 opponentTime) {
+        thread->prepareSearch(MAXDEPTH, std::numeric_limits<double>::infinity(), false);
+        int qSearch = thread->qSearch(1, -MATE_SCORE, MATE_SCORE);
+        globalNodeCount = 0;
+
+        scalar.scaledEval = 1.f / (1.f + std::exp(-qSearch / 400.f));
+        scalar.scaledPly = std::min(thread->b.hashHistory.size() / 100.f, 1.f);
+        scalar.scaledIncrement = std::min((float)increment / (float)timeLeft, 1.f);
+        scalar.scaledOpponentTime = std::min(0.5f * (float)opponentTime / (float)timeLeft, 1.f);
+    }
+
+    void refreshBoard(bool inCheck) {
+        std::fill(board.begin(), board.begin() + 64 * 12, 0);
+        for (size_t i = 0; i < 12; ++i) {
+            U64 x = thread->b.pieces[i];
+            while (x) {
+                board[64 * i + popLSB(x)] = 1;
+            }
+        }
+        std::fill(board.begin() + 64 * 12, board.begin() + 64 * 13, thread->b.side);
+        std::fill(board.begin() + 64 * 13, board.begin() + 64 * 14, inCheck);
+    }
+
   public:
     TimeNetwork() {}
 
-    float forward(const Scalar& scalar, const std::array<float, 14 * 8 * 8>& board) {
+    float forward(bool inCheck, U32 timeLeft, U32 increment, U32 opponentTime) {
+        refreshScalar(timeLeft, increment, opponentTime);
+        refreshBoard(inCheck);
+
         initial.forward(board);
         block.forward(initial.output);
         pool.forward(block.output);
-        return head.forward(scalar, pool.output);
+        float fraction = head.forward(scalar, pool.output);
+
+        return fraction;
     }
 };
 
