@@ -4,17 +4,14 @@
 #include "activations.h"
 
 namespace cnn {
-    template <typename T, const size_t IC, const size_t OC, const size_t K>
-    using Weights = std::array<T, IC * OC * K * K>;
-
-    template <typename T, const size_t OC>
-    using Biases = std::array<T, OC>;
-
-    template <typename T, const size_t IC, const size_t OC, const size_t K, const size_t H, const size_t W,
-              const Weights<T, IC, OC, K>& weights, const Biases<T, OC>& biases, T (*Activation)(T x)>
+    template <typename T, const size_t OC, const size_t IC, const size_t K, const size_t H, const size_t W,
+              const T* _weights, const T* _biases, T (*Activation)(T x)>
     class Conv2D {
       private:
         const int D = K / 2;
+        const std::array<T, OC * IC * K * K>& weights =
+            *reinterpret_cast<const std::array<T, OC * IC * K * K>*>(_weights);
+        const std::array<T, OC>& biases = *reinterpret_cast<const std::array<T, OC>*>(_biases);
 
       public:
         std::array<T, OC * H * W> output;
@@ -43,13 +40,12 @@ namespace cnn {
         }
     };
 
-    template <typename T, const size_t C, const size_t K, const size_t W, const size_t H,
-              Weights<T, C, C, K>& weightsIn, Biases<T, C>& biasesIn, Weights<T, C, C, K>& weightsOut,
-              Biases<T, C>& biasesOut>
+    template <typename T, const size_t C, const size_t K, const size_t W, const size_t H, const T* _weightsIn,
+              const T* _biasesIn, const T* _weightsOut, const T* _biasesOut>
     class ResidualBlock {
       private:
-        Conv2D<T, C, C, K, H, W, weightsIn, biasesIn, activations::ReLU> inLayer;
-        Conv2D<T, C, C, K, H, W, weightsOut, biasesOut, activations::Linear> outLayer;
+        Conv2D<T, C, C, K, H, W, _weightsIn, _biasesIn, activations::ReLU> inLayer;
+        Conv2D<T, C, C, K, H, W, _weightsOut, _biasesOut, activations::Linear> outLayer;
 
       public:
         std::array<T, C * H * W> output;

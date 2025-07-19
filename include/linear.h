@@ -2,15 +2,12 @@
 #define LINEAR_H_INCLUDED
 
 namespace linear {
-    template <typename T, const size_t O, const size_t I>
-    using Weights = std::array<T, O * I>;
-
-    template <typename T, const size_t O>
-    using Biases = std::array<T, O>;
-
-    template <typename T, const size_t O, const size_t I, const Weights<T, O, I>& weights, const Biases<T, O>& biases,
-              T (*Activation)(T x)>
+    template <typename T, const size_t O, const size_t I, const T* _weights, const T* _biases, T (*Activation)(T x)>
     class Linear {
+      private:
+        const std::array<T, O * I>& weights = *reinterpret_cast<const std::array<T, O * I>*>(_weights);
+        const std::array<T, O>& biases = *reinterpret_cast<const std::array<T, O>*>(_biases);
+
       public:
         std::array<T, O> output;
 
