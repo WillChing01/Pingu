@@ -12,6 +12,15 @@
 #include <immintrin.h>
 #include <string>
 
+const std::array<short, 32>& perspective_b0_32 =
+    *reinterpret_cast<const std::array<short, 32>*>(_binary_weights_nnue_perspective_b0_short_32_bin_start);
+const std::array<short, 1441792>& perspective_w0_45056_32 =
+    *reinterpret_cast<const std::array<short, 1441792>*>(_binary_weights_nnue_perspective_w0_short_45056_32_bin_start);
+const std::array<int, 4>& stacks_b0_4 =
+    *reinterpret_cast<const std::array<int, 4>*>(_binary_weights_nnue_stacks_b0_int_4_bin_start);
+const std::array<char, 256>& stacks_w0_4_64 =
+    *reinterpret_cast<const std::array<char, 256>*>(_binary_weights_nnue_stacks_w0_char_4_64_bin_start);
+
 template <int (*index)(U32 kingPos, U32 pieceType, U32 square), bool side>
 class alignas(32) Accumulator {
   public:

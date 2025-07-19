@@ -21,7 +21,7 @@ def find_clang_format():
 
 
 def wrap_header(header):
-    return f"#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n#include <array>\n\n{header}#endif // WEIGHTS_H_INCLUDED\n"
+    return f"#ifndef WEIGHTS_H_INCLUDED\n#define WEIGHTS_H_INCLUDED\n\n{header}\n#endif // WEIGHTS_H_INCLUDED\n"
 
 
 def parse(dir, file):
@@ -32,12 +32,9 @@ def parse(dir, file):
         length *= int(x)
 
     dtype = re.split(shape_regex, file, maxsplit=1)[0].split("_")[-1]
-    name = "".join(file.split(f"_{dtype}"))
-
-    arr_type = f"std::array<{dtype}, {length}>"
     symbol = f"_binary_weights_{dir}_{file}_bin_start"
 
-    return f"extern const {dtype} {symbol}[];\nconst {arr_type}& {name} = *reinterpret_cast<const {arr_type}*>({symbol});\n\n"
+    return f"extern const {dtype} {symbol}[];\n"
 
 
 def main():
