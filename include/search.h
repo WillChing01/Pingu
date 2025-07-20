@@ -112,10 +112,10 @@ class Search {
         if (params.time) {
             double t = params.time;
             double dt = params.inc;
-            params.moveTime =
-                std::min(params.movesToGo ? t / params.movesToGo + 0.5 * dt
-                                          : t * timeNetwork.forward(params.time, params.inc, params.opponentTime),
-                         0.8 * t);
+            params.moveTime = std::min(
+                params.movesToGo ? t / params.movesToGo + 0.5 * dt
+                                 : std::max(t * timeNetwork.forward(params.time, params.inc, params.opponentTime), 25.),
+                0.8 * t);
         }
 
         // set helper threads to start searching.
