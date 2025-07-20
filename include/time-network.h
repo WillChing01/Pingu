@@ -88,8 +88,8 @@ class TimeNetwork {
     Scalar scalar;
     std::array<float, 14 * 8 * 8> board;
 
-    cnn::Conv2D<float, 24, 14, 3, 8, 8, _binary_weights_time_initial_b_float_24_bin_start,
-                _binary_weights_time_initial_w_float_24_14_3_3_bin_start, activations::ReLU>
+    cnn::Conv2D<float, 24, 14, 3, 8, 8, _binary_weights_time_initial_w_float_24_14_3_3_bin_start,
+                _binary_weights_time_initial_b_float_24_bin_start, activations::ReLU>
         initial;
 
     cnn::ResidualBlock<float, 24, 3, 8, 8, _binary_weights_time_block_in_w_float_24_24_3_3_bin_start,
