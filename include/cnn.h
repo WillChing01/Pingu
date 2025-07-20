@@ -20,13 +20,13 @@ namespace cnn {
 
         void forward(const std::array<T, IC * H * W>& input) {
             for (size_t outChannel = 0; outChannel < OC; ++outChannel) {
-                for (int y = 0; y < H; ++y) {
-                    for (int x = 0; x < W; ++x) {
+                for (int y = 0; y < (int)H; ++y) {
+                    for (int x = 0; x < (int)W; ++x) {
                         T sum = biases[outChannel];
                         for (size_t inChannel = 0; inChannel < IC; ++inChannel) {
-                            for (int ky = std::max(0, D - y); ky < std::min(K, H + D - y); ++ky) {
+                            for (int ky = std::max(0, D - y); ky < std::min((int)K, (int)H + D - y); ++ky) {
                                 int yIn = y + ky - D;
-                                for (int kx = std::max(0, D - x); kx < std::min(K, W + D - x); ++kx) {
+                                for (int kx = std::max(0, D - x); kx < std::min((int)K, (int)W + D - x); ++kx) {
                                     int xIn = x + kx - D;
                                     sum += input[inChannel * H * W + yIn * W + xIn] *
                                            weights[outChannel * IC * K * K + inChannel * K * K + ky * K + kx];
