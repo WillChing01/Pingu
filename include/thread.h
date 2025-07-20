@@ -489,7 +489,6 @@ class Thread {
 
         for (int depth = 1; depth <= std::min(maxDepth, MAXDEPTH); ++depth) {
             // start of iteration book-keeping.
-            auto iterationStartTime = std::chrono::high_resolution_clock::now();
             ++nodeCount;
             ++globalNodeCount;
 
@@ -509,10 +508,7 @@ class Thread {
 
             // end of iteration book-keeping.
             auto iterationFinishTime = std::chrono::high_resolution_clock::now();
-            double iterationTime =
-                std::chrono::duration<double, std::milli>(iterationFinishTime - iterationStartTime).count();
             double totalTimeSpent = std::chrono::duration<double, std::milli>(iterationFinishTime - startTime).count();
-            double timeLeft = std::max(searchTime - totalTimeSpent, 0.);
 
             if (verbose) {
                 outputInfo(depth, totalTimeSpent);
@@ -520,10 +516,6 @@ class Thread {
 
             // early exit if mate detected.
             if (bestScore > MATE_BOUND && !analysisMode) {
-                break;
-            }
-            // early exit if insufficient time for next iteration.
-            if (iterationTime * 2. > timeLeft && !analysisMode) {
                 break;
             }
         }
