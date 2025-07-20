@@ -108,7 +108,8 @@ class TimeNetwork {
         globalNodeCount = 0;
 
         scalar.scaledEval = 1.f / (1.f + std::exp(-qSearch / 400.f));
-        scalar.scaledPly = std::min(thread->b.hashHistory.size() / 100.f, 1.f);
+        scalar.scaledPly =
+            std::min((thread->b.startingPly + thread->b.plyOffset + thread->b.moveHistory.size()) / 100.f, 1.f);
         scalar.scaledIncrement = std::min((float)increment / (float)timeLeft, 1.f);
         scalar.scaledOpponentTime = std::min(0.5f * (float)opponentTime / (float)timeLeft, 1.f);
     }

@@ -30,6 +30,9 @@ class Board {
     U64 occupied[2] = {0, 0};
     bool side = 0;
 
+    int startingPly = 1;
+    int plyOffset = 0;
+
     std::vector<gameState> stateHistory;
     std::vector<U32> moveHistory;
     std::vector<U32> hashHistory;
@@ -229,6 +232,9 @@ class Board {
         if (temp[3] != "-") {
             current.enPassantSquare = toSquare(temp[3]);
         }
+
+        startingPly = 2 * std::stoi(temp[5]) - !side;
+        plyOffset = side ? -1 : -2;
 
         zHashHardUpdate();
         phaseHardUpdate();
