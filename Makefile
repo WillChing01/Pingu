@@ -17,8 +17,6 @@ LDFLAGS := -s -static -static-libstdc++ -static-libgcc
 WEIGHTS_FILES := $(wildcard weights/nnue/*.bin weights/time/*.bin)
 WEIGHTS_OBJ := $(WEIGHTS_FILES:.bin=.o)
 
-FILES_TO_CLEAN := $(OBJ) $(TEST_OBJ) $(TIME_OBJ) $(WEIGHTS_OBJ) $(EXE) $(TEST_EXE) $(TIME_EXE)
-
 ifeq ($(OS),Windows_NT)
 	OBJCOPY_FLAGS := -I binary -O pei-x86-64 -B i386
 	EXE := Pingu.exe
@@ -30,6 +28,8 @@ else
 	TEST_EXE := test
 	TIME_EXE := process-time-pgn
 endif
+
+FILES_TO_CLEAN := $(OBJ) $(TEST_OBJ) $(TIME_OBJ) $(WEIGHTS_OBJ) $(EXE) $(TEST_EXE) $(TIME_EXE)
 
 .PHONY: all test time clean
 
