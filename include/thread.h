@@ -2,6 +2,7 @@
 #define THREAD_H_INCLUDED
 
 #include "board.h"
+#include "format.h"
 #include "movepicker.h"
 
 #include <atomic>

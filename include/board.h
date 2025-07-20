@@ -14,7 +14,6 @@
 #include "evaluation.h"
 #include "nnue.h"
 #include "transposition.h"
-#include "format.h"
 
 #include <algorithm>
 #include <iostream>

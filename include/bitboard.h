@@ -4,6 +4,7 @@
 #include "constants.h"
 
 #include <bitset>
+#include <iostream>
 #include <string>
 
 inline void displayBitboard(U64 bitboard) {
