@@ -9,8 +9,9 @@ int main(int argc, const char** argv) {
     Thread thread;
     TimeNetwork network = TimeNetwork(&thread);
 
-    if (argc == 7) {
+    if (argc == 2) {
         thread.b.setPositionFen(argv[1]);
+        thread.b.display();
         std::cout << network.forward(1, 0, 1) << std::endl;
     }
 
