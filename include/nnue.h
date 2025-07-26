@@ -54,8 +54,6 @@ class alignas(32) Accumulator {
                 (this->*_one)(_nRooks + !side, QUEEN_ROOK_SQUARE[!side] + 3);
             }
         }
-
-        cReLU();
     }
 
     void makeMove(U32 move) { _move<&Accumulator::setZero, &Accumulator::setOne>(move); }
@@ -166,6 +164,9 @@ class NNUE {
     }
 
     int forward() {
+        white.cReLU();
+        black.cReLU();
+
         __m256i sum = _ZERO;
         __m256i l, w;
 
