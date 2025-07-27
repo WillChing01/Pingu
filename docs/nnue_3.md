@@ -57,7 +57,7 @@ Scripts for processing data were rewritten to optimise for time and space given 
 
 ## Training
 
-The model was trained with batch size of 32,768, and the final weights were taken from epoch 334. The Adam optimiser was used, with an epsilon of 1e-7.
+The model was trained with a batch size of 32,768, and the final weights were taken from epoch 334. The Adam optimiser was used, with an epsilon of 1e-7.
 
 ### Custom Data Loader
 
@@ -80,4 +80,4 @@ def custom_loss(output, targetEval, targetResult, pieceCounts):
 
 ## Deployment
 
-After training, the weights were quantised and exported to binary files, which were then embedded into the executable at link time. Inference is handled in `nnue.h` and custom AVX2 SIMD instructions are used to optimise the model's runtime throughput.
+After training, the weights were quantised and exported to binary files, which were then embedded into the executable at link time. Inference is handled in `nnue.h`, and custom AVX2 SIMD instructions are used to optimise the model's runtime throughput.
