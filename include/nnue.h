@@ -70,8 +70,6 @@ class alignas(32) Accumulator {
                 setOne(_nRooks + !side, QUEEN_ROOK_SQUARE[!side] + 3);
             }
         }
-
-        cReLU();
     }
 
     void unmakeMove() { --ply; }
@@ -186,6 +184,9 @@ class NNUE {
     }
 
     int forward() {
+        white.cReLU();
+        black.cReLU();
+
         __m256i sum = _ZERO;
         __m256i l, w;
 
