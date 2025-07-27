@@ -57,7 +57,13 @@ Scripts for processing data were rewritten to optimise for time and space given 
 
 ### Custom Data Loader
 
+During training, it was found that Pytorch's standard `DataLoader` class was too slow to handle the scale of data at hand. To circumvent this, a multithreaded C++ script was written to load batches of data (`dataloader.cpp`). At the start of each epoch, the chunks were shuffled. For each chunk, individual training samples were fetched in parallel since the fixed size of each datum allowed for trivial random access. While one chunk was being processed, a single thread pre-loaded the next chunk and shuffled its data.
+
+Python's built-in `ctypes` library was used to interface between the C++ data loader and the Pytorch training script. The C++ data loader fetched and transformed batches of data on the CPU. These were then passed into Python via `ctypes`, and subsequently transferred from CPU to GPU with Pytorch.
+
 ### Custom Loss Function
+
+The following custom loss function was used to train the network. The value of `GAMMA` was scaled by piece count, under the hypothesis that positions later in the game were more correlated with the game result. This helped the network to learn accurate evaluations for endgame positions with material imbalance, e.g. KBK.
 
 ```python
 def custom_loss(output, targetEval, targetResult, pieceCounts):
