@@ -31,6 +31,8 @@ class alignas(32) Accumulator {
         if (pieceType == side) {
             if (isSearch) {
                 ++ply;
+            } else {
+                ply = 0;
             }
             refresh();
             return;
@@ -42,6 +44,8 @@ class alignas(32) Accumulator {
                 _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]));
             }
             ++ply;
+        } else {
+            ply = 0;
         }
 
         U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
