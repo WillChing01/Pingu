@@ -15,21 +15,33 @@
 template <int (*index)(U32 kingPos, U32 pieceType, U32 square), bool side>
 class alignas(32) Accumulator {
   public:
-    alignas(32) short l1[32] = {};
+    alignas(32) short l1[MAXDEPTH + 1 + 64][32] = {};
     alignas(32) char cl1[32] = {};
     const U64* pieces;
     int kingPos = 0;
+    int ply = 0;
 
     Accumulator() {}
 
     Accumulator(const U64* _pieces) : pieces(_pieces) {}
 
-    template <void (Accumulator::*_zero)(U32, U32), void (Accumulator::*_one)(U32, U32)>
-    void _move(U32 move) {
+    template <const bool isSearch>
+    void makeMove(U32 move) {
         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
         if (pieceType == side) {
+            if (isSearch) {
+                ++ply;
+            }
             refresh();
             return;
+        }
+
+        if (isSearch) {
+            for (int i = 0; i < 32; i += 16) {
+                __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
+                _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]));
+            }
+            ++ply;
         }
 
         U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
@@ -38,33 +50,31 @@ class alignas(32) Accumulator {
         U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
         bool enPassant = move & MOVEINFO_ENPASSANT_MASK;
 
-        (this->*_zero)(pieceType, startSquare);
-        (this->*_one)(finishPieceType, finishSquare);
+        setZero(pieceType, startSquare);
+        setOne(finishPieceType, finishSquare);
         if (capturedPieceType != 15) {
-            (this->*_zero)(capturedPieceType, finishSquare + enPassant * (-8 + 16 * (pieceType & 1)));
+            setZero(capturedPieceType, finishSquare + enPassant * (-8 + 16 * (pieceType & 1)));
         }
 
         // check for castles.
         if (pieceType == (!side)) {
             if (finishSquare - startSquare == 2) {
-                (this->*_zero)(_nRooks + !side, KING_ROOK_SQUARE[!side]);
-                (this->*_one)(_nRooks + !side, KING_ROOK_SQUARE[!side] - 2);
+                setZero(_nRooks + !side, KING_ROOK_SQUARE[!side]);
+                setOne(_nRooks + !side, KING_ROOK_SQUARE[!side] - 2);
             } else if (startSquare - finishSquare == 2) {
-                (this->*_zero)(_nRooks + !side, QUEEN_ROOK_SQUARE[!side]);
-                (this->*_one)(_nRooks + !side, QUEEN_ROOK_SQUARE[!side] + 3);
+                setZero(_nRooks + !side, QUEEN_ROOK_SQUARE[!side]);
+                setOne(_nRooks + !side, QUEEN_ROOK_SQUARE[!side] + 3);
             }
         }
 
         cReLU();
     }
 
-    void makeMove(U32 move) { _move<&Accumulator::setZero, &Accumulator::setOne>(move); }
-
-    void unmakeMove(U32 move) { _move<&Accumulator::setOne, &Accumulator::setZero>(move); }
+    void unmakeMove() { --ply; }
 
     void refresh() {
         kingPos = __builtin_ctzll(pieces[side]);
-        std::copy(perspective_b0.begin(), perspective_b0.end(), l1);
+        std::copy(perspective_b0.begin(), perspective_b0.end(), l1[ply]);
 
         setOne(!side, __builtin_ctzll(pieces[!side]));
         for (size_t i = 2; i < 12; ++i) {
@@ -77,14 +87,19 @@ class alignas(32) Accumulator {
         cReLU();
     }
 
+    void fullRefresh() {
+        ply = 0;
+        refresh();
+    }
+
     void setOne(U32 pieceType, U32 square) {
         U32 ind = index(kingPos, pieceType, square);
         __m256i w;
         __m256i l;
         for (size_t i = 0; i < 32; i += 16) {
             w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][i]);
-            l = _mm256_loadu_si256((__m256i*)&l1[i]);
-            _mm256_storeu_si256((__m256i*)&l1[i], _mm256_add_epi16(l, w));
+            l = _mm256_loadu_si256((__m256i*)&l1[ply][i]);
+            _mm256_storeu_si256((__m256i*)&l1[ply][i], _mm256_add_epi16(l, w));
         }
     }
 
@@ -94,8 +109,8 @@ class alignas(32) Accumulator {
         __m256i l;
         for (size_t i = 0; i < 32; i += 16) {
             w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][i]);
-            l = _mm256_loadu_si256((__m256i*)&l1[i]);
-            _mm256_storeu_si256((__m256i*)&l1[i], _mm256_sub_epi16(l, w));
+            l = _mm256_loadu_si256((__m256i*)&l1[ply][i]);
+            _mm256_storeu_si256((__m256i*)&l1[ply][i], _mm256_sub_epi16(l, w));
         }
     }
 
@@ -103,9 +118,9 @@ class alignas(32) Accumulator {
         __m256i x, y;
         for (size_t i = 0; i < 32; i += 32) {
             x = _mm256_srai_epi16(
-                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i*)&l1[i])), _HALF), 6);
+                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i*)&l1[ply][i])), _HALF), 6);
             y = _mm256_srai_epi16(
-                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i*)&l1[i + 16])), _HALF), 6);
+                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i*)&l1[ply][i + 16])), _HALF), 6);
             _mm256_storeu_si256((__m256i*)&cl1[i], cvtepi16_epi8(x, y));
         }
     }
@@ -135,14 +150,15 @@ class NNUE {
         black = Black(_pieces);
     }
 
+    template <const bool isSearch>
     void makeMove(U32 move) {
         U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
         if (capturedPieceType != 15) {
             --pieceCount;
         }
 
-        white.makeMove(move);
-        black.makeMove(move);
+        white.makeMove<isSearch>(move);
+        black.makeMove<isSearch>(move);
     }
 
     void unmakeMove(U32 move) {
@@ -151,8 +167,8 @@ class NNUE {
             ++pieceCount;
         }
 
-        white.unmakeMove(move);
-        black.unmakeMove(move);
+        white.unmakeMove();
+        black.unmakeMove();
     }
 
     void fullRefresh() {
@@ -161,8 +177,8 @@ class NNUE {
             pieceCount += __builtin_popcountll(white.pieces[i]);
         }
 
-        white.refresh();
-        black.refresh();
+        white.fullRefresh();
+        black.fullRefresh();
     }
 
     int forward() {

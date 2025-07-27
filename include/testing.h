@@ -29,7 +29,7 @@ U64 perft(Board& b, int depth, bool verbose = true) {
         std::vector<U32> moveCache = b.moveBuffer;
 
         for (const auto& move : moveCache) {
-            b.makeMove(move);
+            b.makeMoveSearch(move);
             U64 nodes = perft(b, depth - 1, false);
             total += nodes;
             b.unmakeMove();
@@ -93,7 +93,7 @@ bool testMoveValidation(Board& b, int depth, U32 (&cache)[10][128]) {
             cache[depth][zHash & 127] = move;
 
             // play the move.
-            b.makeMove(move);
+            b.makeMoveSearch(move);
             res = res && testMoveValidation(b, depth - 1, cache);
             b.unmakeMove();
         }
@@ -101,7 +101,7 @@ bool testMoveValidation(Board& b, int depth, U32 (&cache)[10][128]) {
     }
 }
 
-bool testIncrementalUpdate(Board& b, int depth, auto Board::*param, void (Board::*hardUpdate)()) {
+bool testIncrementalUpdate(Board& b, int depth, auto Board::* param, void (Board::*hardUpdate)()) {
     // verify incremental updates of 'param' for given position.
     auto oldParam = b.*param;
     (b.*hardUpdate)();
@@ -113,7 +113,7 @@ bool testIncrementalUpdate(Board& b, int depth, auto Board::*param, void (Board:
     b.generatePseudoMoves();
     std::vector<U32> moveCache = b.moveBuffer;
     for (const auto& move : moveCache) {
-        b.makeMove(move);
+        b.makeMoveSearch(move);
         if (!testIncrementalUpdate(b, depth - 1, param, hardUpdate)) {
             return false;
         }
@@ -135,7 +135,7 @@ bool testIncrementalUpdateNNUE(Board& b, int depth) {
     b.generatePseudoMoves();
     std::vector<U32> moveCache = b.moveBuffer;
     for (const auto& move : moveCache) {
-        b.makeMove(move);
+        b.makeMoveSearch(move);
         if (!testIncrementalUpdateNNUE(b, depth - 1)) {
             return false;
         }

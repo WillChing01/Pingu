@@ -57,7 +57,7 @@ inline void collectPV(std::vector<U32>& pvMoves, Board& b, int depth) {
     }
 
     pvMoves.push_back(hashMove);
-    b.makeMove(hashMove);
+    b.makeMoveSearch(hashMove);
     collectPV(pvMoves, b, depth - 1);
     b.unmakeMove();
 }
@@ -152,7 +152,7 @@ class Thread {
 
         // loop through moves and search them.
         while (U32 move = movePicker.getNext()) {
-            b.makeMove(move);
+            b.makeMoveSearch(move);
             int score = -qSearch(ply + 1, -beta, -alpha);
             b.unmakeMove();
 
@@ -295,7 +295,7 @@ class Thread {
             }
 
             // search with PVS. Research if reductions do not fail low.
-            b.makeMove(move);
+            b.makeMoveSearch(move);
 
             // late move reductions.
             int reduction = 0;
@@ -415,7 +415,7 @@ class Thread {
 
         // aspiration search for pv move.
         startNodes = nodeCount;
-        b.makeMove(rootMoves[0].first);
+        b.makeMoveSearch(rootMoves[0].first);
         int alphaInd = depth >= 5 ? 0 : aspirationDelta.size() - 1;
         int betaInd = depth >= 5 ? 0 : aspirationDelta.size() - 1;
         while (true) {
@@ -443,7 +443,7 @@ class Thread {
         // pvs with aspiration for subsequent moves.
         for (int i = 1; i < (int)(rootMoves.size()); ++i) {
             startNodes = nodeCount;
-            b.makeMove(rootMoves[i].first);
+            b.makeMoveSearch(rootMoves[i].first);
             int betaInd = depth >= 2 ? 0 : betaDelta.size() - 1;
             while (true) {
                 int beta = std::min(bestScore + betaDelta[betaInd], MATE_SCORE);
@@ -564,7 +564,7 @@ class Thread {
                   << " nps " << nps << " pv";
 
         pvMoves = {bestMove};
-        b.makeMove(bestMove);
+        b.makeMoveSearch(bestMove);
         collectPV(pvMoves, b, depth - 1);
         b.unmakeMove();
 
