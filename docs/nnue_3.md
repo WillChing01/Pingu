@@ -12,6 +12,8 @@ The transition from Pingu 4.0.0 to Pingu 5.0.0 involved training two successive 
 - [Model Architecture](#model-architecture)
 - [Data Generation](#data-generation)
 - [Data Processing](#data-processing)
+- [Training](#training)
+- [Deployment](#deployment)
 
 ## Model Architecture
 
@@ -73,3 +75,7 @@ def custom_loss(output, targetEval, targetResult, pieceCounts):
     target_scaled = GAMMA * torch.sigmoid(K * targetEval) + (1.0 - GAMMA) * targetResult
     return torch.mean((output_scaled - target_scaled) ** 2)
 ```
+
+## Deployment
+
+After training, the weights were quantised and exported into binary files, and then embedded into the executable at link time. Inference is handled in `nnue.h` and custom AVX2 SIMD instructions were used to optimise the model's throughput.
