@@ -41,7 +41,7 @@ class alignas(32) Accumulator {
         if (isSearch) {
             for (int i = 0; i < 32; i += 16) {
                 __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
-                _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]));
+                _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]), x);
             }
             ++ply;
         } else {
