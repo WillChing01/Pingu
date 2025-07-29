@@ -38,15 +38,12 @@ class alignas(32) Accumulator {
             return;
         }
 
-        if (isSearch) {
-            for (int i = 0; i < 32; i += 16) {
-                __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
-                _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]), x);
-            }
-            ++ply;
-        } else {
-            ply = 0;
+        int newPly = isSearch ? ply + 1 : 0;
+        for (int i = 0; i < 32; i += 16) {
+            __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
+            _mm256_storeu_si256((__m256i*)(&l1[newPly][i]), x);
         }
+        ply = newPly;
 
         U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
         U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
