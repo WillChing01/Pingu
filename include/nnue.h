@@ -36,15 +36,14 @@ class alignas(32) Accumulator {
             return;
         }
 
-        int newPly = ply + 1;
-        while ((int)l1.size() <= newPly) {
+        while ((int)l1.size() <= ply + 1) {
             l1.emplace_back();
         }
         for (int i = 0; i < 32; i += 16) {
             __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
             _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]), x);
         }
-        ply = newPly;
+        ++ply;
 
         U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
         U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
