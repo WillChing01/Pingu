@@ -850,8 +850,7 @@ class Board {
         currentMove.finishPieceType = (chessMove & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
     }
 
-    template <const bool isSearch>
-    void _makeMove(U32 chessMove) {
+    void makeMove(U32 chessMove) {
         unpackMove(chessMove);
 
         // save zHash.
@@ -919,12 +918,8 @@ class Board {
             zHashState ^= randomNums[ZHASH_CASTLES[3]];
         }
 
-        nnue.makeMove<isSearch>(chessMove);
+        nnue.makeMove(chessMove);
     }
-
-    void makeMove(U32 chessMove) { _makeMove<false>(chessMove); }
-
-    void makeMoveSearch(U32 chessMove) { _makeMove<true>(chessMove); }
 
     void unmakeMove() {
         // unmake most recent move and update gameState.

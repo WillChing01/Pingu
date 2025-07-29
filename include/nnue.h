@@ -15,7 +15,7 @@
 template <int (*index)(U32 kingPos, U32 pieceType, U32 square), bool side>
 class alignas(32) Accumulator {
   public:
-    alignas(32) short l1[MAXDEPTH + 1 + 64][32] = {};
+    alignas(32) std::vector<std::array<short, 32>> l1 = {std::array<short, 32>()};
     alignas(32) char cl1[32] = {};
     const U64* pieces;
     int kingPos = 0;
@@ -25,23 +25,24 @@ class alignas(32) Accumulator {
 
     Accumulator(const U64* _pieces) : pieces(_pieces) {}
 
-    template <const bool isSearch>
     void makeMove(U32 move) {
         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
         if (pieceType == side) {
-            if (isSearch) {
-                ++ply;
-            } else {
-                ply = 0;
+            ++ply;
+            while ((int)l1.size() <= ply) {
+                l1.push_back(std::array<short, 32>());
             }
             refresh();
             return;
         }
 
-        int newPly = isSearch ? ply + 1 : 0;
+        int newPly = ply + 1;
+        while ((int)l1.size() <= newPly) {
+            l1.push_back(std::array<short, 32>());
+        }
         for (int i = 0; i < 32; i += 16) {
             __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
-            _mm256_storeu_si256((__m256i*)(&l1[newPly][i]), x);
+            _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]), x);
         }
         ply = newPly;
 
@@ -73,7 +74,7 @@ class alignas(32) Accumulator {
 
     void refresh() {
         kingPos = __builtin_ctzll(pieces[side]);
-        std::copy(perspective_b0.begin(), perspective_b0.end(), l1[ply]);
+        std::copy(perspective_b0.begin(), perspective_b0.end(), l1[ply].begin());
 
         setOne(!side, __builtin_ctzll(pieces[!side]));
         for (size_t i = 2; i < 12; ++i) {
@@ -86,10 +87,7 @@ class alignas(32) Accumulator {
         cReLU();
     }
 
-    void fullRefresh() {
-        ply = 0;
-        refresh();
-    }
+    void fullRefresh() { refresh(); }
 
     void setOne(U32 pieceType, U32 square) {
         U32 ind = index(kingPos, pieceType, square);
@@ -149,15 +147,14 @@ class NNUE {
         black = Black(_pieces);
     }
 
-    template <const bool isSearch>
     void makeMove(U32 move) {
         U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
         if (capturedPieceType != 15) {
             --pieceCount;
         }
 
-        white.makeMove<isSearch>(move);
-        black.makeMove<isSearch>(move);
+        white.makeMove(move);
+        black.makeMove(move);
     }
 
     void unmakeMove(U32 move) {
