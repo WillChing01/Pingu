@@ -87,8 +87,6 @@ class alignas(32) Accumulator {
         cReLU();
     }
 
-    void fullRefresh() { refresh(); }
-
     void setOne(U32 pieceType, U32 square) {
         U32 ind = index(kingPos, pieceType, square);
         __m256i w;
@@ -173,8 +171,8 @@ class NNUE {
             pieceCount += __builtin_popcountll(white.pieces[i]);
         }
 
-        white.fullRefresh();
-        black.fullRefresh();
+        white.refresh();
+        black.refresh();
     }
 
     int forward() {

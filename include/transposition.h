@@ -6,6 +6,27 @@
 #include <atomic>
 #include <random>
 
+// search parameters.
+const int MATE_SCORE = 32767;
+const int MAXDEPTH = 63;
+
+const int MATE_BOUND = MATE_SCORE - 100;
+
+// define hash info compression.
+const U64 BESTMOVEMASK = 4294967295ull;
+const U64 EXACTFLAGMASK = 4294967296ull;
+const U64 EXACTFLAGSHIFT = 32;
+const U64 BETAFLAGMASK = 8589934592ull;
+const U64 BETAFLAGSHIFT = 33;
+const U64 DEPTHMASK = 1082331758592ull;
+const U64 DEPTHSHIFT = 34;
+const U64 EVALMASK = 36027697507336192ull;
+const U64 EVALSHIFT = 40;
+const U64 EVALSIGNMASK = 36028797018963968ull;
+const U64 EVALSIGNSHIFT = 55;
+const U64 AGEMASK = 18374686479671623680ull;
+const U64 AGESHIFT = 56;
+
 int rootCounter = 0;
 const int ageLimit = 2;
 
