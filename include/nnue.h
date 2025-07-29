@@ -30,7 +30,7 @@ class alignas(32) Accumulator {
         if (pieceType == side) {
             ++ply;
             while ((int)l1.size() <= ply) {
-                l1.push_back(std::array<short, 32>());
+                l1.emplace_back();
             }
             refresh();
             return;
@@ -38,7 +38,7 @@ class alignas(32) Accumulator {
 
         int newPly = ply + 1;
         while ((int)l1.size() <= newPly) {
-            l1.push_back(std::array<short, 32>());
+            l1.emplace_back();
         }
         for (int i = 0; i < 32; i += 16) {
             __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
