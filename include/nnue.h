@@ -90,6 +90,27 @@ class alignas(32) Accumulator {
         }
     }
 
+    void applyUpdates() {
+        // assumes that the indices in updateBuffer are sorted in ascending order.
+        __m256i lower = _ZERO;
+        __m256i upper = _ZERO;
+        __m256i wLower;
+        __m256i wUpper;
+        for (const auto& [ind, sign] : updateBuffer) {
+            wLower = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][0]);
+            wUpper = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][16]);
+            if (sign) {
+                lower = _mm256_add_epi16(lower, wLower);
+                upper = _mm256_add_epi16(upper, wUpper);
+            } else {
+                lower = _mm256_sub_epi16(lower, wLower);
+                upper = _mm256_sub_epi16(upper, wUpper);
+            }
+        }
+        _mm256_storeu_si256((__m256i*)&l1[ply][0], lower);
+        _mm256_storeu_si256((__m256i*)&l1[ply][16], upper);
+    }
+
     void setOne(U32 pieceType, U32 square) {
         U32 ind = index(kingPos, pieceType, square);
         __m256i w;
