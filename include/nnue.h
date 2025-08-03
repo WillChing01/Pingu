@@ -9,13 +9,50 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <immintrin.h>
 #include <string>
+
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
+struct SimpleAlignedAllocator {
+    using value_type = std::array<short, 32>;
+
+    SimpleAlignedAllocator() noexcept {}
+
+    value_type* allocate(std::size_t n) {
+        void* ptr = nullptr;
+#ifdef _WIN32
+        ptr = _aligned_malloc(n * sizeof(value_type), 32);
+        if (!ptr) std::terminate();
+#else
+        if (posix_memalign(&ptr, 32, n * sizeof(value_type)) != 0) {
+            std::terminate();
+        }
+#endif
+        return static_cast<value_type*>(ptr);
+    }
+
+    void deallocate(value_type* p, std::size_t) noexcept {
+#ifdef _WIN32
+        _aligned_free(p);
+#else
+        free(p);
+#endif
+    }
+
+    template <typename U>
+    struct rebind {
+        using other = SimpleAlignedAllocator;
+    };
+};
 
 template <int (*index)(U32 kingPos, U32 pieceType, U32 square), bool side>
 class alignas(32) Accumulator {
   public:
-    alignas(32) std::vector<std::array<short, 32>> l1{256};
+    std::vector<std::array<short, 32>, SimpleAlignedAllocator> l1{256};
     alignas(32) char cl1[32] = {};
     const U64* pieces;
     int kingPos = 0;
@@ -26,13 +63,13 @@ class alignas(32) Accumulator {
     Accumulator(const U64* _pieces) : pieces(_pieces) {}
 
     void fillBuffer(const std::array<short, 32>& initial, __m256i* buffer) {
-        buffer[0] = _mm256_loadu_si256((__m256i*)(&initial[0]));
-        buffer[1] = _mm256_loadu_si256((__m256i*)(&initial[16]));
+        buffer[0] = _mm256_load_si256((__m256i*)(&initial[0]));
+        buffer[1] = _mm256_load_si256((__m256i*)(&initial[16]));
     }
 
     void storeBuffer(std::array<short, 32>& layer, __m256i* buffer) {
         for (size_t i = 0; i < 2; ++i) {
-            _mm256_storeu_si256((__m256i*)&layer[16 * i], buffer[i]);
+            _mm256_store_si256((__m256i*)&layer[16 * i], buffer[i]);
         }
     }
 
@@ -40,7 +77,7 @@ class alignas(32) Accumulator {
         U32 ind = index(kingPos, pieceType, square);
         __m256i w;
         for (size_t i = 0; i < 2; ++i) {
-            w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][16 * i]);
+            w = _mm256_load_si256((__m256i*)&perspective_w0[ind][16 * i]);
             buffer[i] = _mm256_add_epi16(buffer[i], w);
         }
     }
@@ -49,7 +86,7 @@ class alignas(32) Accumulator {
         U32 ind = index(kingPos, pieceType, square);
         __m256i w;
         for (size_t i = 0; i < 2; ++i) {
-            w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][16 * i]);
+            w = _mm256_load_si256((__m256i*)&perspective_w0[ind][16 * i]);
             buffer[i] = _mm256_sub_epi16(buffer[i], w);
         }
     }
@@ -125,10 +162,10 @@ class alignas(32) Accumulator {
         __m256i x, y;
         for (size_t i = 0; i < 32; i += 32) {
             x = _mm256_srai_epi16(
-                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i*)&l1[ply][i])), _HALF), 6);
+                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_load_si256((__m256i*)&l1[ply][i])), _HALF), 6);
             y = _mm256_srai_epi16(
-                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i*)&l1[ply][i + 16])), _HALF), 6);
-            _mm256_storeu_si256((__m256i*)&cl1[i], cvtepi16_epi8(x, y));
+                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_load_si256((__m256i*)&l1[ply][i + 16])), _HALF), 6);
+            _mm256_store_si256((__m256i*)&cl1[i], cvtepi16_epi8(x, y));
         }
     }
 };
@@ -197,13 +234,13 @@ class NNUE {
         int index = (pieceCount - 1) / 8;
 
         for (size_t i = 0; i < 32; i += 32) {
-            l = _mm256_loadu_si256((__m256i*)&white.cl1[i]);
-            w = _mm256_loadu_si256((__m256i*)&stacks_w0[index][32 * (*side) + i]);
+            l = _mm256_load_si256((__m256i*)&white.cl1[i]);
+            w = _mm256_load_si256((__m256i*)&stacks_w0[index][32 * (*side) + i]);
             sum = _mm256_add_epi32(sum, madd_epi8(l, w));
         }
         for (size_t i = 0; i < 32; i += 32) {
-            l = _mm256_loadu_si256((__m256i*)&black.cl1[i]);
-            w = _mm256_loadu_si256((__m256i*)&stacks_w0[index][32 * (!(*side)) + i]);
+            l = _mm256_load_si256((__m256i*)&black.cl1[i]);
+            w = _mm256_load_si256((__m256i*)&stacks_w0[index][32 * (!(*side)) + i]);
             sum = _mm256_add_epi32(sum, madd_epi8(l, w));
         }
         return hsum_8x32(sum) + stacks_b0[index];
