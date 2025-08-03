@@ -1,7 +1,6 @@
 .venv
-
 **/__pycache__
-**/_raw
+**/_*
 **/training
 **/validation
 **/checkpoints
