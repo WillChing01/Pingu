@@ -20,25 +20,35 @@ class alignas(32) Accumulator {
     const U64* pieces;
     int kingPos = 0;
     int ply = 0;
+    std::vector<std::pair<U32, bool>> updateBuffer;
 
     Accumulator() {}
 
     Accumulator(const U64* _pieces) : pieces(_pieces) {}
 
     void makeMove(U32 move) {
-        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
-        if (pieceType == side) {
-            ++ply;
-            while ((int)l1.size() <= ply) {
-                l1.emplace_back();
-            }
-            refresh();
-            return;
-        }
-
         while ((int)l1.size() <= ply + 1) {
             l1.emplace_back();
         }
+
+        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        if (pieceType == side) {
+            ++ply;
+            refresh();
+            return;
+        } else if (pieceType == !side && move == CASTLE_MOVES[!side][0]) {
+            // kingside enemy castles.
+        } else if (pieceType == !side && move == CASTLE_MOVES[!side][1]) {
+            // queenside enemy castles.
+        } else if (move & MOVEINFO_ENPASSANT_MASK) {
+            // en-passant capture.
+        } else if ((U64 capturedPieceType =
+                        (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) != 15) {
+            // capture.
+        } else {
+            // non-capture.
+        }
+
         for (int i = 0; i < 32; i += 16) {
             __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
             _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]), x);
@@ -90,10 +100,10 @@ class alignas(32) Accumulator {
         }
     }
 
-    void applyUpdates() {
+    void applyUpdates(const std::array<short, 32>& initial) {
         // assumes that the indices in updateBuffer are sorted in ascending order.
-        __m256i lower = _ZERO;
-        __m256i upper = _ZERO;
+        __m256i lower = _mm256_loadu_si256((__m256i*)&initial[0]);
+        __m256i upper = _mm256_loadu_si256((__m256i*)&initial[16]);
         __m256i wLower;
         __m256i wUpper;
         for (const auto& [ind, sign] : updateBuffer) {
