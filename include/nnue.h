@@ -41,11 +41,6 @@ class alignas(32) Accumulator {
             _mm256_loadu_si256((__m256i*)(&l1[ply][0])),
             _mm256_loadu_si256((__m256i*)(&l1[ply][16])),
         };
-
-        // for (int i = 0; i < 32; i += 16) {
-        //     __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
-        //     _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]), x);
-        // }
         ++ply;
 
         U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
@@ -122,28 +117,6 @@ class alignas(32) Accumulator {
     void storeBuffer(std::array<short, 32>& layer, __m256i* buffer) {
         for (size_t i = 0; i < 2; ++i) {
             _mm256_storeu_si256((__m256i*)&layer[16 * i], buffer[i]);
-        }
-    }
-
-    void setOne(U32 pieceType, U32 square) {
-        U32 ind = index(kingPos, pieceType, square);
-        __m256i w;
-        __m256i l;
-        for (size_t i = 0; i < 32; i += 16) {
-            w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][i]);
-            l = _mm256_loadu_si256((__m256i*)&l1[ply][i]);
-            _mm256_storeu_si256((__m256i*)&l1[ply][i], _mm256_add_epi16(l, w));
-        }
-    }
-
-    void setZero(U32 pieceType, U32 square) {
-        U32 ind = index(kingPos, pieceType, square);
-        __m256i w;
-        __m256i l;
-        for (size_t i = 0; i < 32; i += 16) {
-            w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][i]);
-            l = _mm256_loadu_si256((__m256i*)&l1[ply][i]);
-            _mm256_storeu_si256((__m256i*)&l1[ply][i], _mm256_sub_epi16(l, w));
         }
     }
 
