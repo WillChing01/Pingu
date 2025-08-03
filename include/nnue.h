@@ -69,7 +69,13 @@ class alignas(32) Accumulator {
         }
     }
 
-    void unmakeMove() { --ply; }
+    void unmakeMove(U32 move) {
+        --ply;
+        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        if (pieceType == side) {
+            kingPos = __builtin_ctzll(pieces[side]);
+        }
+    }
 
     void refresh() {
         kingPos = __builtin_ctzll(pieces[side]);
@@ -160,8 +166,8 @@ class NNUE {
             ++pieceCount;
         }
 
-        white.unmakeMove();
-        black.unmakeMove();
+        white.unmakeMove(move);
+        black.unmakeMove(move);
     }
 
     void fullRefresh() {
