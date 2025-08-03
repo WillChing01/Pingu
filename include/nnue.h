@@ -15,7 +15,7 @@
 template <int (*index)(U32 kingPos, U32 pieceType, U32 square), bool side>
 class alignas(32) Accumulator {
   public:
-    alignas(32) std::vector<std::array<short, 32>> l1 = {std::array<short, 32>()};
+    alignas(32) std::vector<std::array<short, 32>> l1{256};
     alignas(32) char cl1[32] = {};
     const U64* pieces;
     int kingPos = 0;
