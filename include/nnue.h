@@ -36,17 +36,6 @@ class alignas(32) Accumulator {
             ++ply;
             refresh();
             return;
-        } else if (pieceType == !side && move == CASTLE_MOVES[!side][0]) {
-            // kingside enemy castles.
-        } else if (pieceType == !side && move == CASTLE_MOVES[!side][1]) {
-            // queenside enemy castles.
-        } else if (move & MOVEINFO_ENPASSANT_MASK) {
-            // en-passant capture.
-        } else if ((U64 capturedPieceType =
-                        (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET) != 15) {
-            // capture.
-        } else {
-            // non-capture.
         }
 
         for (int i = 0; i < 32; i += 16) {
@@ -98,27 +87,6 @@ class alignas(32) Accumulator {
                 setOne(i, popLSB(x));
             }
         }
-    }
-
-    void applyUpdates(const std::array<short, 32>& initial) {
-        // assumes that the indices in updateBuffer are sorted in ascending order.
-        __m256i lower = _mm256_loadu_si256((__m256i*)&initial[0]);
-        __m256i upper = _mm256_loadu_si256((__m256i*)&initial[16]);
-        __m256i wLower;
-        __m256i wUpper;
-        for (const auto& [ind, sign] : updateBuffer) {
-            wLower = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][0]);
-            wUpper = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][16]);
-            if (sign) {
-                lower = _mm256_add_epi16(lower, wLower);
-                upper = _mm256_add_epi16(upper, wUpper);
-            } else {
-                lower = _mm256_sub_epi16(lower, wLower);
-                upper = _mm256_sub_epi16(upper, wUpper);
-            }
-        }
-        _mm256_storeu_si256((__m256i*)&l1[ply][0], lower);
-        _mm256_storeu_si256((__m256i*)&l1[ply][16], upper);
     }
 
     void setOne(U32 pieceType, U32 square) {
