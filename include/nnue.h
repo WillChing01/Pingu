@@ -88,8 +88,6 @@ class alignas(32) Accumulator {
                 setOne(i, popLSB(x));
             }
         }
-
-        cReLU();
     }
 
     void setOne(U32 pieceType, U32 square) {
