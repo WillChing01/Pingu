@@ -23,8 +23,6 @@ const U64 QUEEN_ROOK_POS[2] = {1ull, 72057594037927936ull};
 const int KING_ROOK_SQUARE[2] = {7, 63};
 const int QUEEN_ROOK_SQUARE[2] = {0, 56};
 
-const U64 CASTLE_MOVES[2][2] = {{1972288ull, 1968192ull}, {4127681ull, 4123585ull}};
-
 // MOVE INFO - unsigned int (U32)
 
 struct moveInfo {
