@@ -20,7 +20,6 @@ class alignas(32) Accumulator {
     const U64* pieces;
     int kingPos = 0;
     int ply = 0;
-    std::vector<std::pair<U32, bool>> updateBuffer;
 
     Accumulator() {}
 
@@ -38,10 +37,15 @@ class alignas(32) Accumulator {
             return;
         }
 
-        for (int i = 0; i < 32; i += 16) {
-            __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
-            _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]), x);
-        }
+        __m256i buffer[2] = {
+            _mm256_loadu_si256((__m256i*)(&l1[ply][0])),
+            _mm256_loadu_si256((__m256i*)(&l1[ply][16])),
+        };
+
+        // for (int i = 0; i < 32; i += 16) {
+        //     __m256i x = _mm256_loadu_si256((__m256i*)(&l1[ply][i]));
+        //     _mm256_storeu_si256((__m256i*)(&l1[ply + 1][i]), x);
+        // }
         ++ply;
 
         U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
@@ -50,22 +54,24 @@ class alignas(32) Accumulator {
         U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
         bool enPassant = move & MOVEINFO_ENPASSANT_MASK;
 
-        setZero(pieceType, startSquare);
-        setOne(finishPieceType, finishSquare);
+        setZero(pieceType, startSquare, buffer);
+        setOne(finishPieceType, finishSquare, buffer);
         if (capturedPieceType != 15) {
-            setZero(capturedPieceType, finishSquare + enPassant * (-8 + 16 * (pieceType & 1)));
+            setZero(capturedPieceType, finishSquare + enPassant * (-8 + 16 * (pieceType & 1)), buffer);
         }
 
         // check for castles.
         if (pieceType == (!side)) {
             if (finishSquare - startSquare == 2) {
-                setZero(_nRooks + !side, KING_ROOK_SQUARE[!side]);
-                setOne(_nRooks + !side, KING_ROOK_SQUARE[!side] - 2);
+                setZero(_nRooks + !side, KING_ROOK_SQUARE[!side], buffer);
+                setOne(_nRooks + !side, KING_ROOK_SQUARE[!side] - 2, buffer);
             } else if (startSquare - finishSquare == 2) {
-                setZero(_nRooks + !side, QUEEN_ROOK_SQUARE[!side]);
-                setOne(_nRooks + !side, QUEEN_ROOK_SQUARE[!side] + 3);
+                setZero(_nRooks + !side, QUEEN_ROOK_SQUARE[!side], buffer);
+                setOne(_nRooks + !side, QUEEN_ROOK_SQUARE[!side] + 3, buffer);
             }
         }
+
+        storeBuffer(l1[ply], buffer);
     }
 
     void unmakeMove(U32 move) {
@@ -78,14 +84,44 @@ class alignas(32) Accumulator {
 
     void refresh() {
         kingPos = __builtin_ctzll(pieces[side]);
-        std::copy(perspective_b0.begin(), perspective_b0.end(), l1[ply].begin());
 
-        setOne(!side, __builtin_ctzll(pieces[!side]));
+        __m256i buffer[2] = {
+            _mm256_loadu_si256((__m256i*)(&perspective_b0[0])),
+            _mm256_loadu_si256((__m256i*)(&perspective_b0[16])),
+        };
+
+        setOne(!side, __builtin_ctzll(pieces[!side]), buffer);
         for (size_t i = 2; i < 12; ++i) {
             U64 x = pieces[i];
             while (x) {
-                setOne(i, popLSB(x));
+                setOne(i, popLSB(x), buffer);
             }
+        }
+
+        storeBuffer(l1[ply], buffer);
+    }
+
+    void setOne(U32 pieceType, U32 square, __m256i* buffer) {
+        U32 ind = index(kingPos, pieceType, square);
+        __m256i w;
+        for (size_t i = 0; i < 2; ++i) {
+            w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][16 * i]);
+            buffer[i] = _mm256_add_epi16(buffer[i], w);
+        }
+    }
+
+    void setZero(U32 pieceType, U32 square, __m256i* buffer) {
+        U32 ind = index(kingPos, pieceType, square);
+        __m256i w;
+        for (size_t i = 0; i < 2; ++i) {
+            w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][16 * i]);
+            buffer[i] = _mm256_sub_epi16(buffer[i], w);
+        }
+    }
+
+    void storeBuffer(std::array<short, 32>& layer, __m256i* buffer) {
+        for (size_t i = 0; i < 2; ++i) {
+            _mm256_storeu_si256((__m256i*)&layer[16 * i], buffer[i]);
         }
     }
 
