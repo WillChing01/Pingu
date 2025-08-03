@@ -22,11 +22,11 @@ Pingu accepts many of the usual UCI commands (go/stop/position etc.) and it has 
 
 | Version | CCRL Blitz | CCRL 40/15 |
 | ------: | ---------: | ---------: |
-| 5.0.0   | -          | -          |
-| 4.0.0   | 2989       | 3020       |
+| 5.0.0   | -          | 3186       |
+| 4.0.0   | 2997       | 3019       |
 | 3.0.0   | -          | 2820       |
 | 2.0.0   | 2527       | 2614       |
-| 1.0.0   | 2162       | -          |
+| 1.0.0   | 2158       | -          |
 
 More information on [CCRL](https://www.computerchess.org.uk/ccrl/).
 
@@ -93,7 +93,7 @@ Trained with PyTorch and a custom dataloader written in C++ (source code in `/nn
 Final model uses quantized weights and AVX2 intrinsics for optimal performance.
 
 All NNUE versions of Pingu were trained with the engine's own self-play data.
-The process is described in [nnue.md](/docs/nnue.md) and more recently in [nnue_2.md](/docs/nnue_2.md).
+The process is described in [nnue.md](/docs/nnue.md), and more recently in [nnue_2.md](/docs/nnue_2.md) and [nnue_3.md](/docs/nnue_3.md).
 
 - [Pingu 4.0.0 dataset (new)](https://huggingface.co/datasets/WillChing01/pingu_4)
 - [Pingu 4.0.0 dataset (old)](https://huggingface.co/datasets/WillChing01/pingu)
