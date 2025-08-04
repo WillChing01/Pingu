@@ -9,28 +9,120 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <immintrin.h>
 #include <string>
+
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
+struct SimpleAlignedAllocator {
+    using value_type = std::array<short, 32>;
+
+    SimpleAlignedAllocator() noexcept {}
+
+    value_type* allocate(std::size_t n) {
+        void* ptr = nullptr;
+#ifdef _WIN32
+        ptr = _aligned_malloc(n * sizeof(value_type), 32);
+        if (!ptr) std::terminate();
+#else
+        if (posix_memalign(&ptr, 32, n * sizeof(value_type)) != 0) {
+            std::terminate();
+        }
+#endif
+        return static_cast<value_type*>(ptr);
+    }
+
+    void deallocate(value_type* p, std::size_t) noexcept {
+#ifdef _WIN32
+        _aligned_free(p);
+#else
+        free(p);
+#endif
+    }
+
+    template <typename U>
+    struct rebind {
+        using other = SimpleAlignedAllocator;
+    };
+};
 
 template <int (*index)(U32 kingPos, U32 pieceType, U32 square), bool side>
 class alignas(32) Accumulator {
   public:
-    alignas(32) short l1[32] = {};
+    std::vector<std::array<short, 32>, SimpleAlignedAllocator> l1{256};
     alignas(32) char cl1[32] = {};
     const U64* pieces;
     int kingPos = 0;
+    int ply = 0;
 
     Accumulator() {}
 
     Accumulator(const U64* _pieces) : pieces(_pieces) {}
 
-    template <void (Accumulator::*_zero)(U32, U32), void (Accumulator::*_one)(U32, U32)>
-    void _move(U32 move) {
+    void fillBuffer(const std::array<short, 32>& initial, __m256i* buffer) {
+        buffer[0] = _mm256_load_si256((__m256i*)(&initial[0]));
+        buffer[1] = _mm256_load_si256((__m256i*)(&initial[16]));
+    }
+
+    void storeBuffer(std::array<short, 32>& layer, __m256i* buffer) {
+        for (size_t i = 0; i < 2; ++i) {
+            _mm256_store_si256((__m256i*)&layer[16 * i], buffer[i]);
+        }
+    }
+
+    void setOne(U32 pieceType, U32 square, __m256i* buffer) {
+        U32 ind = index(kingPos, pieceType, square);
+        __m256i w;
+        for (size_t i = 0; i < 2; ++i) {
+            w = _mm256_load_si256((__m256i*)&perspective_w0[ind][16 * i]);
+            buffer[i] = _mm256_add_epi16(buffer[i], w);
+        }
+    }
+
+    void setZero(U32 pieceType, U32 square, __m256i* buffer) {
+        U32 ind = index(kingPos, pieceType, square);
+        __m256i w;
+        for (size_t i = 0; i < 2; ++i) {
+            w = _mm256_load_si256((__m256i*)&perspective_w0[ind][16 * i]);
+            buffer[i] = _mm256_sub_epi16(buffer[i], w);
+        }
+    }
+
+    void refresh() {
+        kingPos = __builtin_ctzll(pieces[side]);
+
+        __m256i buffer[2];
+        fillBuffer(perspective_b0, buffer);
+
+        setOne(!side, __builtin_ctzll(pieces[!side]), buffer);
+        for (size_t i = 2; i < 12; ++i) {
+            U64 x = pieces[i];
+            while (x) {
+                setOne(i, popLSB(x), buffer);
+            }
+        }
+
+        storeBuffer(l1[ply], buffer);
+    }
+
+    void makeMove(U32 move) {
+        while ((int)l1.size() <= ply + 1) {
+            l1.emplace_back();
+        }
+
         U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
         if (pieceType == side) {
+            ++ply;
             refresh();
             return;
         }
+
+        __m256i buffer[2];
+        fillBuffer(l1[ply], buffer);
+        ++ply;
 
         U32 startSquare = (move & MOVEINFO_STARTSQUARE_MASK) >> MOVEINFO_STARTSQUARE_OFFSET;
         U32 finishPieceType = (move & MOVEINFO_FINISHPIECETYPE_MASK) >> MOVEINFO_FINISHPIECETYPE_OFFSET;
@@ -38,64 +130,31 @@ class alignas(32) Accumulator {
         U32 capturedPieceType = (move & MOVEINFO_CAPTUREDPIECETYPE_MASK) >> MOVEINFO_CAPTUREDPIECETYPE_OFFSET;
         bool enPassant = move & MOVEINFO_ENPASSANT_MASK;
 
-        (this->*_zero)(pieceType, startSquare);
-        (this->*_one)(finishPieceType, finishSquare);
+        setZero(pieceType, startSquare, buffer);
+        setOne(finishPieceType, finishSquare, buffer);
         if (capturedPieceType != 15) {
-            (this->*_zero)(capturedPieceType, finishSquare + enPassant * (-8 + 16 * (pieceType & 1)));
+            setZero(capturedPieceType, finishSquare + enPassant * (-8 + 16 * (pieceType & 1)), buffer);
         }
 
         // check for castles.
         if (pieceType == (!side)) {
             if (finishSquare - startSquare == 2) {
-                (this->*_zero)(_nRooks + !side, KING_ROOK_SQUARE[!side]);
-                (this->*_one)(_nRooks + !side, KING_ROOK_SQUARE[!side] - 2);
+                setZero(_nRooks + !side, KING_ROOK_SQUARE[!side], buffer);
+                setOne(_nRooks + !side, KING_ROOK_SQUARE[!side] - 2, buffer);
             } else if (startSquare - finishSquare == 2) {
-                (this->*_zero)(_nRooks + !side, QUEEN_ROOK_SQUARE[!side]);
-                (this->*_one)(_nRooks + !side, QUEEN_ROOK_SQUARE[!side] + 3);
+                setZero(_nRooks + !side, QUEEN_ROOK_SQUARE[!side], buffer);
+                setOne(_nRooks + !side, QUEEN_ROOK_SQUARE[!side] + 3, buffer);
             }
         }
 
-        cReLU();
+        storeBuffer(l1[ply], buffer);
     }
 
-    void makeMove(U32 move) { _move<&Accumulator::setZero, &Accumulator::setOne>(move); }
-
-    void unmakeMove(U32 move) { _move<&Accumulator::setOne, &Accumulator::setZero>(move); }
-
-    void refresh() {
-        kingPos = __builtin_ctzll(pieces[side]);
-        std::copy(perspective_b0.begin(), perspective_b0.end(), l1);
-
-        setOne(!side, __builtin_ctzll(pieces[!side]));
-        for (size_t i = 2; i < 12; ++i) {
-            U64 x = pieces[i];
-            while (x) {
-                setOne(i, popLSB(x));
-            }
-        }
-
-        cReLU();
-    }
-
-    void setOne(U32 pieceType, U32 square) {
-        U32 ind = index(kingPos, pieceType, square);
-        __m256i w;
-        __m256i l;
-        for (size_t i = 0; i < 32; i += 16) {
-            w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][i]);
-            l = _mm256_loadu_si256((__m256i*)&l1[i]);
-            _mm256_storeu_si256((__m256i*)&l1[i], _mm256_add_epi16(l, w));
-        }
-    }
-
-    void setZero(U32 pieceType, U32 square) {
-        U32 ind = index(kingPos, pieceType, square);
-        __m256i w;
-        __m256i l;
-        for (size_t i = 0; i < 32; i += 16) {
-            w = _mm256_loadu_si256((__m256i*)&perspective_w0[ind][i]);
-            l = _mm256_loadu_si256((__m256i*)&l1[i]);
-            _mm256_storeu_si256((__m256i*)&l1[i], _mm256_sub_epi16(l, w));
+    void unmakeMove(U32 move) {
+        --ply;
+        U32 pieceType = (move & MOVEINFO_PIECETYPE_MASK) >> MOVEINFO_PIECETYPE_OFFSET;
+        if (pieceType == side) {
+            kingPos = __builtin_ctzll(pieces[side]);
         }
     }
 
@@ -103,10 +162,10 @@ class alignas(32) Accumulator {
         __m256i x, y;
         for (size_t i = 0; i < 32; i += 32) {
             x = _mm256_srai_epi16(
-                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i*)&l1[i])), _HALF), 6);
+                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_load_si256((__m256i*)&l1[ply][i])), _HALF), 6);
             y = _mm256_srai_epi16(
-                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_loadu_si256((__m256i*)&l1[i + 16])), _HALF), 6);
-            _mm256_storeu_si256((__m256i*)&cl1[i], cvtepi16_epi8(x, y));
+                _mm256_add_epi16(_mm256_max_epi16(_ZERO, _mm256_load_si256((__m256i*)&l1[ply][i + 16])), _HALF), 6);
+            _mm256_store_si256((__m256i*)&cl1[i], cvtepi16_epi8(x, y));
         }
     }
 };
@@ -166,19 +225,22 @@ class NNUE {
     }
 
     int forward() {
+        white.cReLU();
+        black.cReLU();
+
         __m256i sum = _ZERO;
         __m256i l, w;
 
         int index = (pieceCount - 1) / 8;
 
         for (size_t i = 0; i < 32; i += 32) {
-            l = _mm256_loadu_si256((__m256i*)&white.cl1[i]);
-            w = _mm256_loadu_si256((__m256i*)&stacks_w0[index][32 * (*side) + i]);
+            l = _mm256_load_si256((__m256i*)&white.cl1[i]);
+            w = _mm256_load_si256((__m256i*)&stacks_w0[index][32 * (*side) + i]);
             sum = _mm256_add_epi32(sum, madd_epi8(l, w));
         }
         for (size_t i = 0; i < 32; i += 32) {
-            l = _mm256_loadu_si256((__m256i*)&black.cl1[i]);
-            w = _mm256_loadu_si256((__m256i*)&stacks_w0[index][32 * (!(*side)) + i]);
+            l = _mm256_load_si256((__m256i*)&black.cl1[i]);
+            w = _mm256_load_si256((__m256i*)&stacks_w0[index][32 * (!(*side)) + i]);
             sum = _mm256_add_epi32(sum, madd_epi8(l, w));
         }
         return hsum_8x32(sum) + stacks_b0[index];

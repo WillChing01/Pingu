@@ -12,10 +12,10 @@ WEIGHTS_FILES := $(wildcard weights/nnue/*.bin)
 WEIGHTS_OBJ := $(WEIGHTS_FILES:.bin=.o)
 
 ifeq ($(OS),Windows_NT)
-	OBJCOPY_FLAGS := -I binary -O pei-x86-64 -B i386
+	OBJCOPY_FLAGS := -I binary -O pei-x86-64 -B i386 --set-section-alignment .data=32
 	EXE := Pingu.exe
 else
-	OBJCOPY_FLAGS := -I binary -O elf64-x86-64 -B i386
+	OBJCOPY_FLAGS := -I binary -O elf64-x86-64 -B i386 --set-section-alignment .data=32
 	EXE := Pingu
 endif
 
