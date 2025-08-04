@@ -101,7 +101,7 @@ bool testMoveValidation(Board& b, int depth, U32 (&cache)[10][128]) {
     }
 }
 
-bool testIncrementalUpdate(Board& b, int depth, auto Board::* param, void (Board::*hardUpdate)()) {
+bool testIncrementalUpdate(Board& b, int depth, auto Board::*param, void (Board::*hardUpdate)()) {
     // verify incremental updates of 'param' for given position.
     auto oldParam = b.*param;
     (b.*hardUpdate)();
