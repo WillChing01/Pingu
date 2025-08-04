@@ -23,4 +23,3 @@ jobs:
           VALIDATE_PYTHON_BLACK: true
           LINTER_RULES_PATH: .
           CLANG_FORMAT_FILE_NAME: .clang-format
-          FILTER_REGEX_EXCLUDE: include/weights.h
