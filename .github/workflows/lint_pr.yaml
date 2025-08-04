@@ -15,7 +15,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run Linter
-        uses: super-linter/super-linter@v7.2.1
+        uses: super-linter/super-linter@v8.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MULTI_STATUS: false
