@@ -18,6 +18,9 @@ jobs:
       - name: Bench engine
         run: ./Pingu bench
 
+      - name: Bench test
+        run: cd testing && python3 bench_check.py
+
       - name: Perft test
         run: cd testing && python3 perft_check.py
 
